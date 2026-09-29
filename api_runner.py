@@ -170,7 +170,10 @@ def job_worker(job_id):
                 try:
                     resp_body = resp.json()
                 except Exception:
-                    resp_body = resp.text
+                    text = resp.text
+                    if len(text) > 500_000:
+                        text = text[:500_000] + f"\n\n... [{len(text)/1024/1024:.1f} MB, qisqartirildi]"
+                    resp_body = text
 
                 status = resp.status_code
                 ok     = 200 <= status < 300
@@ -2906,8 +2909,13 @@ function renderResult(item) {
   if (currentFilter === 'success' && !ok) return;
   if (currentFilter === 'error'   &&  ok) return;
 
-  const respStr = typeof item.response === 'object'
+  const respFull = typeof item.response === 'object'
     ? JSON.stringify(item.response, null, 2) : String(item.response ?? '');
+  const RESP_LIMIT = 100_000;
+  const respTruncated = respFull.length > RESP_LIMIT;
+  const respStr = respTruncated
+    ? respFull.slice(0, RESP_LIMIT) + `\n\n... [${(respFull.length/1024/1024).toFixed(1)} MB, qisqartirildi]`
+    : respFull;
 
   const retryBadge = item.retries > 0
     ? `<span style="font-size:9.5px;color:#f97316;background:rgba(249,115,22,.12);padding:1px 5px;border-radius:4px;">↺${item.retries}</span>` : '';
@@ -2962,8 +2970,13 @@ function openResultFull(idx) {
   const item = _resultItems.get(idx);
   if (!item) return;
   const ok = typeof item.status === 'number' && item.status >= 200 && item.status < 300;
-  const respStr = typeof item.response === 'object'
+  const respFull2 = typeof item.response === 'object'
     ? JSON.stringify(item.response, null, 2) : String(item.response ?? '');
+  const RESP_LIMIT2 = 200_000;
+  const resp2Truncated = respFull2.length > RESP_LIMIT2;
+  const respStr = resp2Truncated
+    ? respFull2.slice(0, RESP_LIMIT2) + `\n\n... [${(respFull2.length/1024/1024).toFixed(1)} MB, qisqartirildi]`
+    : respFull2;
   const hdrs = item.resp_headers || {};
   const hdrKeys = Object.keys(hdrs);
 
@@ -3205,6 +3218,7 @@ function fmtBytes(n) {
 }
 
 function syntaxHL(str) {
+  if (str.length > 80_000) return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const s = str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return s.replace(
     /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(true|false|null)\b|(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g,
@@ -5192,7 +5206,9 @@ def run_one():
         r       = getattr(req_lib, method.lower())(url, **kw)
         elapsed = _time.perf_counter() - start
         try:    resp = r.json()
-        except: resp = r.text
+        except:
+            t = r.text
+            resp = t[:500_000] + f"\n\n... [{len(t)/1024/1024:.1f} MB, qisqartirildi]" if len(t) > 500_000 else t
         return jsonify({
             "status":       r.status_code,
             "time":         round(elapsed, 3),
