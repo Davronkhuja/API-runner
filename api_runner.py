@@ -157,23 +157,30 @@ def job_worker(job_id):
                 kw = {"params": params, "headers": hdrs,
                       "timeout": timeout, "verify": ssl_verify}
 
-                # File-type params: build multipart upload from local paths
+                # File-type params: multipart file upload from local paths
                 if file_params:
                     opened_files = []
                     try:
                         mp_files = {}
-                        for fn, fpath in file_params.items():
+                        for fn, fval in file_params.items():
+                            # value format: "path::OriginalName.ext" or just path
+                            if "::" in fval:
+                                fpath, orig_name = fval.split("::", 1)
+                            else:
+                                fpath, orig_name = fval, os.path.basename(fval)
                             fpath = fpath.strip()
                             if os.path.isfile(fpath):
                                 fh = open(fpath, "rb")
                                 opened_files.append(fh)
-                                mp_files[fn] = (os.path.basename(fpath), fh, "application/octet-stream")
+                                mime = "application/octet-stream"
+                                mp_files[fn] = (orig_name, fh, mime)
                             else:
                                 mp_files[fn] = (None, fpath)
+                        # text params stay as URL query params; file goes in body
                         kw["files"] = mp_files
-                        if params:
-                            kw["data"] = params
-                            del kw["params"]
+                        # remove auto Content-Type so requests sets multipart boundary
+                        kw["headers"] = {k: v for k, v in hdrs.items()
+                                         if k.lower() != "content-type"}
                     except Exception as fe:
                         for fh in opened_files:
                             fh.close()
@@ -197,7 +204,7 @@ def job_worker(job_id):
                 resp    = req_lib.request(method, url, **kw)
                 elapsed = time.perf_counter() - start
                 last_elapsed = elapsed
-                if file_params:
+                if file_params and opened_files:
                     for fh in opened_files:
                         try: fh.close()
                         except: pass
@@ -2262,14 +2269,15 @@ pre.resp-pre {
   </div>
 
   <!-- ── CARD: RUNNER ───────────────────────────────────── -->
-  <div class="card">
-    <div class="card-header">
+  <div class="card" id="runnerCard">
+    <div class="card-header" style="cursor:pointer;user-select:none" onclick="toggleRunnerCard()">
       <span class="card-title">Runner — Iteration Data</span>
-      <div class="card-acts" style="font-size:11.5px;color:var(--muted);">
-        Fayl <b>ixtiyoriy</b> — faylsiz bitta so'rov yuboriladi
+      <div class="card-acts" style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);">
+        <span id="runnerCardHint">Fayl <b>ixtiyoriy</b> — faylsiz bitta so'rov yuboriladi</span>
+        <span id="runnerCardChevron" style="font-size:13px;transition:transform .2s">▼</span>
       </div>
     </div>
-    <div class="card-body">
+    <div class="card-body" id="runnerCardBody">
 
       <div class="upload-zone" id="uploadZone">
         <input type="file" id="dataFile" accept=".csv,.json" onchange="handleFile()">
@@ -2660,10 +2668,11 @@ async function uploadParamFile(input) {
     if (!r.ok) throw new Error(await r.text());
     const d = await r.json();
     tr.dataset.type     = 'file';
-    tr.dataset.tempPath = d.path;
+    tr.dataset.tempPath = d.path + '::' + file.name;
     valI.value          = file.name;
     valI.readOnly       = true;
     btn.classList.add('active');
+    syncParamsToUrl();
     showToast('Fayl yuklandi: ' + file.name, 'ok');
   } catch(e) {
     showToast('Fayl yuklanmadi: ' + e.message, 'error');
@@ -4977,6 +4986,15 @@ function closeResults() {
 function toggleResults() {
   if (resultsPane.classList.contains('closed')) openResults();
   else closeResults();
+}
+
+let _runnerOpen = true;
+function toggleRunnerCard() {
+  _runnerOpen = !_runnerOpen;
+  const body = document.getElementById('runnerCardBody');
+  const chevron = document.getElementById('runnerCardChevron');
+  body.style.display    = _runnerOpen ? '' : 'none';
+  chevron.style.transform = _runnerOpen ? '' : 'rotate(-90deg)';
 }
 
 // Drag resize
