@@ -124,11 +124,16 @@ def job_worker(job_id):
             hdrs["Content-Type"] = ctype
 
         params = {}
+        file_params = {}
         for item in params_tmpl:
             n = item.get("name", "").strip()
             v = item.get("value", "")
             if n:
-                params[n] = replace_variables(v, row)
+                val = replace_variables(v, row)
+                if item.get("type") == "file":
+                    file_params[n] = val
+                else:
+                    params[n] = val
 
         body = replace_variables(body_tmpl, row)
 
@@ -148,7 +153,30 @@ def job_worker(job_id):
             try:
                 kw = {"params": params, "headers": hdrs,
                       "timeout": timeout, "verify": ssl_verify}
-                if method in ("POST", "PUT", "PATCH", "DELETE") and (body or body_type == "multipart"):
+
+                # File-type params: build multipart upload from local paths
+                if file_params:
+                    opened_files = []
+                    try:
+                        mp_files = {}
+                        for fn, fpath in file_params.items():
+                            fpath = fpath.strip()
+                            if os.path.isfile(fpath):
+                                fh = open(fpath, "rb")
+                                opened_files.append(fh)
+                                mp_files[fn] = (os.path.basename(fpath), fh, "application/octet-stream")
+                            else:
+                                mp_files[fn] = (None, fpath)
+                        kw["files"] = mp_files
+                        if params:
+                            kw["data"] = params
+                            del kw["params"]
+                    except Exception as fe:
+                        for fh in opened_files:
+                            fh.close()
+                        raise fe
+
+                elif method in ("POST", "PUT", "PATCH", "DELETE") and (body or body_type == "multipart"):
                     if body_type == "json" and body:
                         kw["json"] = json.loads(body)
                     elif body_type == "multipart":
@@ -166,6 +194,10 @@ def job_worker(job_id):
                 resp    = req_lib.request(method, url, **kw)
                 elapsed = time.perf_counter() - start
                 last_elapsed = elapsed
+                if file_params:
+                    for fh in opened_files:
+                        try: fh.close()
+                        except: pass
 
                 try:
                     resp_body = resp.json()
@@ -1000,6 +1032,15 @@ input,select,textarea,button { font-family: inherit; font-size: 14px; }
 .kv-table input:focus { background: var(--primary-bg); }
 .kv-del { width: 34px; text-align: center; cursor: pointer; color: var(--error); font-size: 17px; font-weight: bold; user-select: none; opacity: .45; }
 .kv-del:hover { opacity: 1; }
+.kv-file-td { width: 30px; text-align: center; border: 1px solid var(--border); }
+.kv-file-btn {
+  background: none; border: 1px solid transparent; border-radius: 4px;
+  padding: 2px 4px; cursor: pointer; font-size: 12px; color: var(--muted);
+  line-height: 1; transition: all .12s;
+}
+.kv-file-btn:hover { border-color: var(--border-d); color: var(--text); }
+.kv-file-btn.active { background: var(--primary-bg); border-color: var(--primary); color: var(--primary); }
+tr[data-type="file"] .kv-val { background: rgba(59,130,246,.07); }
 .btn-add-row {
   margin-top: 7px; padding: 4px 11px;
   background: none; border: 1px dashed var(--border-d); border-radius: var(--rad);
@@ -1520,6 +1561,7 @@ pre.resp-pre {
 [data-theme="dark"] .prog-fill.stopped { background: linear-gradient(90deg, #f59e0b, #ef4444); }
 [data-theme="dark"] .status-bar { background: rgba(8,22,36,.7); border-color: rgba(255,255,255,.07); }
 [data-theme="dark"] .flt-btn { border-color: rgba(255,255,255,.1); color: var(--muted); }
+[data-theme="dark"] tr[data-type="file"] .kv-val { background: rgba(59,130,246,.12); }
 [data-theme="dark"] .flt-btn.active { background: var(--text); color: #0b1d2e; border-color: var(--text); }
 [data-theme="dark"] .flt-btn.f-ok.active { background: #00d4a0; color: #0b1d2e; border-color: #00d4a0; }
 [data-theme="dark"] .flt-btn.f-err.active { background: #ff5555; color: #fff; border-color: #ff5555; }
@@ -2098,7 +2140,7 @@ pre.resp-pre {
       <div id="tab-params" class="tab-panel active">
         <table class="kv-table" id="paramsTable">
           <thead><tr>
-            <th style="width:40%">Key</th><th>Value</th><th style="width:34px"></th>
+            <th style="width:40%">Key</th><th>Value</th><th style="width:30px" title="Fayl yuklash">📎</th><th style="width:34px"></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -2584,20 +2626,25 @@ function beautifyBody() {
 // ════════════════════════════════════════════════════════════
 // KV TABLE
 // ════════════════════════════════════════════════════════════
-function addKvRow(tid, name='', value='') {
+function addKvRow(tid, name='', value='', type='text') {
   const tbody = document.querySelector('#' + tid + ' tbody');
   const tr = document.createElement('tr');
+  tr.dataset.type = type;
   const delCb = tid === 'paramsTable' ? "this.closest('tr').remove();syncParamsToUrl()" : "this.closest('tr').remove()";
+  const fileCol = tid === 'paramsTable'
+    ? `<td class="kv-file-td"><button class="kv-file-btn${type==='file'?' active':''}" title="Fayl sifatida yuborish" onclick="const t=this.closest('tr');t.dataset.type=t.dataset.type==='file'?'text':'file';this.classList.toggle('active')">📎</button></td>`
+    : '';
   tr.innerHTML = `
     <td><input class="kv-name" value="${ea(name)}" placeholder="key"></td>
     <td><input class="kv-val"  value="${ea(value)}" placeholder="{{column}}"></td>
+    ${fileCol}
     <td class="kv-del" onclick="${delCb}">×</td>`;
   tbody.appendChild(tr);
 }
 
 function getKv(tid) {
   return [...document.querySelectorAll('#' + tid + ' tbody tr')]
-    .map(tr => ({ name: tr.querySelector('.kv-name').value.trim(), value: tr.querySelector('.kv-val').value }))
+    .map(tr => ({ name: tr.querySelector('.kv-name').value.trim(), value: tr.querySelector('.kv-val').value, type: tr.dataset.type || 'text' }))
     .filter(r => r.name);
 }
 
@@ -2613,7 +2660,7 @@ function syncParamsToUrl() {
   try {
     const inp  = document.getElementById('url');
     const base = inp.value.split('?')[0];
-    const rows = getKv('paramsTable').filter(p => p.name);
+    const rows = getKv('paramsTable').filter(p => p.name && p.type !== 'file');
     inp.value  = rows.length
       ? base + '?' + rows.map(p => encodeURIComponent(p.name) + '=' + encodeURIComponent(p.value)).join('&')
       : base;
@@ -3403,7 +3450,7 @@ function loadRequest(rid) {
 
   document.querySelector('#paramsTable tbody').innerHTML  = '';
   document.querySelector('#headersTable tbody').innerHTML = '';
-  (r.params  || []).forEach(x => addKvRow('paramsTable',  x.name, x.value));
+  (r.params  || []).forEach(x => addKvRow('paramsTable',  x.name, x.value, x.type || 'text'));
   (r.headers || []).forEach(x => addKvRow('headersTable', x.name, x.value));
   if (!(r.params  || []).length) addKvRow('paramsTable');
   if (!(r.headers || []).length) addKvRow('headersTable');
