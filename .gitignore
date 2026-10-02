@@ -1,6 +1,9 @@
 # Saved API data — local only, do not commit
 saved_requests.json
 
+# Temporary uploaded files
+.tmp_uploads/
+
 # Python
 __pycache__/
 *.py[cod]

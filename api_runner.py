@@ -14,6 +14,9 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 
 app = Flask(__name__)
 
+TEMP_UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".tmp_uploads")
+os.makedirs(TEMP_UPLOAD_DIR, exist_ok=True)
+
 # ============================================================
 # SAVED DATA  (saved_requests.json)
 # Format: {"folders": [...], "requests": [...]}
@@ -2632,19 +2635,49 @@ function addKvRow(tid, name='', value='', type='text') {
   tr.dataset.type = type;
   const delCb = tid === 'paramsTable' ? "this.closest('tr').remove();syncParamsToUrl()" : "this.closest('tr').remove()";
   const fileCol = tid === 'paramsTable'
-    ? `<td class="kv-file-td"><button class="kv-file-btn${type==='file'?' active':''}" title="Fayl sifatida yuborish" onclick="const t=this.closest('tr');t.dataset.type=t.dataset.type==='file'?'text':'file';this.classList.toggle('active')">📎</button></td>`
+    ? `<td class="kv-file-td"><input type="file" class="kv-file-input" style="display:none" onchange="uploadParamFile(this)"><button class="kv-file-btn${type==='file'?' active':''}" title="Fayl tanlash" onclick="this.previousElementSibling.click()">📎</button></td>`
     : '';
   tr.innerHTML = `
     <td><input class="kv-name" value="${ea(name)}" placeholder="key"></td>
-    <td><input class="kv-val"  value="${ea(value)}" placeholder="{{column}}"></td>
+    <td><input class="kv-val"  value="${ea(value)}" placeholder="${tid==='paramsTable'?'value / {{column}}':'value'}"></td>
     ${fileCol}
     <td class="kv-del" onclick="${delCb}">×</td>`;
   tbody.appendChild(tr);
 }
 
+async function uploadParamFile(input) {
+  if (!input.files.length) return;
+  const file = input.files[0];
+  const tr   = input.closest('tr');
+  const btn  = tr.querySelector('.kv-file-btn');
+  const valI = tr.querySelector('.kv-val');
+  const origTxt = btn.textContent;
+  btn.textContent = '⏳'; btn.disabled = true;
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch('/upload_temp', {method: 'POST', body: fd});
+    if (!r.ok) throw new Error(await r.text());
+    const d = await r.json();
+    tr.dataset.type     = 'file';
+    tr.dataset.tempPath = d.path;
+    valI.value          = file.name;
+    valI.readOnly       = true;
+    btn.classList.add('active');
+    showToast('Fayl yuklandi: ' + file.name, 'ok');
+  } catch(e) {
+    showToast('Fayl yuklanmadi: ' + e.message, 'error');
+  }
+  btn.textContent = '📎'; btn.disabled = false;
+}
+
 function getKv(tid) {
   return [...document.querySelectorAll('#' + tid + ' tbody tr')]
-    .map(tr => ({ name: tr.querySelector('.kv-name').value.trim(), value: tr.querySelector('.kv-val').value, type: tr.dataset.type || 'text' }))
+    .map(tr => {
+      const type = tr.dataset.type || 'text';
+      const value = (type === 'file' && tr.dataset.tempPath) ? tr.dataset.tempPath : tr.querySelector('.kv-val').value;
+      return { name: tr.querySelector('.kv-name').value.trim(), value, type };
+    })
     .filter(r => r.name);
 }
 
@@ -5141,6 +5174,18 @@ def delete_request(rid):
 
 
 # ── RUNNER ──────────────────────────────────────────────────
+
+@app.route("/upload_temp", methods=["POST"])
+def upload_temp():
+    f = request.files.get("file")
+    if not f:
+        return jsonify({"error": "fayl topilmadi"}), 400
+    ext  = os.path.splitext(f.filename or "")[1]
+    name = uuid.uuid4().hex + ext
+    path = os.path.join(TEMP_UPLOAD_DIR, name)
+    f.save(path)
+    return jsonify({"path": path, "name": f.filename})
+
 
 @app.route("/run", methods=["POST"])
 def run_job():
