@@ -78,7 +78,7 @@ def test_each_tab_keeps_independent_state_url_params_body_auth_scripts_response_
     expect(ui.locator("[data-testid=url]")).to_have_value("http://x/Delta")
     expect(ui.locator("[data-testid=response]")).to_contain_text("Javob shu yerda")
     ui.locator(f"{TABS}", has_text="Gamma").click()
-    expect(ui.locator("[data-testid=url]")).to_have_value(echo_server + "/echo")
+    expect(ui.locator("[data-testid=url]")).to_have_value(echo_server + "/echo?x=1")
     expect(ui.locator("[data-testid=resp-status]")).to_have_text("200")
     ui.click("[data-section=auth]")
     expect(ui.locator("[data-testid=auth-token]")).to_have_value("TOK-G")

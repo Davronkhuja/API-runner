@@ -3,13 +3,17 @@ import { ref, watch } from 'vue'
 import { useWorkspace } from '../stores/workspace'
 import { useTabs, type Tab } from '../stores/tabs'
 import type { Environment } from '../types/model'
+import { showToast } from '../lib/ui'
 
 const props = defineProps<{ tab: Tab }>()
 const ws = useWorkspace(), tabs = useTabs()
 const env = ref<Environment | null>(null)
 watch(() => [props.tab.ref, ws.environments], () => { env.value = JSON.parse(JSON.stringify(ws.environments.find(e => e.id === props.tab.ref) ?? null)) }, { immediate: true })
 const add = () => { env.value!.values.push({ key: '', value: '', enabled: true, type: 'default' }); tabs.touch(props.tab.id) }
-async function save() { await ws.saveEnv(env.value!); tabs.markSaved(props.tab.id, { title: env.value!.name }) }
+async function save() {
+  try { await ws.saveEnv(env.value!); tabs.markSaved(props.tab.id, { title: env.value!.name }) }
+  catch (e: any) { showToast(e.message, 'error') }     // 409: boshqa tab/jarayon o'zgartirgan — ustidan yozilmaydi
+}
 </script>
 
 <template>

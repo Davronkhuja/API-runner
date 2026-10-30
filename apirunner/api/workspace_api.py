@@ -1,9 +1,11 @@
 """Yangi workspace API (/api/*): collection, environment, globals, localStorage importi."""
+import os
+
 from flask import Blueprint, current_app, jsonify, request
 
 from ..storage import model, tree_ops
 from ..storage.migrate import import_localstorage
-from ..storage.workspace import NotFound
+from ..storage.workspace import Conflict, NotFound
 
 bp = Blueprint("workspace_api", __name__, url_prefix="/api")
 
@@ -15,6 +17,11 @@ def _ws():
 @bp.errorhandler(NotFound)
 def _not_found(_e):
     return jsonify({"error": "Topilmadi"}), 404
+
+
+@bp.errorhandler(Conflict)
+def _conflict(_e):
+    return jsonify({"error": "Ma'lumot boshqa tab yoki jarayonda o'zgartirilgan. Qayta yuklang.", "conflict": True}), 409
 
 
 @bp.get("/version")
@@ -62,7 +69,7 @@ def put_collection(cid):
     if col.get("info", {}).get("_postman_id") != cid or not isinstance(col.get("item"), list):
         return jsonify({"error": "Collection tuzilmasi noto'g'ri"}), 400
     _ws().get_collection(cid)                 # mavjudligini tekshirish
-    _ws().save_collection(col)
+    _ws().save_collection(col, expected_rev=(col.get("x-apirunner") or {}).get("rev"))
     return jsonify({"ok": True})
 
 
@@ -93,7 +100,7 @@ def put_environment(eid):
     if env.get("id") != eid or not isinstance(env.get("values"), list):
         return jsonify({"error": "Environment tuzilmasi noto'g'ri"}), 400
     _ws().get_environment(eid)
-    _ws().save_environment(env)
+    _ws().save_environment(env, expected_rev=env.get("rev"))
     return jsonify({"ok": True})
 
 
@@ -115,7 +122,7 @@ def put_globals():
     if not isinstance(g.get("values"), list):
         return jsonify({"error": "Globals tuzilmasi noto'g'ri"}), 400
     g["_postman_variable_scope"] = "globals"
-    _ws().save_globals(g)
+    _ws().save_globals(g, expected_rev=g.get("rev"))
     return jsonify({"ok": True})
 
 
@@ -205,7 +212,7 @@ def put_ui_state():
 @bp.put("/workspace/meta")
 def put_meta():
     d = request.get_json(silent=True) or {}
-    allowed = {k: d[k] for k in ("active_environment_id",) if k in d}
+    allowed = {k: d[k] for k in ("active_environment_id", "legacy_default_notified") if k in d}
     _ws().update_meta(**allowed)
     return jsonify({"ok": True, "meta": _ws().meta()})
 
@@ -246,3 +253,46 @@ def import_any():
         return jsonify({"error": "Format tanilmadi (Postman collection yoki OpenAPI JSON kerak)"}), 400
     cid = _ws().save_collection(col)
     return jsonify({"ok": True, "kind": kind, "id": cid, "name": col["info"]["name"]})
+
+
+# ── holat / zaxiralar ──
+@bp.get("/status")
+def status():
+    from .. import __version__
+    r = dict(current_app.config["MIGRATION_RESULT"])
+    return jsonify({"version": __version__, "schemaVersion": _ws().schema_version(),
+                    "migration": {"status": r["status"], "legacy": r["legacy"], "message": r["message"]},
+                    "meta": _ws().meta()})
+
+
+@bp.get("/backups")
+def list_backups():
+    from ..storage import backup as bk
+    return jsonify([{k: v for k, v in b.items() if k != "path"} for b in bk.list_backups(current_app.extensions["backup_dir"])])
+
+
+@bp.post("/backups")
+def create_backup_route():
+    from .. import __version__
+    from ..storage import backup as bk
+    ws = _ws()
+    with ws.lock:
+        path = bk.create_backup(ws.root, current_app.extensions["saved_file"], __version__,
+                                current_app.extensions["backup_dir"], suffix="manual")
+    return jsonify({"ok": True, "name": os.path.basename(path)})
+
+
+@bp.post("/backups/restore")
+def restore_backup_route():
+    from .. import __version__
+    from ..storage.restore import restore_backup
+    name = (request.get_json(silent=True) or {}).get("name", "")
+    bdir = current_app.extensions["backup_dir"]
+    ws = _ws()
+    try:
+        with ws.lock:
+            pre = restore_backup(os.path.join(bdir, os.path.basename(name)), ws.root,
+                                 current_app.extensions["saved_file"], __version__, bdir)
+    except (ValueError, FileNotFoundError) as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"ok": True, "pre_restore": os.path.basename(pre)})

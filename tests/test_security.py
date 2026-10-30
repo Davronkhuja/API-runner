@@ -52,8 +52,8 @@ def test_index_is_public_and_injects_token(make_client):
 
 def test_tokens_are_random_per_app(isolated):
     from apirunner.app import create_app
-    a = create_app(workspace_dir=str(isolated / "w1"), saved_file="", upload_dir=str(isolated / "u"))
-    b = create_app(workspace_dir=str(isolated / "w2"), saved_file="", upload_dir=str(isolated / "u"))
+    a = create_app(workspace_dir=str(isolated / "w1"), saved_file="", upload_dir=str(isolated / "u"), backup_dir=str(isolated / "b"))
+    b = create_app(workspace_dir=str(isolated / "w2"), saved_file="", upload_dir=str(isolated / "u"), backup_dir=str(isolated / "b"))
     assert a.config["SESSION_TOKEN"] != b.config["SESSION_TOKEN"] and len(a.config["SESSION_TOKEN"]) >= 32
 
 

@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { get, put } from '../api/client'
 import { newDraft, type RequestDraft } from '../lib/draft'
 
-export type TabKind = 'request' | 'environment' | 'collection' | 'runner'
+export type TabKind = 'request' | 'environment' | 'collection' | 'runner' | 'settings'
 
 export interface Tab {
   id: string

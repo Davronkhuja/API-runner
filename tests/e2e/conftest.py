@@ -4,6 +4,10 @@ Har test o'z serveri va workspace'i bilan ishlaydi (holat tablar/daraxt testlari
 """
 import threading
 
+import os
+
+os.environ["APIRUNNER_TESTING"] = "1"
+
 import pytest
 import requests
 from werkzeug.serving import make_server
@@ -20,7 +24,8 @@ class App:
 
     def _start(self):
         self.flask = create_app(workspace_dir=str(self.tmp / "workspace"), saved_file=str(self.tmp / "saved_requests.json"),
-                                upload_dir=str(self.tmp / "uploads"), session_token=E2E_TOKEN)
+                                upload_dir=str(self.tmp / "uploads"), session_token=E2E_TOKEN,
+                                backup_dir=str(self.tmp / "backups"))
         self.srv = make_server("127.0.0.1", 0, self.flask, threaded=True)
         threading.Thread(target=self.srv.serve_forever, daemon=True).start()
         self.url = f"http://127.0.0.1:{self.srv.server_port}"

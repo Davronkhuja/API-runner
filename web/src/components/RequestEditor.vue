@@ -7,6 +7,7 @@ import { sendTab, saveTab } from '../lib/actions'
 import { fmtBytes, fmtMs, showToast } from '../lib/ui'
 import KvTable from './KvTable.vue'
 import BatchPanel from './BatchPanel.vue'
+import { composeUrl, paramsFromUrl } from '../lib/draft'
 import { applyCurlToDraft, buildCurl, parseCurl } from '../lib/curl'
 
 const props = defineProps<{ tab: Tab }>()
@@ -25,18 +26,9 @@ const showHist = ref(false)
 const hideHist = () => { setTimeout(() => (showHist.value = false), 150) }
 const reqEl = ref<HTMLElement>(), respEl = ref<HTMLElement>()
 
-// URL ?query <-> Params jadvali
-function onUrlInput() {
-  const raw = d.value.url
-  const q = raw.indexOf('?')
-  if (q >= 0) {
-    const sp = new URLSearchParams(raw.slice(q + 1))
-    d.value.url = raw.slice(0, q)
-    const rows = [...sp.entries()].map(([key, value]) => ({ key, value, enabled: true }))
-    d.value.params = [...rows, { key: '', value: '', enabled: true }]
-  }
-  touch()
-}
+// URL ↔ Params ikki tomonlama sinxron
+function onUrlInput() { d.value.params = paramsFromUrl(d.value.url, d.value.params); touch() }
+function onParamsChange() { d.value.url = composeUrl(d.value.url, d.value.params); touch() }
 // cURL paste (to'liq parser — paritet bandi; hozir minimal)
 function onPaste(e: ClipboardEvent) {
   const parsed = parseCurl(e.clipboardData?.getData('text') ?? '')
@@ -79,7 +71,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       </button>
     </div>
     <div class="editor" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
-      <KvTable v-if="section === 'params'" :rows="d.params" files testid="params-table" @change="touch" />
+      <KvTable v-if="section === 'params'" :rows="d.params" files testid="params-table" @change="onParamsChange" />
       <KvTable v-else-if="section === 'headers'" :rows="d.headers" testid="headers-table" @change="touch" />
       <div v-else-if="section === 'auth'" data-testid="auth-panel">
         <select v-model="d.auth.type" data-testid="auth-type" @change="touch">

@@ -26,11 +26,11 @@ Qoidalar: eski UI `/legacy` da ishlab turadi; paritet e2e yashil bo'lgach o'chir
 
 ### Paritet checklisti (eski UI → yangi frontend; e2e: `tests/e2e/test_parity.py`)
 Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha · [ ] qilinmagan
-**URL bar:** [x] method select · [x] URL input · [x] Run/Stop (Stop — Batch bo'limida) · [x] cURL paste → parse · [~] URL ↔ Params: URL→Params ishlaydi, Params→URL matnga qaytmaydi (query jadvalda turadi) · [x] URL tarixi dropdown · [x] Save (dirty bo'lmasa disabled, Save As dialog) · [x] Copy as cURL drawer · [ ] cURL sintaksis ranglash · [ ] metod rangi select'da
+**URL bar:** [x] method select · [x] URL input · [x] Run/Stop (Stop — Batch bo'limida) · [x] cURL paste → parse · [x] URL ↔ Params ikki tomonlama sinxron · [x] URL tarixi dropdown · [x] Save (dirty bo'lmasa disabled, Save As dialog) · [x] Copy as cURL drawer · [ ] cURL sintaksis ranglash · [ ] metod rangi select'da
 **Tablar:** [x] Params/Headers kv + checkbox + DnD · [x] 📎 fayl yuklash + rad etilgan yo'l xabari · [x] Auth None/Bearer/Basic/Custom (+ ko'z, preview) · [x] Body JSON/Raw/Form/Multipart · [x] Beautify (+Cmd/Ctrl+B) · [ ] body sintaksis ranglash va Tab tugmasi (CodeMirror 6 bilan) · [ ] Content-Type avtomatik ko'rsatish
 **Runner:** [x] data fayl CSV/JSON · [ ] data fayl preview jadvali va drop zona (oynaga tashlash Runner tabini ochadi) · [x] rows mode · [x] delay · [x] timeout · [x] parallel · [x] retry · [x] SSL · [~] collapse (natijalar yig'iladi, karta emas) · [x] Postman collection runner (import + Runner tabi, ketma-ket `/run_one`) · [x] `/run` + SSE + Stop · [x] status line
 **Natijalar:** [x] progress · [x] stats (+2xx/4xx/5xx) · [x] filtrlar · [x] result kartalar (badge, vaqt, hajm, retry, headers, copy) · [ ] JSON sintaksis ranglash · [x] fullscreen viewer (copy, TXT) · [~] Esc bilan yopish (tugma bilan yopiladi) · [x] time chart (60) · [x] export JSON/CSV · [x] run'larni solishtirish (server tarixi) · [ ] resizer
-**Sidebar:** [x] collapse + kenglik · [x] qidiruv · [x] daraxt (ichma-ich) · [x] yangi so'rov · [x] Save modal · [x] papka yaratish/qayta nomlash/o'chirish (confirm) · [x] Move (modal va DnD) · [x] kontekst menyu · [x] inline rename (+tab sarlavhasi) · [x] duplicate (" Copy") · [x] Postman/OpenAPI import (tugma va tashlash) · [x] Environments: ro'yxat, activate, yaratish, tahrirlash (tab), o'chirish (confirm), header selector, `env_vars` · [~] eski yagona env → globals'ga (eski UI "Default" env qilardi) · [x] History: ro'yxat, yuklash, o'chirish, tozalash · [ ] History drawer
+**Sidebar:** [x] collapse + kenglik · [x] qidiruv · [x] daraxt (ichma-ich) · [x] yangi so'rov · [x] Save modal · [x] papka yaratish/qayta nomlash/o'chirish (confirm) · [x] Move (modal va DnD) · [x] kontekst menyu · [x] inline rename (+tab sarlavhasi) · [x] duplicate (" Copy") · [x] Postman/OpenAPI import (tugma va tashlash) · [x] Environments: ro'yxat, activate, yaratish, tahrirlash (tab), o'chirish (confirm), header selector, `env_vars` · [x] eski "Default" env va yagona o'zgaruvchilar → Globals (bir martalik xabar bilan) · [x] History: ro'yxat, yuklash, o'chirish, tozalash · [ ] History drawer
 **Umumiy:** [x] tema · [x] yorliqlar (Cmd+Enter/S/T/W/Tab) · [x] toast · [x] confirm · [x] dirty tracking · [x] ⇪ localStorage import · [x] versiya · [x] workspace → saved_requests.json eksport tugmasi
 
 ### Skelet va arxitektura
@@ -75,3 +75,6 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 
 ## Bosqich 8 — Sayqal va sifat
 - [ ] Ishlash tezligi, UX, hujjatlar
+
+## Ma'lumotlar xavfsizligi (doimiy qoida, v2.1.6)
+- [x] Testlar faqat tmp (APIRUNNER_TESTING himoyasi) · [x] avtomatik zaxira (20 ta) · [x] schemaVersion + idempotent migratsiya + sonlar tekshiruvi + rollback · [x] atomik yozuv · [x] SQLite WAL · [x] qulf va rev (409) · [x] localStorage o'chirilmaydi, dublikatsiz import · [x] tiklash (UI + CLI) · [x] anonimlashtirilgan fixture testi

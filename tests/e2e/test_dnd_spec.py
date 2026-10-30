@@ -339,7 +339,7 @@ def test_drop_csv_file_imports(ui):
 
 def test_drop_curl_text_imports(ui):
     drop_text(ui, "curl -X POST 'https://api.test/x?y=1' -H 'X-Foo: bar' -d '{\"k\":1}'")
-    expect(ui.locator("[data-testid=url]")).to_have_value("https://api.test/x")
+    expect(ui.locator("[data-testid=url]")).to_have_value("https://api.test/x?y=1")
     expect(ui.locator("[data-testid=method]")).to_have_value("POST")
 
 

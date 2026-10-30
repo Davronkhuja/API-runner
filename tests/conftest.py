@@ -1,6 +1,8 @@
 """Umumiy fixture'lar: lokal echo server va izolyatsiyalangan api_runner."""
 import os
 import sys
+
+os.environ["APIRUNNER_TESTING"] = "1"      # create_app() faqat aniq (tmp) yo'llar bilan ishlaydi
 import threading
 
 import pytest
@@ -100,7 +102,8 @@ def make_client(isolated):
         if legacy is not None:
             saved.write_text(legacy, encoding="utf-8")
         app = create_app(workspace_dir=str(isolated / "workspace"), saved_file=str(saved),
-                         upload_dir=str(isolated / "uploads"), session_token=TOKEN)
+                         upload_dir=str(isolated / "uploads"), session_token=TOKEN,
+                         backup_dir=str(isolated / "backups"))
         app.config["TESTING"] = True
         c = app.test_client()
         c.environ_base["HTTP_X_SESSION_TOKEN"] = TOKEN

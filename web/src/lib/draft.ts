@@ -14,6 +14,28 @@ export interface RequestDraft {
 
 export const emptyKV = (): KV => ({ key: '', value: '', enabled: true })
 
+// ── URL ↔ Params ikki tomonlama sinxron ──
+// URL matni to'liq (query bilan) saqlanadi; yuborishda query kesiladi va jadval manba bo'ladi.
+const enc = (s: string) => encodeURIComponent(s).replace(/%7B%7B/gi, '{{').replace(/%7D%7D/gi, '}}')
+const dec = (s: string) => { try { return decodeURIComponent(s.replace(/\+/g, ' ')) } catch { return s } }
+export const baseUrl = (url: string) => { const i = url.indexOf('?'); return i < 0 ? url : url.slice(0, i) }
+export function composeUrl(url: string, params: KV[]): string {
+  const qs = params.filter(p => p.enabled && p.key.trim()).map(p => `${enc(p.key)}=${enc(p.value)}`).join('&')
+  return baseUrl(url) + (qs ? '?' + qs : '')
+}
+/** URL'dagi query'dan qatorlar; jadvaldagi o'chirilgan (disabled) qatorlar saqlanadi. */
+export function paramsFromUrl(url: string, existing: KV[]): KV[] {
+  const i = url.indexOf('?')
+  const fromUrl: KV[] = i < 0 ? [] : url.slice(i + 1).split('&').filter(Boolean).map(pair => {
+    const e = pair.indexOf('=')
+    return { key: dec(e < 0 ? pair : pair.slice(0, e)), value: e < 0 ? '' : dec(pair.slice(e + 1)), enabled: true }
+  })
+  // mavjud qatorlarning tavsifi/fayl turini kalit bo'yicha saqlaymiz
+  const byKey = new Map(existing.filter(x => x.enabled).map(x => [x.key, x]))
+  const merged = fromUrl.map(r => { const o = byKey.get(r.key); return o && (o.kind === 'file' || o.description) && o.value === r.value ? { ...o } : r })
+  return [...merged, ...existing.filter(x => !x.enabled && x.key), emptyKV()]
+}
+
 export function newDraft(name = 'Yangi so\'rov'): RequestDraft {
   return {
     name, method: 'GET', url: '', params: [emptyKV()], headers: [emptyKV()],
@@ -30,8 +52,8 @@ export function draftFromItem(item: RequestItem): RequestDraft {
   const lg = item['x-apirunner']?.legacy
   if (lg) {
     d.method = lg.method ?? 'GET'
-    d.url = lg.url ?? ''
     d.params = withTrailing((lg.params ?? []).map((p: any) => ({ key: p.name ?? '', value: p.value ?? '', enabled: true, kind: p.type === 'file' ? 'file' : 'text' })))
+    d.url = composeUrl(lg.url ?? '', d.params)
     d.headers = withTrailing((lg.headers ?? []).map((h: any) => ({ key: h.name ?? '', value: h.value ?? '', enabled: true })))
     const a: string = (lg.authorization ?? '').trim()
     if (a.toLowerCase().startsWith('bearer ')) d.auth = { ...d.auth, type: 'bearer', token: a.slice(7) }
@@ -47,8 +69,8 @@ export function draftFromItem(item: RequestItem): RequestDraft {
   }
   const r: PmRequest = item.request
   d.method = r.method
-  d.url = (r.url?.raw ?? '').split('?')[0]
   d.params = withTrailing((r.url?.query ?? []).map(q => ({ key: q.key, value: q.value, enabled: !q.disabled, description: q.description })))
+  d.url = composeUrl(r.url?.raw ?? '', d.params)
   d.headers = withTrailing((r.header ?? []).map(h => ({ key: h.key, value: h.value, enabled: !h.disabled, description: h.description })))
   if (r.auth?.type === 'bearer') d.auth = { ...d.auth, type: 'bearer', token: r.auth.bearer?.find((x: any) => x.key === 'token')?.value ?? '' }
   const b = r.body
@@ -63,11 +85,10 @@ export function draftFromItem(item: RequestItem): RequestDraft {
 export function requestFromDraft(d: RequestDraft): PmRequest {
   const rows = (kv: KV[]) => kv.filter(x => x.key || x.value)
   const query = rows(d.params).map(p => ({ key: p.key, value: p.value, ...(p.enabled ? {} : { disabled: true }), ...(p.description ? { description: p.description } : {}) }))
-  const qs = rows(d.params).filter(p => p.enabled).map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&')
   const req: PmRequest = {
     method: d.method,
     header: rows(d.headers).map(h => ({ key: h.key, value: h.value, ...(h.enabled ? {} : { disabled: true }), ...(h.description ? { description: h.description } : {}) })),
-    url: { raw: d.url + (qs ? '?' + qs : ''), query },
+    url: { raw: composeUrl(d.url, d.params), query },
   }
   if (d.auth.type === 'bearer') req.auth = { type: 'bearer', bearer: [{ key: 'token', value: d.auth.token, type: 'string' }] }
   else if (d.auth.type === 'basic') req.auth = { type: 'basic', basic: [{ key: 'username', value: d.auth.user }, { key: 'password', value: d.auth.pass }] }
@@ -90,7 +111,7 @@ export function authHeader(a: RequestDraft['auth']): string {
 export function specFromDraft(d: RequestDraft, vars: Record<string, string> = {}) {
   const on = (kv: KV[]) => kv.filter(x => x.enabled && x.key.trim())
   const spec: Record<string, any> = {
-    method: d.method, url: d.url, authorization: authHeader(d.auth),
+    method: d.method, url: baseUrl(d.url), authorization: authHeader(d.auth),
     params: on(d.params).map(p => ({ name: p.key, value: p.value, ...(p.kind === 'file' ? { type: 'file' } : {}) })),
     headers: on(d.headers).map(h => ({ name: h.key, value: h.value })),
     body: '', content_type: d.body.contentType, body_type: 'raw', env_vars: vars,

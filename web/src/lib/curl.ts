@@ -65,12 +65,11 @@ export function parseCurl(raw: string): ParsedCurl | null {
 
 /** Tahrir qoralamasiga qo'llash. */
 import type { RequestDraft } from './draft'
-import { emptyKV } from './draft'
+import { emptyKV, paramsFromUrl, composeUrl } from './draft'
 
 export function applyCurlToDraft(d: RequestDraft, p: ParsedCurl) {
-  const q = p.url.indexOf('?')
-  d.url = q >= 0 ? p.url.slice(0, q) : p.url
-  d.params = [...(q >= 0 ? [...new URLSearchParams(p.url.slice(q + 1)).entries()].map(([key, value]) => ({ key, value, enabled: true })) : []), emptyKV()]
+  d.params = paramsFromUrl(p.url, [])
+  d.url = composeUrl(p.url, d.params)
   d.method = p.method || 'GET'
   d.headers = []
   d.auth = { ...d.auth, type: 'none' }

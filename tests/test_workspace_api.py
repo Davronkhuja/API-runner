@@ -16,7 +16,10 @@ def test_collection_crud_with_nested_folders(client):
                 {"id": "r", "name": "Req", "request": {"method": "GET", "url": {"raw": "http://x"}},
                  "response": [{"name": "ok", "code": 200}]}]}]}]}]
     assert client.put(f"/api/collections/{cid}", json=col).status_code == 200
-    assert client.get(f"/api/collections/{cid}").get_json() == col
+    got = client.get(f"/api/collections/{cid}").get_json()
+    assert got["x-apirunner"]["rev"] == col["x-apirunner"]["rev"] + 1          # har yozuvda rev oshadi
+    got["x-apirunner"]["rev"] = col["x-apirunner"]["rev"]
+    assert got == col
     assert client.get("/api/workspace").get_json()["collections"] == [{"id": cid, "name": "Mening", "requests": 1}]
     client.delete(f"/api/collections/{cid}")
     assert client.get(f"/api/collections/{cid}").status_code == 404
@@ -97,4 +100,4 @@ def test_import_localstorage_tolerates_garbage(client):
 def test_version_endpoint_matches_package(client):
     import apirunner
     assert client.get("/api/version").get_json() == {"version": apirunner.__version__}
-    assert apirunner.__version__ == "2.1.5"
+    assert apirunner.__version__ == "2.1.6"

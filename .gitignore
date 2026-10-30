@@ -40,3 +40,5 @@ saved_requests.json.*bak
 # Frontend
 web/node_modules/
 web/.vite/
+_manual_backups/
+backups/

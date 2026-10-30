@@ -13,6 +13,7 @@ import RequestEditor from './components/RequestEditor.vue'
 import EnvTab from './components/EnvTab.vue'
 import RunnerTab from './components/RunnerTab.vue'
 import CollectionTab from './components/CollectionTab.vue'
+import SettingsTab from './components/SettingsTab.vue'
 import { post as apiPost } from './api/client'
 import { parseCurl, applyCurlToDraft } from './lib/curl'
 import { showToast } from './lib/ui'
@@ -22,9 +23,36 @@ const ready = ref(false)
 const saveAs = ref<{ tab: Tab; name: string; target: string; resolve: (ok: boolean) => void } | null>(null)
 const dropping = ref(false)
 const importInput = ref<HTMLInputElement>()
+const migrationWarning = ref('')
 const sbHidden = ref(false)
 const sbWidth = ref(280)
 try { sbHidden.value = localStorage.getItem('apiRunnerSbHidden') === '1'; sbWidth.value = Number(localStorage.getItem('apiRunnerSbWidth')) || 280 } catch { /* ixtiyoriy */ }
+const LS_KEYS = ['apiRunnerEnvs', 'apiRunnerActiveEnvId', 'apiRunnerEnvVars', 'apiRunnerHistory', 'apiRunnerRunHistory', 'apiRunnerUrlHistory']
+/** localStorage'dan faqat O'QIYDI — hech narsa o'chirilmaydi. */
+function readLocalStorage(): Record<string, string> {
+  const data: Record<string, string> = {}
+  try { LS_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v != null) data[k] = v }) } catch { /* ixtiyoriy */ }
+  return data
+}
+async function defaultNotice() {
+  const st = await get('/api/status').catch(() => null)
+  if (st?.meta?.legacy_default_migrated && !st.meta.legacy_default_notified) {
+    showToast("Eski Default o'zgaruvchilar Globals'ga ko'chirildi", 'info', 8000)
+    await put('/api/workspace/meta', { legacy_default_notified: true }).catch(() => {})
+  }
+}
+async function startupChecks() {
+  const st = await get('/api/status').catch(() => null)
+  if (st?.migration?.status === 'rolled_back') migrationWarning.value = st.migration.message || 'Migratsiya bekor qilindi va zaxiradan tiklandi'
+  // birinchi ochilishda eski brauzer ma'lumotini bir marta serverga ko'chirish (idempotent, localStorage tegilmaydi)
+  if (st && !st.meta?.localstorage_imported) {
+    const data = readLocalStorage()
+    if (Object.keys(data).length) {
+      try { await apiPost('/api/import/localstorage', { data }); await Promise.all([ws.load(), hist.load()]) } catch { /* qo'lda ⇪ bilan qayta urinish mumkin */ }
+    }
+  }
+  await defaultNotice()
+}
 function toggleSidebar() { sbHidden.value = !sbHidden.value; try { localStorage.setItem('apiRunnerSbHidden', sbHidden.value ? '1' : '0') } catch { /* ixtiyoriy */ } }
 function startResize(e: MouseEvent) {
   const x0 = e.clientX, w0 = sbWidth.value
@@ -38,14 +66,13 @@ async function onImportFile(e: Event) {
   ;(e.target as HTMLInputElement).value = ''
 }
 async function importLocalStorage() {
-  const keys = ['apiRunnerEnvs', 'apiRunnerActiveEnvId', 'apiRunnerEnvVars', 'apiRunnerHistory', 'apiRunnerRunHistory', 'apiRunnerUrlHistory']
-  const data: Record<string, string> = {}
-  try { keys.forEach(k => { const v = localStorage.getItem(k); if (v != null) data[k] = v }) } catch { /* ixtiyoriy */ }
+  const data = readLocalStorage()
   if (!Object.keys(data).length) return showToast("localStorage'da ko'chiriladigan ma'lumot yo'q", 'warn')
   try {
     const r = await apiPost('/api/import/localstorage', { data })
     await Promise.all([ws.load(), hist.load()])
     showToast(`Ko'chirildi: ${r.stats.environments} env, ${r.stats.history + r.stats.run_history + r.stats.url_history} tarix yozuvi`, 'success')
+    await defaultNotice()
   } catch (err: any) { showToast('Import xatosi: ' + err.message, 'error') }
 }
 async function exportLegacy() {
@@ -90,6 +117,7 @@ onMounted(async () => {
   const st = await get('/api/ui-state').catch(() => ({}))
   if (st.expanded) tree.expandedOverride = st.expanded
   await tabs.restore()
+  await startupChecks()
   // tiklangan tablar uchun o'chirilgan elementlarni olib tashlash
   tabs.tabs.filter(t => t.kind === 'request' && t.ref && !tree.findItem(...(t.ref.split(':') as [string, string]))).forEach(t => { if (!t.dirty) tabs.dropRef(t.ref!) })
   await ensureCollection()
@@ -146,6 +174,7 @@ function toggleTheme() {
 </script>
 
 <template>
+  <div v-if="ready && migrationWarning" class="toast" style="position:static;background:var(--err);color:#fff;border-radius:0;padding:8px 14px" data-testid="migration-warning">⚠ {{ migrationWarning }}</div>
   <div class="app" data-testid="app" :class="{ 'dropzone-active': dropping }" @dragover="onWindowDragOver" @dragleave="dropping = false" @drop="onWindowDrop" v-if="ready">
     <div v-show="!sbHidden" :style="{ width: sbWidth + 'px' }" style="display:flex;position:relative" data-testid="sb-wrap"><Sidebar style="width:100%" /><div class="sb-resizer" data-testid="sb-resizer" @mousedown="startResize" /></div>
     <div class="main">
@@ -159,12 +188,14 @@ function toggleTheme() {
         <input ref="importInput" type="file" accept=".json" hidden data-testid="import-file" @change="onImportFile">
         <button class="ghost" style="border-radius:0" data-testid="ls-import" title="Brauzer (localStorage) ma'lumotlarini serverga ko'chirish" @click="importLocalStorage">⇪</button>
         <button class="ghost" style="border-radius:0" data-testid="export-legacy" title="saved_requests.json formatiga eksport (orqaga qaytish)" @click="exportLegacy">⤓</button>
+        <button class="ghost" style="border-radius:0" data-testid="settings-btn" title="Sozlamalar → Zaxiralar" @click="tabs.open('settings', 'settings', 'Sozlamalar', { permanent: true })">⚙</button>
         <button class="ghost" title="Tema" data-testid="theme" style="border-radius:0" @click="toggleTheme">◐</button>
       </div>
       <template v-if="tabs.active">
         <RequestEditor v-if="tabs.active.kind === 'request' && tabs.active.draft" :key="tabs.active.id" :tab="tabs.active" />
         <EnvTab v-else-if="tabs.active.kind === 'environment'" :key="tabs.active.id" :tab="tabs.active" />
         <RunnerTab v-else-if="tabs.active.kind === 'runner'" :key="tabs.active.id" :tab="tabs.active" />
+        <SettingsTab v-else-if="tabs.active.kind === 'settings'" :key="tabs.active.id" />
         <CollectionTab v-else-if="tabs.active.kind === 'collection'" :key="tabs.active.id" :tab="tabs.active" />
       </template>
       <div v-else class="empty" data-testid="no-tabs">

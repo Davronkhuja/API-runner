@@ -31,7 +31,7 @@ def test_curl_paste_fills_everything(ui):
     ui.evaluate("""() => { const i = document.querySelector('[data-testid=url]'); i.focus();
       const dt = new DataTransfer(); dt.setData('text', "curl -X PUT 'https://a.io/x?y=1' -H 'X-Foo: bar' -H 'Authorization: Bearer TT' -d '{\\"k\\":1}'");
       i.dispatchEvent(new ClipboardEvent('paste', {clipboardData: dt, bubbles: true, cancelable: true})); }""")
-    expect(T(ui, "url")).to_have_value("https://a.io/x")
+    expect(T(ui, "url")).to_have_value("https://a.io/x?y=1")
     expect(T(ui, "method")).to_have_value("PUT")
     ui.click("[data-section=params]")
     expect(ui.locator("[data-testid=params-table] input[type=text]").first).to_have_value("y")
