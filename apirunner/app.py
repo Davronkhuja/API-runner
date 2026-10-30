@@ -5,7 +5,7 @@ import webbrowser
 
 from flask import Flask, Response
 
-from .api import legacy, security, workspace_api
+from .api import legacy, oauth, security, workspace_api
 from .core.jobs import JobManager
 from .storage.db import StateDB
 from . import __version__
@@ -41,6 +41,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     security.install(app)
     app.register_blueprint(legacy.bp)
     app.register_blueprint(workspace_api.bp)
+    app.register_blueprint(oauth.bp)
 
     static = os.path.join(PKG_DIR, "static")
 

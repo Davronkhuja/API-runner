@@ -64,6 +64,21 @@ def _build_echo_app():
         from flask import redirect
         return redirect("/echo")
 
+    @app.route("/digest")
+    def digest_endpoint():
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Digest ") and 'username="dan"' in auth and "response=" in auth:
+            return jsonify({"digest": "ok"})
+        return "", 401, {"WWW-Authenticate": 'Digest realm="r", nonce="abc123", qop="auth", algorithm=MD5, opaque="op"'}
+
+    @app.route("/oauth/token", methods=["POST"])
+    def oauth_token():
+        form = request.form.to_dict()
+        if form.get("client_secret") == "bad" or request.authorization and request.authorization.password == "bad":
+            return jsonify({"error": "invalid_client", "error_description": "bad creds"}), 401
+        return jsonify({"access_token": "AT-" + form.get("grant_type", "?"), "token_type": "Bearer", "expires_in": 3600,
+                        "refresh_token": "RT", "echo": form, "basic": bool(request.authorization)})
+
     @app.route("/big")
     def big():
         return "x" * 600_000, 200, {"Content-Type": "text/plain"}

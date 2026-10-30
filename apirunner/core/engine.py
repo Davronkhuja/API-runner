@@ -14,6 +14,7 @@ from typing import Callable, Optional
 
 import httpx
 
+from .auth import apply_auth_config
 from .variables import apply_path_variables, replace_variables
 
 MAX_TEXT_RESPONSE = 500_000
@@ -121,6 +122,12 @@ def _build_kwargs(spec, ctx, opened):
             kw["data"] = body.encode("utf-8") if body else b""   # xom matn, qayta serializatsiyasiz
     url = apply_path_variables(replace_variables(spec.get("url", ""), v), [
         {"name": p.get("name"), "value": replace_variables(p.get("value", ""), v)} for p in spec.get("path_variables") or []])
+    cfg = spec.get("auth_config")
+    if cfg:
+        payload = kw.get("data") if "files" not in kw else None      # multipart: SigV4 UNSIGNED-PAYLOAD
+        url, auth_obj = apply_auth_config(cfg, v, method, url, kw["headers"], kw["params"], payload if payload is not None else (b"" if "files" not in kw else None))
+        if auth_obj is not None:
+            kw["auth"] = auth_obj
     return method, url, kw
 
 
