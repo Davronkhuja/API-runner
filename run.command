@@ -2,7 +2,7 @@
 # API Runner ishga tushirgich.
 #  - loyiha ichidagi .venv ishlatiladi (yo'q bo'lsa yaratiladi);
 #  - pip xatolari yashirilmaydi: xato bo'lsa tushunarli xabar chiqadi va oyna Enter bosilguncha yopilmaydi;
-#  - port band bo'lsa: bizning eski jarayonimiz bo'lsa to'xtatiladi, boshqa dastur bo'lsa O'LDIRILMAYDI (ogohlantiriladi).
+#  - port band bo'lsa: PM2 (api-runner) boshqarsa tegilmaydi — `pm2 restart api-runner` taklif qilinadi; bizning eski jarayonimiz bo'lsa to'xtatiladi, boshqa dastur bo'lsa O'LDIRILMAYDI (ogohlantiriladi).
 #
 # Sozlamalar (ixtiyoriy): APIRUNNER_PORT (sukut 5050), APIRUNNER_VENV_ARGS, APIRUNNER_NO_BROWSER=1
 
@@ -45,6 +45,25 @@ fi
 
 # 4) Port: bizning eski jarayon bo'lsa to'xtatamiz, boshqa dastur bo'lsa tegmaymiz
 PIDS="$(lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t 2>/dev/null)"
+# PM2 (api-runner) boshqarayotgan jarayonga tegmaymiz: to'xtatish o'rniga "pm2 restart api-runner" taklif qilinadi
+PM2_PID=""
+if [ -n "$PIDS" ] && command -v pm2 >/dev/null 2>&1; then
+  PM2_PID="$(pm2 pid api-runner 2>/dev/null | tail -1 | tr -dc '0-9')"
+fi
+if [ -n "$PM2_PID" ] && [ "$PM2_PID" -gt 0 ] 2>/dev/null && echo "$PIDS" | grep -qx "$PM2_PID"; then
+  echo "Port $PORT da API Runner PM2 ostida ishlayapti (api-runner, PID $PM2_PID) — to'xtatilmadi."
+  if [ -t 0 ]; then
+    printf "Yangi kod bilan qayta ishga tushirish uchun 'pm2 restart api-runner' bajarilsinmi? [y/N] "
+    read -r ans || ans=""
+    case "$ans" in
+      y|Y|yes|YES) pm2 restart api-runner && echo "Qayta ishga tushirildi: http://127.0.0.1:$PORT" ;;
+      *) echo "Bajarilmadi." ;;
+    esac
+  else
+    echo "Qayta ishga tushirish uchun: pm2 restart api-runner"
+  fi
+  pause_and_exit 0
+fi
 OTHER=""
 for pid in $PIDS; do
   cmd="$(ps -p "$pid" -o command= 2>/dev/null)"

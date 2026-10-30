@@ -44,6 +44,22 @@ python3 -m venv .venv
 .venv/bin/python api_runner.py
 ```
 
+### PM2 bilan doimiy ishga tushirish
+
+Repoda `ecosystem.config.js` bor: u `api-runner` nomli ilovani loyiha ichidagi `.venv/bin/python` bilan, `cwd` = loyiha papkasi, `APIRUNNER_PORT=5050` va `APIRUNNER_NO_BROWSER=1` (PM2 ostida brauzer ochilmaydi) bilan ishga tushiradi.
+
+```bash
+./run.command                       # bir marta: .venv va kutubxonalar tayyor bo'ladi (yoki qo'lda yuqoridagi buyruqlar)
+pm2 start ecosystem.config.js       # ishga tushirish
+pm2 save                            # qayta yuklashdan keyin tiklanishi uchun
+pm2 restart api-runner              # yangi kod/versiyadan keyin
+pm2 logs api-runner                 # jurnal
+```
+
+Portni o'zgartirish: `ecosystem.config.js` dagi `APIRUNNER_PORT` ni tahrirlang, so'ng `pm2 restart api-runner --update-env`.
+
+`run.command` PM2 ostidagi `api-runner` ni taniydi: port shu jarayon tomonidan band bo'lsa uni **to'xtatmaydi**, balki `pm2 restart api-runner` bajarilsinmi deb so'raydi (terminal bo'lmasa faqat buyruqni ko'rsatadi).
+
 Muhit o'zgaruvchilari: `APIRUNNER_PORT`, `APIRUNNER_WORKSPACE`, `APIRUNNER_NO_BROWSER=1`, `APIRUNNER_VENV_ARGS` (venv yaratishga qo'shimcha argument).
 Node.js kerak emas — frontend build natijasi (`apirunner/static/app/`) repoga kiritilgan.
 

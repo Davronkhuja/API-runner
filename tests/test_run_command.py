@@ -170,3 +170,72 @@ def test_requirements_unchanged_skips_pip_so_it_works_offline(proj_with_venv):
         os.killpg(p.pid, signal.SIGTERM)
         out = p.communicate(timeout=30)[0]
     assert "Kutubxonalar o'rnatilmoqda" not in out and "API RUNNER v" in out
+
+
+# ── PM2 (api-runner) ──
+@pytest.fixture
+def pm2_managed(proj_with_venv, tmp_path):
+    """PM2 ostida ishlayotgandek: api_runner.py jarayoni + soxta `pm2` (pid faylidan o'qiydi, restart'ni jurnalga yozadi)."""
+    port = free_port()
+    env = clean_env(APIRUNNER_PORT=str(port))
+    bindir = tmp_path / "fakebin"
+    bindir.mkdir()
+    pidf, logf = tmp_path / "pm2.pid", tmp_path / "pm2.log"
+    (bindir / "pm2").write_text(f'#!/bin/bash\ncase "$1" in pid) cat "{pidf}";; restart) echo "$@" >> "{logf}";; esac\n')
+    (bindir / "pm2").chmod(0o755)
+    managed = subprocess.Popen([str(proj_with_venv / ".venv" / "bin" / "python"), "api_runner.py"], cwd=str(proj_with_venv), env=env,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    pidf.write_text(f"{managed.pid}\n")
+    env["PATH"] = f"{bindir}:{env['PATH']}"
+    try:
+        assert wait_until(lambda: port_open(port))
+        yield proj_with_venv, env, managed, logf
+    finally:
+        managed.kill()
+        managed.wait()
+
+
+def run_in_pty(proj, env, answer, timeout=60):
+    import pty
+    master, slave = pty.openpty()
+    p = subprocess.Popen(["bash", str(proj / "run.command")], cwd=str(proj), env=env, stdin=slave, stdout=slave, stderr=slave, close_fds=True)
+    os.close(slave)
+    out = ""
+    end = time.monotonic() + timeout
+    answered = entered = False
+    while time.monotonic() < end and p.poll() is None:
+        import select
+        if select.select([master], [], [], 0.2)[0]:
+            try:
+                out += os.read(master, 4096).decode(errors="replace")
+            except OSError:
+                break
+        if not answered and "[y/N]" in out:
+            os.write(master, (answer + "\n").encode())
+            answered = True
+        elif answered and not entered and "Enter bosing" in out:
+            entered = True
+            try:
+                os.write(master, b"\n")
+            except OSError:
+                break
+    p.wait(timeout=15)
+    os.close(master)
+    return p.returncode, out
+
+
+def test_pm2_managed_process_is_not_killed_and_restart_is_suggested(pm2_managed):
+    proj, env, managed, logf = pm2_managed
+    r = run_script(proj, env)                                                     # TTY yo'q: faqat taklif
+    assert r.returncode == 0
+    assert "PM2 ostida" in r.stdout and "pm2 restart api-runner" in r.stdout
+    assert managed.poll() is None                                                 # to'xtatilmadi
+    assert not logf.exists()
+
+
+def test_pm2_restart_offer_yes_runs_restart_no_does_not(pm2_managed):
+    proj, env, managed, logf = pm2_managed
+    code, out = run_in_pty(proj, env, "n")
+    assert code == 0 and "pm2 restart api-runner" in out and not logf.exists() and managed.poll() is None
+    code, out = run_in_pty(proj, env, "y")
+    assert code == 0 and logf.read_text().strip() == "restart api-runner" and managed.poll() is None

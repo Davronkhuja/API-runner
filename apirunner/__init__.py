@@ -1,3 +1,3 @@
 """API Runner — lokal Postman-ga o'xshash API klient."""
 
-__version__ = "2.1.11"
+__version__ = "2.1.12"
