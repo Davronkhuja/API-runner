@@ -116,3 +116,25 @@ API-tester/
 ├── saved_requests.json  # Saqlangan so'rovlar (gitignore'd)
 └── README.md
 ```
+
+## Tuzilma (v0.2, Bosqich 1)
+
+```
+api_runner.py      # kirish nuqtasi:  python3 api_runner.py  (yoki run.command)
+apirunner/         # core (engine, runner) · storage (workspace, SQLite, migratsiya) · api · static (UI)
+workspace/         # sizning ma'lumotingiz: collection/environment JSON + state.db (git'ga kirmaydi)
+docs/adr/          # arxitektura qarorlari, docs/ROADMAP.md — reja
+tests/             # pytest + Playwright
+```
+
+- Birinchi ishga tushishda `saved_requests.json` avtomatik `workspace/` ga ko'chiriladi; zaxira `saved_requests.json.bak`, asl fayl o'zgarmaydi.
+- Brauzer (localStorage) ma'lumotlarini serverga ko'chirish: sarlavhadagi **⇪** tugmasi (bir martalik, qayta bosish xavfsiz).
+- Server faqat `127.0.0.1`/`localhost` Host'larini qabul qiladi va har chaqiruvda sessiya tokenini tekshiradi.
+- Fayl parametrlari (📎) faqat `.tmp_uploads/` va workspace ichidan o'qiladi.
+- Env: `APIRUNNER_WORKSPACE` (workspace joyi), `APIRUNNER_PORT` (sukut 5050), `APIRUNNER_NO_BROWSER=1`.
+
+### Testlar
+```
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/playwright install chromium
+.venv/bin/python -m pytest
+```

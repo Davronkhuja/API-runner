@@ -12,13 +12,14 @@ Branch: `feature/postman-level`. Testlar: `.venv/bin/python -m pytest` (dev: `pi
 - [x] `docs/ROADMAP.md`
 
 ## Bosqich 1 — Refaktor va poydevor ⛔ (tugagach to'xta, hisobot)
-- [ ] ADR'lar (`docs/adr/`)
-- [ ] Monolitni `apirunner/{core,storage,api}` ga bo'lish
-- [ ] Yagona `execute()` engine; `job_worker`/`run_one` dublikati yo'q; concurrency hisobi tuzatilgan
-- [ ] Ma'lumot modeli: Workspace → Collection → ichma-ich Folder → Request (+Examples), Environment, Globals
-- [ ] Migratsiya: `saved_requests.json` (+`.bak`), localStorage bir martalik import
-- [ ] Xavfsizlik: Host tekshiruvi, session token, fayl yuklash siyosati
-- [ ] Frontend yangi stackka ko'chirish boshlanishi
+- [x] ADR'lar (`docs/adr/0001–0007`; 0003 httpx, 0006 frontend — **tasdiq kutilmoqda**, 0007 sandbox — ochiq)
+- [x] Monolitni `apirunner/{core,storage,api}` ga bo'lish
+- [x] Yagona `execute()` engine; `job_worker`/`run_one` dublikati yo'q; concurrency hisobi tuzatilgan
+- [x] Ma'lumot modeli: Workspace → Collection → ichma-ich Folder → Request (+Examples), Environment, Globals
+- [x] Migratsiya: `saved_requests.json` (+`.bak`), localStorage bir martalik import (⇪ tugma)
+- [x] Xavfsizlik: Host/Origin tekshiruvi, session token, fayl yuklash siyosati
+- [ ] Frontend yangi stackka ko'chirish boshlanishi — **tasdiqni kutadi** (UI hozircha `apirunner/static/index.html`)
+- [ ] (Bosqich 2 ga qoldi) UI env/tarixni localStorage o'rniga serverdan o'qishi
 
 ## Bosqich 2 — Asosiy so'rov imkoniyatlari
 ### Multi-tab (majburiy) — e2e: `tests/e2e/test_multitab_spec.py`
