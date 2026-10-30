@@ -46,8 +46,8 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 ### Sidebar va drag&drop (majburiy) — e2e: `tests/e2e/test_dnd_spec.py`
 - [x] 27 test (`test_dnd_spec.py`) — hammasi yashil
 ### Qolganlari
-- [ ] Collection/folder darajasidagi Auth, Variables, Scripts, Description (meros)
-- [ ] Variable scope'lar, path variables, dinamik o'zgaruvchilar, secret
+- [x] Collection/folder darajasidagi Auth, Variables, Description (meros) · Scripts saqlanadi, bajarilishi Bosqich 3 (v2.1.14)
+- [x] Variable scope'lar (Globals<Collection<Papka<Env), path variables, dinamik o'zgaruvchilar, secret maskalash (v2.1.13–14); Data/Local — Bosqich 3 skriptlari bilan
 - [ ] Auth turlari (API Key, Digest, OAuth 2.0, AWS SigV4, JWT)
 - [ ] Body turlari (form-data, urlencoded jadval, binary, GraphQL)
 - [ ] Qator checkbox/tavsif/bulk edit

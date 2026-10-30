@@ -8,7 +8,9 @@ import { fmtBytes, fmtMs, showToast } from '../lib/ui'
 import KvTable from './KvTable.vue'
 import CodeEditor from './CodeEditor.vue'
 import BatchPanel from './BatchPanel.vue'
-import { composeUrl, paramsFromUrl } from '../lib/draft'
+import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
+import { effectiveAuth, scopedVars } from '../lib/scope'
+import AuthEditor from './AuthEditor.vue'
 import { applyCurlToDraft, buildCurl, parseCurl } from '../lib/curl'
 import { highlightCurl, highlightJson } from '../lib/highlight'
 
@@ -18,7 +20,19 @@ const d = computed(() => props.tab.draft!)
 const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
 const touch = () => tabs.touch(props.tab.id)
 const curlOpen = ref(false)
-const curlText = computed(() => buildCurl(d.value))
+const curlText = computed(() => buildCurl({ ...d.value, auth: effectiveAuth(d.value.auth, props.tab.ref) }))
+const inheritNote = computed(() => { const t = effectiveAuth(d.value.auth, props.tab.ref).type; return t === 'none' ? 'Meros: ota papka/collection auth\'i yo\'q — Auth yuborilmaydi.' : `Meros: ${t} (ota papka/collection)` })
+// {{o'zgaruvchi}} chiplari: scope va qiymat hoverda, aniqlanmagani qizil
+const usedVars = computed(() => {
+  const dd = d.value, text = [dd.url, dd.body.raw, ...dd.headers.flatMap(h => [h.key, h.value]), ...dd.params.flatMap(p => [p.key, p.value]), dd.auth.token, dd.auth.user, dd.auth.pass, dd.auth.custom].join('\n')
+  const known = scopedVars(props.tab.ref)
+  return [...new Set([...text.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)].map(m => m[1]))].map(name => {
+    const v = known[name]
+    if (v) return { name, ok: true, title: `${v.scope}: ${v.secret ? '••••' : v.value}` }
+    if (name.startsWith('$')) return { name, ok: true, title: 'Dinamik o\'zgaruvchi (har so\'rovda yangi)' }
+    return { name, ok: false, title: 'Aniqlanmagan o\'zgaruvchi' }
+  })
+})
 const autoCT = computed(() => ({ json: 'application/json', form: 'application/x-www-form-urlencoded', multipart: 'multipart/form-data' } as Record<string, string>)[d.value.body.mode] ?? '')
 const effectiveCT = computed(() => (d.value.body.mode === 'json' || d.value.body.mode === 'raw') && d.value.body.contentType ? d.value.body.contentType : autoCT.value)
 function onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && curlOpen.value) curlOpen.value = false }
@@ -36,13 +50,12 @@ function copyCurl() { navigator.clipboard?.writeText(curlText.value); showToast(
 function beautify() {
   try { d.value.body.raw = JSON.stringify(JSON.parse(d.value.body.raw), null, 2); touch() } catch { showToast('JSON noto\'g\'ri — formatlab bo\'lmadi', 'warn') }
 }
-const showPass = ref(false)
 const showHist = ref(false)
 const hideHist = () => { setTimeout(() => (showHist.value = false), 150) }
 const reqEl = ref<HTMLElement>(), respEl = ref<HTMLElement>()
 
 // URL ↔ Params ikki tomonlama sinxron
-function onUrlInput() { d.value.params = paramsFromUrl(d.value.url, d.value.params); touch() }
+function onUrlInput() { d.value.params = paramsFromUrl(d.value.url, d.value.params); d.value.pathVars = syncPathVars(d.value.url, d.value.pathVars); touch() }
 function onParamsChange() { d.value.url = composeUrl(d.value.url, d.value.params); touch() }
 // cURL paste (to'liq parser — paritet bandi; hozir minimal)
 function onPaste(e: ClipboardEvent) {
@@ -50,6 +63,7 @@ function onPaste(e: ClipboardEvent) {
   if (!parsed) return
   e.preventDefault()
   applyCurlToDraft(d.value, parsed)
+  d.value.pathVars = syncPathVars(d.value.url, [])
   touch()
 }
 const bodyText = computed(() => {
@@ -74,11 +88,14 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
              @input="onUrlInput" @paste="onPaste" @focus="showHist = true; hist.load()" @blur="hideHist"
              @keydown.enter="sendTab(tab)">
       <div v-if="showHist && urlHist.length" class="menu" style="position:absolute;left:90px;top:44px;right:130px" data-testid="url-history">
-        <button v-for="(h, i) in urlHist" :key="i" @mousedown.prevent="d.method = h.method; d.url = h.url; touch()"><b>{{ h.method }}</b> {{ h.url }}</button>
+        <button v-for="(h, i) in urlHist" :key="i" @mousedown.prevent="d.method = h.method; d.url = h.url; d.pathVars = syncPathVars(d.url, d.pathVars); touch()"><b>{{ h.method }}</b> {{ h.url }}</button>
       </div>
       <button class="primary" data-testid="send" :disabled="tab.response?.loading" @click="sendTab(tab)">▶ Yuborish</button>
       <button data-testid="curl-btn" title="Copy as cURL" @click="curlOpen = true">cURL</button>
       <button data-testid="save" :disabled="!tab.dirty && !!tab.ref" @click="saveTab(tab)">Saqlash</button>
+    </div>
+    <div v-if="usedVars.length" class="var-chips" data-testid="var-chips">
+      <span v-for="v in usedVars" :key="v.name" class="var-chip" :class="v.ok ? 'var-ok' : 'var-undef'" data-testid="var-chip" :title="v.title">{{ v.name }}</span>
     </div>
     <div class="sections" data-testid="sections">
       <button v-for="s in ['params', 'headers', 'auth', 'body', 'batch']" :key="s" :class="{ on: section === s }" :data-section="s" @click="section = s">
@@ -86,16 +103,15 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       </button>
     </div>
     <div class="editor" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
-      <KvTable v-if="section === 'params'" :rows="d.params" files testid="params-table" @change="onParamsChange" />
+      <template v-if="section === 'params'">
+        <KvTable :rows="d.params" files testid="params-table" @change="onParamsChange" />
+        <div v-if="d.pathVars.length" data-testid="path-vars" style="margin-top:12px">
+          <b>Path variables</b>
+          <table class="kv"><tbody><tr v-for="pv in d.pathVars" :key="pv.key"><td style="width:160px"><code>:{{ pv.key }}</code></td><td><input v-model="pv.value" placeholder="Qiymat" data-testid="path-var-val" @input="touch"></td></tr></tbody></table>
+        </div>
+      </template>
       <KvTable v-else-if="section === 'headers'" :rows="d.headers" testid="headers-table" @change="touch" />
-      <div v-else-if="section === 'auth'" data-testid="auth-panel">
-        <select v-model="d.auth.type" data-testid="auth-type" @change="touch">
-          <option value="none">Auth yo'q</option><option value="bearer">Bearer Token</option><option value="basic">Basic Auth</option><option value="custom">Custom</option>
-        </select>
-        <p v-if="d.auth.type === 'bearer'"><input v-model="d.auth.token" placeholder="Token" style="width:100%" data-testid="auth-token" @input="touch"></p>
-        <p v-if="d.auth.type === 'basic'"><input v-model="d.auth.user" placeholder="Username" @input="touch"> <input v-model="d.auth.pass" :type="showPass ? 'text' : 'password'" placeholder="Password" data-testid="auth-pass" @input="touch"> <button class="ghost" data-testid="auth-eye" @click="showPass = !showPass">👁</button> <span class="muted" data-testid="auth-preview">Authorization: Basic {{ (d.auth.user || d.auth.pass) ? '••••' : '' }}</span></p>
-        <p v-if="d.auth.type === 'custom'"><input v-model="d.auth.custom" placeholder="Authorization qiymati" style="width:100%" @input="touch"></p>
-      </div>
+      <AuthEditor v-else-if="section === 'auth'" :auth="d.auth" allow-inherit :inherit-note="inheritNote" @change="touch" />
       <BatchPanel v-else-if="section === 'batch'" :tab="tab" />
       <div v-else data-testid="body-panel">
         <select v-model="d.body.mode" data-testid="body-mode" @change="touch">

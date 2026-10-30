@@ -52,3 +52,5 @@ button.ghost{background:none;border-color:transparent}
 .drawer-backdrop{position:fixed;inset:0;background:#0003;z-index:70}
 .hist-drawer{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:92vw;background:var(--bg);border-left:1px solid var(--bd);box-shadow:-6px 0 24px #0003;z-index:71;display:flex;flex-direction:column}
 .body-editor{height:220px;margin-top:8px}
+.var-chips{display:flex;gap:6px;flex-wrap:wrap;padding:4px 10px;border-bottom:1px solid var(--bd)}
+.var-chip{font:11px ui-monospace,Menlo,monospace;padding:1px 7px;border-radius:9px;cursor:default}.var-ok{background:var(--ac2);color:var(--ac)}.var-undef{background:#dc262622;color:var(--err)}

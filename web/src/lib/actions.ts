@@ -3,7 +3,8 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
-import { draftFromItem, requestFromDraft, specFromDraft } from './draft'
+import { draftFromItem, requestFromDraft } from './draft'
+import { specFor } from './scope'
 import { showToast } from './ui'
 import type { RequestItem } from '../types/model'
 
@@ -40,11 +41,11 @@ export function openRequest(cid: string, id: string, permanent = false) {
 
 export async function sendTab(tab: Tab) {
   if (!tab.draft || !tab.draft.url.trim()) { showToast('URL kiriting!', 'warn'); return }
-  const ws = useWorkspace(), hist = useHistory()
+  const hist = useHistory()
   await useTabs().flush()
   tab.response = { loading: true }
   try {
-    const spec = specFromDraft(tab.draft, ws.activeVars)
+    const spec = specFor(tab.draft, tab.ref)
     spec.timeout = 30
     const r = await post('/run_one', spec)
     tab.response = r

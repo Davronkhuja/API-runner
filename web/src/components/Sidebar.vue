@@ -93,6 +93,7 @@ async function menuAct(a: string) {
   if (a === 'rename') { renaming.value = keyOf(r); renameVal.value = r.name }
   else if (a === 'runner') tabs.open('runner', r.collectionId, 'Runner: ' + r.name, { permanent: true })
   else if (a === 'open') tabs.open('collection', r.collectionId, r.name, { permanent: true })
+  else if (a === 'settings') tabs.open('collection', `${r.collectionId}:${r.id}`, r.name, { permanent: true })
   else if (a === 'newreq') { const t = tabs.openNew(); t.draft!.name = 'Yangi so\'rov' }
   else if (a === 'newfolder') { await tree.addItem(r.collectionId, { name: 'Yangi papka', item: [] }, r.isCollection ? null : r.id) }
   else if (a === 'move') { moveDlg.value = { keys: tree.selection.length ? [...tree.selection] : [keyOf(r)] }; moveTarget.value = '' }
@@ -166,6 +167,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
 
     <div v-else-if="panel === 'environments'" class="sb-body" data-testid="env-list">
       <div style="padding:6px"><button style="width:100%" data-testid="new-env" @click="newEnv">＋ Yangi muhit</button></div>
+      <div class="row" style="padding-left:10px" data-testid="globals-row" @click="tabs.open('environment', 'globals', 'Globals', { permanent: true })"><span class="name">🌐 Globals</span></div>
       <div v-for="e in ws.environments" :key="e.id" class="row" :class="{ sel: ws.activeEnvId === e.id }" style="padding-left:10px" data-testid="env-row" @click="openEnv(e.id, e.name)">
         <span :class="ws.activeEnvId === e.id ? 'ok' : 'muted'">●</span><span class="name">{{ e.name }}</span>
         <button class="ghost" title="Faollashtirish" @click.stop="ws.setActive(ws.activeEnvId === e.id ? null : e.id)">{{ ws.activeEnvId === e.id ? '✓' : '○' }}</button>
@@ -187,6 +189,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
       <div class="menu" :style="{ left: menu.x + 'px', top: menu.y + 'px' }" data-testid="tree-menu" @click.stop>
         <button v-if="menu.row.isCollection" data-act="open" @click="menuAct('open')">Ochish</button>
         <button v-if="menu.row.isCollection" data-act="runner" @click="menuAct('runner')">Runner</button>
+        <button v-if="menu.row.folder && !menu.row.isCollection" data-act="settings" @click="menuAct('settings')">Sozlamalar</button>
         <button v-if="menu.row.folder" data-act="newfolder" @click="menuAct('newfolder')">Yangi papka</button>
         <button v-if="!menu.row.isCollection" data-act="rename" @click="menuAct('rename')">Nomini o'zgartirish</button>
         <button v-if="!menu.row.isCollection" data-act="dup" @click="menuAct('dup')">Dublikat</button>

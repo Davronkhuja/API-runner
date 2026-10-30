@@ -45,7 +45,7 @@ onMounted(() => window.addEventListener('keydown', onEsc))
 onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
 async function run() {
   await tabs.flush()
-  await startBatch(props.tab, ws.activeVars, async done => {
+  await startBatch(props.tab, {}, async done => {
     try { await hist.add('run', { ts: Date.now(), label: props.tab.draft!.url, count: done.results.length, results: done.results.map(r => ({ index: r.index, status: r.status, time: r.time, size: r.size, url: r.url })) }) } catch { /* tarix yozilmasa ham natija ko'rinadi */ }
   })
 }

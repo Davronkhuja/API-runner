@@ -27,6 +27,7 @@ export const useWorkspace = defineStore('workspace', () => {
   async function setActive(id: string | null) { activeEnvId.value = id; await put('/api/workspace/meta', { active_environment_id: id }) }
   async function createEnv(name: string) { const r = await post('/api/environments', { name }); await load(); return r.id as string }
   async function saveEnv(env: Environment) { await put(`/api/environments/${env.id}`, env); await load() }
+  async function saveGlobals(values: EnvValue[]) { await put('/api/globals', { values }); await load() }
   async function deleteEnv(id: string) { await del(`/api/environments/${id}`); if (activeEnvId.value === id) await setActive(null); await load() }
-  return { environments, globals, activeEnvId, activeEnv, activeVars, version, load, setActive, createEnv, saveEnv, deleteEnv }
+  return { environments, globals, activeEnvId, activeEnv, activeVars, version, load, setActive, createEnv, saveEnv, saveGlobals, deleteEnv }
 })
