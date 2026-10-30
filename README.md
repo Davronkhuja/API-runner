@@ -2,7 +2,7 @@
 
 > Postman Runner-ga o'xshash, lekin yengil va tez — CSV/JSON fayldan ma'lumot olib, har bir qatorni API ga donalab yuboradi va natijalarni real vaqtda ko'rsatadi.
 
-![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=flat-square&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.0+-000000?style=flat-square&logo=flask&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)
 
@@ -23,25 +23,29 @@
 
 ---
 
-## O'rnatish
+## O'rnatish va ishga tushirish
 
 ```bash
-git clone https://github.com/Davronkhuja/API-tester.git
-cd API-tester
-pip install -r requirements.txt
+git clone https://github.com/Davronkhuja/API-runner.git
+cd API-runner
 ```
 
-### Ishga tushirish
+**macOS** — Finder da `run.command` faylini ikki marta bosing (yoki terminalda `./run.command`). U o'zi:
 
-**macOS / Linux** — Finder da `run.command` faylini ikki marta bosing:
-- Server avtomatik ishga tushadi
-- Brauzer avtomatik ochiladi (`http://127.0.0.1:5050`)
-- Terminal oynasini yopsangiz — server to'xtaydi
+1. loyiha ichidagi `.venv` ni ishlatadi, yo'q bo'lsa `python3 -m venv .venv` bilan yaratadi;
+2. `requirements.txt` o'zgargan bo'lsa `.venv/bin/python -m pip install -r requirements.txt` ni bajaradi (pip xabarlari yashirilmaydi; xato bo'lsa tushunarli xabar chiqadi va oyna **Enter** bosilguncha yopilmaydi);
+3. port (sukut `5050`) bandligini tekshiradi: band qilgan jarayon **bizning eski API Runner** bo'lsa to'xtatadi; **boshqa dastur** bo'lsa uni o'ldirmasdan ogohlantiradi (`APIRUNNER_PORT=5051 ./run.command` bilan boshqa port tanlash mumkin);
+4. `API RUNNER v2.x.y` deb versiyani chiqaradi va brauzerni ochadi (`http://127.0.0.1:5050`). Terminal oynasini yopsangiz — server to'xtaydi.
 
-**Qo'lda:**
+**Qo'lda (har qanday OS):**
 ```bash
-python3 api_runner.py
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python api_runner.py
 ```
+
+Muhit o'zgaruvchilari: `APIRUNNER_PORT`, `APIRUNNER_WORKSPACE`, `APIRUNNER_NO_BROWSER=1`, `APIRUNNER_VENV_ARGS` (venv yaratishga qo'shimcha argument).
+Node.js kerak emas — frontend build natijasi (`apirunner/static/app/`) repoga kiritilgan.
 
 ---
 

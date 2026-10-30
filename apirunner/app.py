@@ -77,7 +77,7 @@ def main(host="127.0.0.1", port=None, open_browser_tab=True):
         threading.Thread(target=open_browser, daemon=True).start()
     print()
     print("=" * 50)
-    print(f"  API RUNNER  —  http://{host}:{port}")
+    print(f"  API RUNNER v{__version__}  —  http://{host}:{port}")
     print(f"  Workspace: {app.extensions['workspace'].root}")
     if app.config["MIGRATION_RESULT"]["status"] == "rolled_back":
         print("  DIQQAT: " + app.config["MIGRATION_RESULT"]["message"])
