@@ -11,6 +11,11 @@ import Sidebar from './components/Sidebar.vue'
 import TabBar from './components/TabBar.vue'
 import RequestEditor from './components/RequestEditor.vue'
 import EnvTab from './components/EnvTab.vue'
+import RunnerTab from './components/RunnerTab.vue'
+import CollectionTab from './components/CollectionTab.vue'
+import { post as apiPost } from './api/client'
+import { parseCurl, applyCurlToDraft } from './lib/curl'
+import { showToast } from './lib/ui'
 
 const tabs = useTabs(), tree = useTree(), ws = useWorkspace(), hist = useHistory()
 const ready = ref(false)
@@ -65,6 +70,43 @@ import { watch } from 'vue'
 watch(() => tree.expandedOverride, persistTree, { deep: true })
 void openRequest
 
+// Fayllarni (Postman collection, OpenAPI, CSV) va cURL matnini oynaga tashlab import qilish
+function onWindowDragOver(e: DragEvent) {
+  const t = e.dataTransfer?.types ?? []
+  if (t.includes('Files')) { e.preventDefault(); dropping.value = true }
+}
+async function onWindowDrop(e: DragEvent) {
+  dropping.value = false
+  const dt = e.dataTransfer
+  if (!dt) return
+  const file = dt.files?.[0]
+  if (file) {
+    e.preventDefault()
+    const text = await file.text()
+    if (/\.csv$/i.test(file.name) || /text\/csv/.test(file.type)) return openRunnerWithData(file.name, text)
+    try {
+      const r = await apiPost('/api/import', { content: text })
+      await tree.load()
+      showToast(`Import qilindi: ${r.name}`, 'success')
+    } catch (err: any) { showToast(err.message, 'error') }
+    return
+  }
+  const txt = dt.getData('text/plain')
+  if (txt && !e.defaultPrevented) {
+    const p = parseCurl(txt)
+    if (p) { e.preventDefault(); const t = tabs.openNew(); applyCurlToDraft(t.draft!, p); tabs.touch(t.id) }
+  }
+}
+function openRunnerWithData(name: string, text: string) {
+  const cid = tree.metas[0]?.id
+  if (!cid) return
+  const t = tabs.open('runner', cid, 'Runner: ' + tree.cols[cid].info.name, { permanent: true })
+  t.state ??= {}
+  const rows = /\.json$/i.test(name) ? JSON.parse(text) : text.split(/\r?\n/).filter(l => l.trim()).slice(1).map(l => l.split(','))
+  t.state.data = { name, rows }
+  tabs.touch(t.id)
+}
+
 function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'
   document.documentElement.dataset.theme = next
@@ -73,20 +115,20 @@ function toggleTheme() {
 </script>
 
 <template>
-  <div class="app" data-testid="app" :class="{ 'dropzone-active': dropping }" @dragover.prevent="dropping = false" v-if="ready">
+  <div class="app" data-testid="app" :class="{ 'dropzone-active': dropping }" @dragover="onWindowDragOver" @dragleave="dropping = false" @drop="onWindowDrop" v-if="ready">
     <Sidebar />
     <div class="main">
-      <TabBar />
+      <div style="display:flex;align-items:stretch"><div style="flex:1;min-width:0"><TabBar /></div><button class="ghost" title="Tema" data-testid="theme" style="border-radius:0" @click="toggleTheme">◐</button></div>
       <template v-if="tabs.active">
         <RequestEditor v-if="tabs.active.kind === 'request' && tabs.active.draft" :key="tabs.active.id" :tab="tabs.active" />
         <EnvTab v-else-if="tabs.active.kind === 'environment'" :key="tabs.active.id" :tab="tabs.active" />
-        <div v-else class="empty" :data-testid="'tab-' + tabs.active.kind">{{ tabs.active.title }} — tez orada</div>
+        <RunnerTab v-else-if="tabs.active.kind === 'runner'" :key="tabs.active.id" :tab="tabs.active" />
+        <CollectionTab v-else-if="tabs.active.kind === 'collection'" :key="tabs.active.id" :tab="tabs.active" />
       </template>
       <div v-else class="empty" data-testid="no-tabs">
         <p>Tab ochiq emas</p><button class="primary" @click="tabs.openNew()">Yangi so'rov</button>
       </div>
     </div>
-    <button class="ghost" style="position:fixed;right:8px;top:4px;z-index:5" data-testid="theme" @click="toggleTheme">◐</button>
     <div class="version" data-testid="version">v{{ ws.version }}</div>
 
     <div v-if="closeDialog" class="overlay"><div class="dialog" data-testid="close-dialog">

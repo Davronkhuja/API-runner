@@ -18,6 +18,7 @@ export interface Tab {
   response: any | null
   scroll: { req: number; resp: number }
   activeSection?: string    // Params/Headers/Auth/Body...
+  state?: Record<string, any>   // runner: tartib, belgilar, data fayl
 }
 
 export interface Persistence { load(): Promise<any>; save(state: any): Promise<void> }

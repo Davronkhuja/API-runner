@@ -79,7 +79,10 @@ function onClick(e: MouseEvent, r: Row) {
   tree.select(k)
   openRequest(r.collectionId, r.id, false)
 }
-function onDbl(r: Row) { if (!r.folder) openRequest(r.collectionId, r.id, true) }
+function onDbl(r: Row) {
+  if (r.isCollection) tabs.open('collection', r.collectionId, r.name, { permanent: true })
+  else if (!r.folder) openRequest(r.collectionId, r.id, true)
+}
 void clickTimer
 
 // ── Kontekst menyu ──
@@ -87,6 +90,8 @@ function ctx(e: MouseEvent, r: Row) { menu.value = { x: e.clientX, y: e.clientY,
 async function menuAct(a: string) {
   const r = menu.value!.row; menu.value = null
   if (a === 'rename') { renaming.value = keyOf(r); renameVal.value = r.name }
+  else if (a === 'runner') tabs.open('runner', r.collectionId, 'Runner: ' + r.name, { permanent: true })
+  else if (a === 'open') tabs.open('collection', r.collectionId, r.name, { permanent: true })
   else if (a === 'newreq') { const t = tabs.openNew(); t.draft!.name = 'Yangi so\'rov' }
   else if (a === 'newfolder') { await tree.addItem(r.collectionId, { name: 'Yangi papka', item: [] }, r.isCollection ? null : r.id) }
   else if (a === 'move') { moveDlg.value = { keys: tree.selection.length ? [...tree.selection] : [keyOf(r)] }; moveTarget.value = '' }
@@ -179,6 +184,8 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
 
     <div v-if="menu" class="overlay" style="background:none" @click="menu = null" @contextmenu.prevent="menu = null">
       <div class="menu" :style="{ left: menu.x + 'px', top: menu.y + 'px' }" data-testid="tree-menu" @click.stop>
+        <button v-if="menu.row.isCollection" data-act="open" @click="menuAct('open')">Ochish</button>
+        <button v-if="menu.row.isCollection" data-act="runner" @click="menuAct('runner')">Runner</button>
         <button v-if="menu.row.folder" data-act="newfolder" @click="menuAct('newfolder')">Yangi papka</button>
         <button v-if="!menu.row.isCollection" data-act="rename" @click="menuAct('rename')">Nomini o'zgartirish</button>
         <button v-if="!menu.row.isCollection" data-act="dup" @click="menuAct('dup')">Dublikat</button>

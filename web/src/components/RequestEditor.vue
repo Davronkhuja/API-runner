@@ -6,6 +6,7 @@ import { useHistory } from '../stores/history'
 import { sendTab, saveTab } from '../lib/actions'
 import { fmtBytes, fmtMs } from '../lib/ui'
 import KvTable from './KvTable.vue'
+import { applyCurlToDraft, parseCurl } from '../lib/curl'
 
 const props = defineProps<{ tab: Tab }>()
 const tabs = useTabs(), ws = useWorkspace(), hist = useHistory()
@@ -30,13 +31,10 @@ function onUrlInput() {
 }
 // cURL paste (to'liq parser — paritet bandi; hozir minimal)
 function onPaste(e: ClipboardEvent) {
-  const text = e.clipboardData?.getData('text') ?? ''
-  if (!/^\s*curl\b/i.test(text)) return
+  const parsed = parseCurl(e.clipboardData?.getData('text') ?? '')
+  if (!parsed) return
   e.preventDefault()
-  const m = text.match(/(?:'|")?(https?:\/\/[^\s'"]+)/)
-  const meth = text.match(/-X\s+(\w+)/)
-  if (m) { d.value.url = m[1].split('?')[0]; onUrlInput(); d.value.url = m[1].split('?')[0] }
-  if (meth) d.value.method = meth[1].toUpperCase()
+  applyCurlToDraft(d.value, parsed)
   touch()
 }
 const bodyText = computed(() => {

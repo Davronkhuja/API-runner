@@ -224,3 +224,25 @@ def add_history():
 def clear_history():
     current_app.extensions["db"].delete_history(request.args.get("kind"), request.args.get("id", type=int))
     return jsonify({"ok": True})
+
+
+# ── import (fayl tashlash / Import tugmasi). Bosqich 5 da to'liq round-trip testlar bilan kengayadi ──
+@bp.post("/import")
+def import_any():
+    import json as _json
+    d = request.get_json(silent=True) or {}
+    content = d.get("content")
+    try:
+        doc = _json.loads(content) if isinstance(content, str) else content
+    except _json.JSONDecodeError:
+        return jsonify({"error": "JSON o'qib bo'lmadi (YAML hali qo'llab-quvvatlanmaydi)"}), 400
+    from ..importers.openapi import import_openapi, looks_like_openapi
+    from ..importers.postman import import_postman, looks_like_postman
+    if looks_like_openapi(doc):
+        col, kind = import_openapi(doc), "openapi"
+    elif looks_like_postman(doc):
+        col, kind = import_postman(doc), "postman"
+    else:
+        return jsonify({"error": "Format tanilmadi (Postman collection yoki OpenAPI JSON kerak)"}), 400
+    cid = _ws().save_collection(col)
+    return jsonify({"ok": True, "kind": kind, "id": cid, "name": col["info"]["name"]})
