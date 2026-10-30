@@ -17,6 +17,12 @@ def _not_found(_e):
     return jsonify({"error": "Topilmadi"}), 404
 
 
+@bp.get("/version")
+def version():
+    from .. import __version__
+    return jsonify({"version": __version__})
+
+
 @bp.get("/workspace")
 def summary():
     ws = _ws()

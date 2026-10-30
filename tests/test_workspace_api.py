@@ -92,3 +92,9 @@ def test_import_localstorage_tolerates_garbage(client):
     d = client.post("/api/import/localstorage", json={"data": {"apiRunnerEnvs": "{not json", "apiRunnerHistory": 5}})
     assert d.status_code == 200
     assert client.post("/api/import/localstorage", json={"data": "x"}).status_code == 400
+
+
+def test_version_endpoint_matches_package(client):
+    import apirunner
+    assert client.get("/api/version").get_json() == {"version": apirunner.__version__}
+    assert apirunner.__version__ == "2.1.0"

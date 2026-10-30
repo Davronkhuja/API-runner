@@ -4781,5 +4781,7 @@ async function importLocalStorage() {
   }
 }
 </script>
+<div id="appVersion" style="position:fixed;right:8px;bottom:4px;font-size:10px;opacity:.5;pointer-events:none;z-index:5"></div>
+<script>fetch('/api/version').then(r=>r.json()).then(d=>{document.getElementById('appVersion').textContent='v'+d.version}).catch(()=>{});</script>
 </body>
 </html>
