@@ -12,7 +12,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-import requests as req_lib
+import httpx
 
 from .variables import replace_variables
 
@@ -85,7 +85,8 @@ def _build_kwargs(spec, ctx, opened):
         headers["Content-Type"] = ctype
 
     kw = {"params": params, "headers": headers, "timeout": timeout,
-          "verify": bool(spec.get("ssl_verify", True))}
+          "verify": bool(spec.get("ssl_verify", True)),
+          "http2": bool(spec.get("http2", False))}       # sukut: HTTP/1.1
 
     if file_params:
         files = {}
@@ -121,8 +122,49 @@ def _build_kwargs(spec, ctx, opened):
     return method, replace_variables(spec.get("url", ""), v), kw
 
 
+class _Trace:
+    """httpcore trace hodisalaridan timing yig'adi. Olinmagan qiymat None qoladi (UI: "—").
+
+    httpcore DNS'ni alohida ko'rsatmaydi, shuning uchun `dns` doim None; `connect` DNS'ni ham o'z ichiga oladi.
+    """
+
+    def __init__(self):
+        self.t0 = time.perf_counter()
+        self.marks = {}
+
+    def __call__(self, name, info):
+        self.marks[name] = time.perf_counter()
+
+    def _span(self, a, b):
+        if a in self.marks and b in self.marks:
+            return round(self.marks[b] - self.marks[a], 6)
+        return None
+
+    def result(self, total):
+        m, now = self.marks, self.t0
+        first_byte = next((m[k] for k in m if k.endswith("receive_response_headers.complete")), None)
+        return {
+            "dns": None,
+            "connect": self._span("connection.connect_tcp.started", "connection.connect_tcp.complete"),
+            "tls": self._span("connection.start_tls.started", "connection.start_tls.complete"),
+            "ttfb": round(first_byte - now, 6) if first_byte else None,
+            "total": round(total, 6),
+        }
+
+
 def _send(method, url, kw):
-    return req_lib.request(method, url, **kw)
+    kw = dict(kw)
+    params = kw.pop("params", None)
+    if params:                      # httpx params'ni URL query o'rniga qo'yadi; requests kabi qo'shamiz
+        url = str(httpx.URL(url).copy_merge_params(params))
+    http2 = kw.pop("http2", False)
+    timeout, verify = kw.pop("timeout"), kw.pop("verify")
+    if "data" in kw:
+        kw["content"] = kw.pop("data")
+    trace = _Trace()
+    with httpx.Client(http2=http2, verify=verify, timeout=timeout, follow_redirects=True) as client:
+        resp = client.request(method, url, extensions={"trace": trace}, **kw)
+    return resp, trace
 
 
 def _parse_body(resp):
@@ -156,16 +198,17 @@ def execute(spec, ctx=None):
         try:
             method, url, kw = _build_kwargs(spec, ctx, opened)
             url_for_error = url
-            resp = _send(method, url, kw)
+            resp, trace = _send(method, url, kw)
             elapsed = last_elapsed = time.perf_counter() - start
             ok = 200 <= resp.status_code < 300
             if not ok and attempt < ctx.retry_count:
                 last_err = f"HTTP {resp.status_code}"
                 continue
             return {"status": resp.status_code, "time": elapsed, "size": len(resp.content),
-                    "url": resp.url, "response": _parse_body(resp),
-                    "resp_headers": dict(resp.headers), "error": not ok, "retries": attempt}
-        except req_lib.Timeout:
+                    "url": str(resp.url), "response": _parse_body(resp),
+                    "resp_headers": dict(resp.headers), "error": not ok, "retries": attempt,
+                    "timing": trace.result(elapsed), "http_version": resp.http_version}
+        except httpx.TimeoutException:
             last_elapsed = time.perf_counter() - start
             last_err = "Request timed out ({:.0f}s)".format(timeout)
         except FilePolicyError as exc:
@@ -183,4 +226,5 @@ def execute(spec, ctx=None):
                     pass
 
     return {"status": "ERROR", "time": last_elapsed, "size": 0, "url": url_for_error,
-            "response": last_err, "resp_headers": {}, "error": True, "retries": ctx.retry_count}
+            "response": last_err, "resp_headers": {}, "error": True, "retries": ctx.retry_count,
+            "timing": None, "http_version": None}

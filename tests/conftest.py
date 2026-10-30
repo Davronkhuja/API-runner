@@ -57,6 +57,11 @@ def _build_echo_app():
         time.sleep(float(request.args.get("s", "0.3")))
         return jsonify({"slow": True})
 
+    @app.route("/redirect")
+    def redirect_():
+        from flask import redirect
+        return redirect("/echo")
+
     @app.route("/big")
     def big():
         return "x" * 600_000, 200, {"Content-Type": "text/plain"}

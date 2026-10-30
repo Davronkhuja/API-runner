@@ -36,3 +36,33 @@ def test_file_policy_allowed_files(echo, tmp_path):
     assert execute(spec)["status"] == "ERROR"                                         # sukut bo'yicha taqiq
     ok = execute(spec, ExecContext(allowed_files=frozenset({os.path.realpath(f)})))   # aniq tanlangan fayl
     assert ok["status"] == 200 and ok["response"]["files"]["d"]["content"] == "hi"
+
+
+def test_timing_breakdown_keys_and_missing_values_are_none(echo):
+    r = execute({"method": "GET", "url": echo + "/echo"})
+    t = r["timing"]
+    assert set(t) == {"dns", "connect", "tls", "ttfb", "total"}
+    assert t["dns"] is None and t["tls"] is None            # plain HTTP: TLS yo'q, DNS alohida o'lchanmaydi
+    assert t["connect"] is not None and 0 <= t["ttfb"] <= t["total"] + 0.01
+    assert r["http_version"] == "HTTP/1.1"
+
+
+def test_error_result_has_null_timing_and_no_exception():
+    r = execute({"method": "GET", "url": "http://127.0.0.1:1/"})
+    assert r["status"] == "ERROR" and r["timing"] is None
+
+
+def test_http2_is_opt_in_and_falls_back_on_cleartext(echo):
+    assert execute({"method": "GET", "url": echo + "/echo"})["http_version"] == "HTTP/1.1"
+    r = execute({"method": "GET", "url": echo + "/echo", "http2": True})   # h2c yo'q → HTTP/1.1
+    assert r["status"] == 200 and r["http_version"] == "HTTP/1.1"
+
+
+def test_query_in_url_survives_when_params_empty_and_merges_with_params(echo):
+    r = execute({"method": "GET", "url": echo + "/echo?a=1", "params": [{"name": "b", "value": "2"}]})
+    assert r["response"]["args"] == {"a": ["1"], "b": ["2"]}
+
+
+def test_redirects_are_followed(echo):
+    r = execute({"method": "GET", "url": echo + "/redirect"})
+    assert r["status"] == 200 and r["url"].endswith("/echo")
