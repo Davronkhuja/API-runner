@@ -21,7 +21,7 @@ def test_json_body(client, echo):
     assert d["response"]["json"] == {"k": 1}
 
 
-def test_invalid_json_falls_back_to_raw(client, echo):
+def test_invalid_json_sent_raw(client, echo):
     d = post(client, url=echo + "/echo", method="POST", body="{bad", body_type="json")
     assert d["response"]["data"] == "{bad"
 
@@ -36,11 +36,11 @@ def test_env_vars_simple_replacement(client, echo):
     assert d["response"]["args"] == {"x": ["42"]}
 
 
-def test_env_vars_with_spaces_not_replaced_quirk(client, echo):
-    """Hozirgi nuqson: '{{ v }}' (bo'sh joy bilan) run_one'da almashtirilmaydi."""
+def test_env_vars_with_spaces_replaced(client, echo):
+    """Bosqich 1: yagona engine — '{{ v }}' run_one'da ham /run kabi almashtiriladi."""
     d = post(client, url=echo + "/echo", method="GET",
              headers=[{"name": "X", "value": "{{ v }}"}], env_vars={"v": "42"})
-    assert d["response"]["headers"]["X"] == "{{ v }}"
+    assert d["response"]["headers"]["X"] == "42"
 
 
 def test_http_error_status_passthrough(client, echo):
@@ -73,7 +73,16 @@ def test_missing_url_is_400(client):
     assert client.post("/run_one", json={}).status_code == 400
 
 
-def test_multipart_not_supported_quirk(client, echo):
-    """Hozirgi cheklov: run_one multipart/fayl yubormaydi — body_type=multipart oddiy data bo'ladi."""
-    d = post(client, url=echo + "/echo", method="POST", body="a=b", body_type="multipart")
-    assert d["response"]["files"] == {}
+def test_multipart_supported_via_unified_engine(client, echo):
+    """Bosqich 1: run_one ham /run kabi multipart yuboradi."""
+    d = post(client, url=echo + "/echo", method="POST", body_type="multipart",
+             multipart_fields=[{"name": "k", "value": "{{v}}"}], env_vars={"v": "val"})
+    assert d["response"]["form"] == {"k": ["val"]}
+
+
+def test_file_param_in_run_one(client, echo, isolated):
+    f = isolated / "uploads" / "a.txt"
+    f.write_text("mazmun")
+    d = post(client, url=echo + "/echo", method="POST",
+             params=[{"name": "doc", "value": f"{f}::x.txt", "type": "file"}])
+    assert d["response"]["files"]["doc"] == {"filename": "x.txt", "content": "mazmun"}

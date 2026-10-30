@@ -1,4 +1,4 @@
-from api_runner import replace_variables as rv
+from apirunner.core.variables import replace_variables as rv
 
 
 def test_replaces_known_key():

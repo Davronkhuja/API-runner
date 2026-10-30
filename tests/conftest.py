@@ -10,7 +10,9 @@ from werkzeug.serving import make_server
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-import api_runner  # noqa: E402
+from apirunner.app import create_app  # noqa: E402
+
+TOKEN = "test-token"
 
 
 def _build_echo_app():
@@ -79,19 +81,32 @@ def echo(echo_server):
 
 
 @pytest.fixture
-def isolated(tmp_path, monkeypatch):
-    """saved_requests.json va .tmp_uploads ni vaqtinchalik papkaga yo'naltiradi."""
-    monkeypatch.setattr(api_runner, "SAVED_FILE", str(tmp_path / "saved_requests.json"))
-    up = tmp_path / "uploads"
-    up.mkdir()
-    monkeypatch.setattr(api_runner, "TEMP_UPLOAD_DIR", str(up))
+def isolated(tmp_path):
+    """Hamma narsa (workspace, saved fayl, uploads) vaqtinchalik papkada."""
+    (tmp_path / "uploads").mkdir()
     return tmp_path
 
 
 @pytest.fixture
-def client(isolated):
-    api_runner.app.config["TESTING"] = True
-    return api_runner.app.test_client()
+def make_client(isolated):
+    """make_client(legacy=<saved_requests.json matni | None>) -> test client (tokenli)."""
+    def _make(legacy=None):
+        saved = isolated / "saved_requests.json"
+        if legacy is not None:
+            saved.write_text(legacy, encoding="utf-8")
+        app = create_app(workspace_dir=str(isolated / "workspace"), saved_file=str(saved),
+                         upload_dir=str(isolated / "uploads"), session_token=TOKEN)
+        app.config["TESTING"] = True
+        c = app.test_client()
+        c.environ_base["HTTP_X_SESSION_TOKEN"] = TOKEN
+        c.app = app
+        return c
+    return _make
+
+
+@pytest.fixture
+def client(make_client):
+    return make_client()
 
 
 @pytest.fixture

@@ -56,17 +56,16 @@ def test_delete_folder_moves_requests_to_root(client):
     assert db["requests"][0]["folder_id"] is None
 
 
-def test_legacy_list_format_is_migrated(client, isolated):
-    (isolated / "saved_requests.json").write_text(json.dumps([{"id": "1", "name": "old"}]))
-    db = client.get("/saved").get_json()
+def test_legacy_list_format_is_migrated(make_client):
+    db = make_client(json.dumps([{"id": "1", "name": "old"}])).get("/saved").get_json()
     assert db["folders"] == [] and db["requests"][0]["name"] == "old"
 
 
-def test_corrupt_file_yields_empty_db(client, isolated):
-    (isolated / "saved_requests.json").write_text("{not json")
-    assert client.get("/saved").get_json() == {"folders": [], "requests": []}
+def test_corrupt_file_yields_empty_db(make_client):
+    assert make_client("{not json").get("/saved").get_json() == {"folders": [], "requests": []}
 
 
 def test_unicode_roundtrip(client, isolated):
     client.post("/saved/folder", json={"name": "Ўзбекча — ʻoʻ"})
-    assert "Ўзбекча" in (isolated / "saved_requests.json").read_text(encoding="utf-8")
+    assert client.get("/saved").get_json()["folders"][0]["name"] == "Ўзбекча — ʻoʻ"
+    assert "Ўзбекча" in (isolated / "workspace" / "collections" / "saved.json").read_text(encoding="utf-8")

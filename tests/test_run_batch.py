@@ -81,21 +81,31 @@ def test_multipart_fields(run_batch, echo):
     assert results[0]["response"]["form"] == {"k": ["val"]}
 
 
-def test_file_param_upload(run_batch, echo, tmp_path):
-    f = tmp_path / "a.txt"
+def test_file_param_upload(run_batch, echo, isolated):
+    f = isolated / "uploads" / "a.txt"
     f.write_text("fayl-mazmuni")
     results, _ = run_batch(cfg(echo, method="POST",
                                params=[{"name": "doc", "value": f"{f}::asl.txt", "type": "file"}]))
     assert results[0]["response"]["files"]["doc"] == {"filename": "asl.txt", "content": "fayl-mazmuni"}
 
 
-def test_file_param_reads_arbitrary_path_current_behaviour(run_batch, echo, tmp_path):
-    """Xavfsizlik nuqsoni (Bosqich 1 da cheklanadi): diskdagi istalgan yo'l o'qiladi."""
+def test_file_param_outside_allowed_roots_is_denied(run_batch, echo, tmp_path):
+    """Bosqich 1 xavfsizlik: diskdagi ixtiyoriy yo'l o'qilmaydi (workspace / .tmp_uploads bilan cheklangan)."""
     f = tmp_path / "secret.txt"
     f.write_text("maxfiy")
-    results, _ = run_batch(cfg(echo, method="POST",
-                               params=[{"name": "d", "value": str(f), "type": "file"}]))
-    assert results[0]["response"]["files"]["d"]["content"] == "maxfiy"
+    results, summary = run_batch(cfg(echo, method="POST",
+                                     params=[{"name": "d", "value": str(f), "type": "file"}]))
+    assert results[0]["status"] == "ERROR" and "ruxsat yo'q" in results[0]["response"]
+    assert "maxfiy" not in str(results) and summary["failed"] == 1
+
+
+def test_file_param_symlink_escape_is_denied(run_batch, echo, isolated, tmp_path):
+    secret = tmp_path / "secret.txt"
+    secret.write_text("maxfiy")
+    link = isolated / "uploads" / "link.txt"
+    link.symlink_to(secret)
+    results, _ = run_batch(cfg(echo, method="POST", params=[{"name": "d", "value": str(link), "type": "file"}]))
+    assert results[0]["status"] == "ERROR"
 
 
 def test_concurrency_all_complete(run_batch, echo):
@@ -122,8 +132,7 @@ def test_stop_sequential(run_batch, echo):
     rows = [{} for _ in range(50)]
     results, summary = run_batch(cfg(echo, url=echo + "/slow?s=0.2", rows=rows), stop_after=0.5)
     assert summary["stopped"] is True and 0 < len(results) < 50
-    # Hozirgi nuqson: to'xtatilganda `completed` bitta ortiqcha (sikl indeksi oldinga o'tib bo'lgan)
-    assert summary["completed"] in (len(results), len(results) + 1)
+    assert summary["completed"] == len(results)      # Bosqich 1: hisob tuzatildi
 
 
 def test_stop_unknown_job_404(client):
@@ -146,3 +155,11 @@ def test_upload_temp(client, isolated):
     assert r["name"] == "x.csv" and r["path"].endswith(".csv") and open(r["path"], "rb").read() == b"abc"
     assert os.path.dirname(r["path"]) == str(isolated / "uploads")
     assert client.post("/upload_temp").status_code == 400
+
+
+def test_stop_concurrent_completed_matches_results(run_batch, echo):
+    rows = [{} for _ in range(60)]
+    results, summary = run_batch(cfg(echo, url=echo + "/slow?s=0.2", concurrency=3, rows=rows), stop_after=0.5)
+    assert summary["stopped"] is True
+    assert summary["completed"] == len(results) < 60
+    assert summary["successful"] + summary["failed"] == len(results)
