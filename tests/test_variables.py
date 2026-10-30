@@ -27,3 +27,34 @@ def test_multiple_and_repeated():
 
 def test_non_string_text_is_stringified():
     assert rv(123, {}) == "123"
+
+
+def test_nested_variables_are_resolved():
+    assert rv("{{url}}/x", {"url": "{{host}}/api", "host": "h"}) == "h/api/x"
+
+
+def test_circular_variables_terminate():
+    assert rv("{{a}}", {"a": "{{b}}", "b": "{{a}}"}) in ("{{a}}", "{{b}}")
+
+
+def test_dynamic_variables_are_fresh_and_have_shape():
+    import re
+    a, b = rv("{{$guid}}", {}), rv("{{$guid}}", {})
+    assert a != b and re.fullmatch(r"[0-9a-f-]{36}", a)
+    assert rv("{{$timestamp}}", {}).isdigit()
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT[\d:.]+Z", rv("{{$isoTimestamp}}", {}))
+    assert 0 <= int(rv("{{$randomInt}}", {})) <= 1000
+    assert "@" in rv("{{$randomEmail}}", {})
+
+
+def test_user_variable_wins_over_dynamic_and_unknown_dynamic_stays():
+    assert rv("{{$guid}}", {"$guid": "fixed"}) == "fixed"
+    assert rv("{{$nope}}", {}) == "{{$nope}}"
+
+
+def test_path_variables_only_in_path():
+    from apirunner.core.variables import apply_path_variables as ap
+    pv = [{"name": "id", "value": "42"}, {"name": "port", "value": "X"}]
+    assert ap("http://h:5050/users/:id/x?t=:id", pv) == "http://h:5050/users/42/x?t=:id"
+    assert ap("/a/:missing", pv) == "/a/:missing"
+    assert ap("http://h/a/:id", None) == "http://h/a/:id"

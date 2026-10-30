@@ -66,3 +66,11 @@ def test_query_in_url_survives_when_params_empty_and_merges_with_params(echo):
 def test_redirects_are_followed(echo):
     r = execute({"method": "GET", "url": echo + "/redirect"})
     assert r["status"] == 200 and r["url"].endswith("/echo")
+
+
+def test_engine_applies_path_variables_and_dynamic(echo):
+    from apirunner.core.engine import ExecContext, execute
+    r = execute({"method": "GET", "url": echo + "/echo/:id?g={{$guid}}", "path_variables": [{"name": "id", "value": "{{n}}"}]},
+                ExecContext(variables={"n": "77"}))
+    assert r["status"] != "ERROR", r["response"]
+    assert "/echo/77" in r["url"] and "%7B" not in r["url"] and "$guid" not in r["url"]

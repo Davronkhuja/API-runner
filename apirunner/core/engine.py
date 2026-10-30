@@ -14,7 +14,7 @@ from typing import Callable, Optional
 
 import httpx
 
-from .variables import replace_variables
+from .variables import apply_path_variables, replace_variables
 
 MAX_TEXT_RESPONSE = 500_000
 MUTATING = ("POST", "PUT", "PATCH", "DELETE")
@@ -119,7 +119,9 @@ def _build_kwargs(spec, ctx, opened):
             if body_type == "json" and not has_ct():
                 headers["Content-Type"] = "application/json"
             kw["data"] = body.encode("utf-8") if body else b""   # xom matn, qayta serializatsiyasiz
-    return method, replace_variables(spec.get("url", ""), v), kw
+    url = apply_path_variables(replace_variables(spec.get("url", ""), v), [
+        {"name": p.get("name"), "value": replace_variables(p.get("value", ""), v)} for p in spec.get("path_variables") or []])
+    return method, url, kw
 
 
 class _Trace:
