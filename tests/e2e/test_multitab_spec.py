@@ -85,7 +85,7 @@ def test_each_tab_keeps_independent_state_url_params_body_auth_scripts_response_
     ui.click("[data-section=auth]")
     expect(ui.locator("[data-testid=auth-token]")).to_have_value("TOK-G")
     ui.click("[data-section=body]")
-    expect(ui.locator("[data-testid=body-raw]")).to_have_value("gamma-body")
+    expect(ui.locator("[data-testid=body-raw]")).to_have_text("gamma-body")
     ui.click("[data-section=params]")
     expect(ui.locator("[data-testid=params-table] input[type=text]").first).to_have_value("x")
 

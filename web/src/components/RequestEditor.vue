@@ -6,6 +6,7 @@ import { useHistory } from '../stores/history'
 import { sendTab, saveTab } from '../lib/actions'
 import { fmtBytes, fmtMs, showToast } from '../lib/ui'
 import KvTable from './KvTable.vue'
+import CodeEditor from './CodeEditor.vue'
 import BatchPanel from './BatchPanel.vue'
 import { composeUrl, paramsFromUrl } from '../lib/draft'
 import { applyCurlToDraft, buildCurl, parseCurl } from '../lib/curl'
@@ -103,7 +104,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <button v-if="d.body.mode === 'json'" data-testid="beautify" style="margin-left:8px" @click="beautify" title="Cmd/Ctrl+B">Beautify</button>
         <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart'" v-model="d.body.contentType" :placeholder="autoCT || 'Content-Type'" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
         <span v-if="effectiveCT" class="muted" style="margin-left:8px" data-testid="content-type-auto">Content-Type: {{ effectiveCT }}</span>
-        <textarea v-if="d.body.mode === 'json' || d.body.mode === 'raw'" @keydown.meta.b.prevent="beautify" @keydown.ctrl.b.prevent="beautify" v-model="d.body.raw" data-testid="body-raw" style="width:100%;height:220px;margin-top:8px;font-family:ui-monospace,monospace" @input="touch" />
+        <CodeEditor v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :key="d.body.mode" v-model="d.body.raw" :lang="d.body.mode === 'json' ? 'json' : 'raw'" testid="body-raw" placeholder='{ "key": "{{value}}" }' class="body-editor" @update:model-value="touch" @beautify="beautify" />
         <KvTable v-else-if="d.body.mode === 'form'" :rows="d.body.fields" testid="form-table" @change="touch" />
         <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" files testid="formdata-table" @change="touch" />
       </div>

@@ -51,3 +51,4 @@ button.ghost{background:none;border-color:transparent}
 
 .drawer-backdrop{position:fixed;inset:0;background:#0003;z-index:70}
 .hist-drawer{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:92vw;background:var(--bg);border-left:1px solid var(--bd);box-shadow:-6px 0 24px #0003;z-index:71;display:flex;flex-direction:column}
+.body-editor{height:220px;margin-top:8px}

@@ -27,7 +27,7 @@ Qoidalar: eski UI `/legacy` da ishlab turadi; paritet e2e yashil bo'lgach o'chir
 ### Paritet checklisti (eski UI → yangi frontend; e2e: `tests/e2e/test_parity.py`)
 Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha · [ ] qilinmagan
 **URL bar:** [x] method select · [x] URL input · [x] Run/Stop (Stop — Batch bo'limida) · [x] cURL paste → parse · [x] URL ↔ Params ikki tomonlama sinxron · [x] URL tarixi dropdown · [x] Save (dirty bo'lmasa disabled, Save As dialog) · [x] Copy as cURL drawer · [x] cURL sintaksis ranglash · [x] metod rangi select'da
-**Tablar:** [x] Params/Headers kv + checkbox + DnD · [x] 📎 fayl yuklash + rad etilgan yo'l xabari · [x] Auth None/Bearer/Basic/Custom (+ ko'z, preview) · [x] Body JSON/Raw/Form/Multipart · [x] Beautify (+Cmd/Ctrl+B) · [ ] body sintaksis ranglash va Tab tugmasi (CodeMirror 6 bilan) · [x] Content-Type avtomatik ko'rsatish
+**Tablar:** [x] Params/Headers kv + checkbox + DnD · [x] 📎 fayl yuklash + rad etilgan yo'l xabari · [x] Auth None/Bearer/Basic/Custom (+ ko'z, preview) · [x] Body JSON/Raw/Form/Multipart · [x] Beautify (+Cmd/Ctrl+B) · [x] body sintaksis ranglash va Tab tugmasi (CodeMirror 6) · [x] Content-Type avtomatik ko'rsatish
 **Runner:** [x] data fayl CSV/JSON · [x] data fayl preview jadvali va drop zona (oynaga tashlash Runner tabini ochadi) · [x] rows mode · [x] delay · [x] timeout · [x] parallel · [x] retry · [x] SSL · [x] collapse (karta bo'yicha va hammasi) · [x] Postman collection runner (import + Runner tabi, ketma-ket `/run_one`) · [x] `/run` + SSE + Stop · [x] status line
 **Natijalar:** [x] progress · [x] stats (+2xx/4xx/5xx) · [x] filtrlar · [x] result kartalar (badge, vaqt, hajm, retry, headers, copy) · [x] JSON sintaksis ranglash · [x] fullscreen viewer (copy, TXT) · [x] Esc bilan yopish · [x] time chart (60) · [x] export JSON/CSV · [x] run'larni solishtirish (server tarixi) · [x] resizer (editor/javob vertikal)
 **Sidebar:** [x] collapse + kenglik · [x] qidiruv · [x] daraxt (ichma-ich) · [x] yangi so'rov · [x] Save modal · [x] papka yaratish/qayta nomlash/o'chirish (confirm) · [x] Move (modal va DnD) · [x] kontekst menyu · [x] inline rename (+tab sarlavhasi) · [x] duplicate (" Copy") · [x] Postman/OpenAPI import (tugma va tashlash) · [x] Environments: ro'yxat, activate, yaratish, tahrirlash (tab), o'chirish (confirm), header selector, `env_vars` · [x] eski "Default" env va yagona o'zgaruvchilar → Globals (bir martalik xabar bilan) · [x] History: ro'yxat, yuklash, o'chirish, tozalash · [x] History drawer
@@ -35,7 +35,7 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 
 ### Skelet va arxitektura
 - [x] Backend: daraxt API (`order` = `item[]` tartibi, move/copy/cycle-guard), `/api/ui-state`, server tarixi, faol env
-- [x] `web/` Vite+Vue3+TS+Pinia; stores: `tabs`, `tree`, `workspace`, `history` (+`lib/batch`) · [ ] CodeMirror 6 (hozircha textarea)
+- [x] `web/` Vite+Vue3+TS+Pinia; stores: `tabs`, `tree`, `workspace`, `history` (+`lib/batch`) · [x] CodeMirror 6 (body)
 - [x] Build → `apirunner/static/app/` (commit), `/` yangi UI, `/legacy` eski
 - [x] Vitest unit (32) · [x] Playwright: multi-tab 31, DnD 27, paritet 40 · [ ] eski UI'ni o'chirish (paritet [ ]/[~] bandlari yopilgach)
 

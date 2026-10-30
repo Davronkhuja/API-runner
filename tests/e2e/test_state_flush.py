@@ -60,7 +60,7 @@ def test_params_headers_body_edits_survive_immediate_reload(ui):
     ui.click("[data-section=headers]")
     expect(ui.locator("[data-testid=headers-table] input[type=text]").nth(1)).to_have_value("v")
     ui.click("[data-section=body]")
-    expect(T(ui, "body-raw")).to_have_value("son-matn")
+    expect(T(ui, "body-raw")).to_have_text("son-matn")
 
 
 def test_new_unsaved_tab_survives_immediate_reload(ui):

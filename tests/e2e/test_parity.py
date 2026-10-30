@@ -5,6 +5,8 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from tests.e2e.conftest import eventually
+
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
 
 
@@ -40,7 +42,7 @@ def test_curl_paste_fills_everything(ui):
     ui.click("[data-section=auth]")
     expect(T(ui, "auth-token")).to_have_value("TT")
     ui.click("[data-section=body]")
-    expect(T(ui, "body-raw")).to_have_value('{"k":1}')
+    expect(T(ui, "body-raw")).to_have_text('{"k":1}')
 
 
 def test_copy_as_curl_drawer(ui):
@@ -167,10 +169,10 @@ def test_beautify_json_body(ui):
     ui.select_option("[data-testid=body-mode]", "json")
     ui.fill("[data-testid=body-raw]", '{"a":1,"b":[1,2]}')
     T(ui, "beautify").click()
-    expect(T(ui, "body-raw")).to_have_value('{\n  "a": 1,\n  "b": [\n    1,\n    2\n  ]\n}')
+    eventually(lambda: T(ui, "body-raw").inner_text() == '{\n  "a": 1,\n  "b": [\n    1,\n    2\n  ]\n}')
     ui.fill("[data-testid=body-raw]", '{"x":1}')
     T(ui, "body-raw").press("Control+b")
-    expect(T(ui, "body-raw")).to_have_value('{\n  "x": 1\n}')
+    eventually(lambda: T(ui, "body-raw").inner_text() == '{\n  "x": 1\n}')
 
 
 # ── batch runner + natijalar ──
@@ -577,3 +579,37 @@ def test_result_card_collapse_and_fold_all(ui, echo_server, tmp_path):
     expect(T(ui, "card-body")).to_have_count(0)
     T(ui, "fold-all").click()
     expect(T(ui, "card-body")).to_have_count(3)
+
+
+# ── v2.1.11: CodeMirror body ──
+def test_body_editor_tab_key_inserts_indent_and_keeps_focus(ui):
+    T(ui, "new-tab").click()
+    ui.click("[data-section=body]")
+    ui.select_option("[data-testid=body-mode]", "raw")
+    T(ui, "body-raw").click()
+    ui.keyboard.type("a")
+    ui.keyboard.press("Tab")
+    ui.keyboard.type("b")
+    eventually(lambda: T(ui, "body-raw").inner_text() == "a  b")
+    assert ui.evaluate("document.activeElement.getAttribute('data-testid')") == "body-raw"
+
+
+def test_body_json_is_syntax_highlighted(ui):
+    T(ui, "new-tab").click()
+    ui.click("[data-section=body]")
+    ui.select_option("[data-testid=body-mode]", "json")
+    ui.fill("[data-testid=body-raw]", '{"k": "v", "n": 1}')
+    expect(ui.locator("[data-testid=body-raw] span").first).to_be_visible()
+    colors = ui.evaluate("[...document.querySelectorAll('[data-testid=body-raw] span')].map(s => getComputedStyle(s).color)")
+    assert len(set(colors)) >= 2
+
+
+def test_body_editor_value_survives_tab_switch(ui):
+    T(ui, "new-tab").click()
+    ui.click("[data-section=body]")
+    ui.select_option("[data-testid=body-mode]", "raw")
+    ui.fill("[data-testid=body-raw]", "uno")
+    T(ui, "new-tab").click()
+    ui.locator("[data-testid=tab]").first.click()
+    ui.click("[data-section=body]")
+    expect(T(ui, "body-raw")).to_have_text("uno")
