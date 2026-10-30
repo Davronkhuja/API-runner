@@ -2,14 +2,23 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.1.16] — 2026-10-30 — Bosqich 2 (2/5: Auth, frontend)
+### Added
+- Auth turlari formasi (so'rov, papka va collection darajasida; meros ishlaydi): **API Key**, **Digest**, **OAuth 2.0**, **AWS Signature V4**, **JWT Bearer** (+ mavjud Bearer/Basic/Custom). Postman formatida saqlanadi (`apikey`/`oauth2`/... massivlari).
+- **OAuth 2.0** (`lib/oauth.ts`): Client Credentials, Password, Authorization Code, Authorization Code + **PKCE** (S256), Implicit. "Get New Access Token" (popup + `/oauth/callback`, `state` tekshiruvi), joriy token (maskalangan, muddati, refresh), tokenni o'chirish, tokenni header yoki query'ga qo'shish, header prefiksi.
+- Yuborishdan oldin avtomatik: token yo'q bo'lsa (Client Credentials/Password) olinadi, muddati tugagan bo'lsa `refresh_token` bilan yoki qayta olinadi; kod oqimlarida token yo'q bo'lsa tushunarli xato. Single send, Batch va Collection Runner uchun.
+- Tokenlar `sessionStorage`da (collection faylga yozilmaydi); kalit — grant/URL/clientId/scope/username.
+- 11 yangi e2e (`test_auth_ui.py`, soxta authorize endpoint bilan popup oqimlari) va echo serverga `/oauth/authorize`.
+### Eslatma
+- JWT faqat HS256/384/512 (RS*/ES* uchun `cryptography` kerak — o'rnatilmagan; aniq xabar chiqadi).
+- Digest/SigV4/JWT/API Key yagona so'rov va Batch'da engine orqali; "Copy as cURL" faqat Bearer/Basic/Custom auth'ni qo'shadi.
+
 ## [2.1.15] — 2026-10-30 — Bosqich 2 (2/5: Auth, backend)
 ### Added
 - `spec.auth_config` (engine): **API Key** (header/query), **JWT** (HS256/384/512, payload JSON'da `{{}}` va `{{$timestamp}}`, header/query), **AWS Signature V4** (AWS test-suite vektori bilan tekshirilgan; session token, S3 payload xeshi), **Digest** (httpx `DigestAuth`). Xatolar (masalan RS256 — `cryptography` o'rnatilmagan) exception emas, natija xatosi sifatida qaytadi.
 - `POST /api/oauth2/token`: Client Credentials, Password, Authorization Code (+PKCE `code_verifier`), Refresh Token; client autentifikatsiyasi header (Basic) yoki body; `{{}}` yechiladi; `expires_at` hisoblanadi; xatolar tushunarli (`error_description`). Server tomonida — CORS yo'q.
 - `GET /oauth/callback`: Authorization Code/Implicit uchun redirect sahifasi (ochiq yo'l; faqat `postMessage` bilan o'z origin'iga uzatadi).
 - 13 yangi test (`tests/test_auth_types.py`), echo serverga `/digest` va `/oauth/token`.
-### Hali qilinmagan (Auth)
-- Frontend: auth turlari formasi, "Get New Access Token" (Auth Code + PKCE, Implicit oynasi), token xotirasi va avtomatik yangilash.
 
 ## [2.1.14] — 2026-10-30 — Bosqich 2 (1/5: sozlamalar va scope'lar)
 ### Added

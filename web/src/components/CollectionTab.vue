@@ -66,7 +66,7 @@ async function save() {
       </button>
     </div>
     <div style="padding-top:10px">
-      <AuthEditor v-if="section === 'auth'" :auth="form.auth" :allow-inherit="isFolder" @change="touch" />
+      <AuthEditor v-if="section === 'auth'" :auth="form.auth" :allow-inherit="isFolder" :scope-ref="props.tab.ref" @change="touch" />
       <VarsTable v-else-if="section === 'vars'" :rows="form.vars" testid="scope-vars" @change="touch" />
       <div v-else-if="section === 'scripts'">
         <p class="muted">Pre-request / Tests skriptlari saqlanadi; bajarilishi Bosqich 3 da.</p>

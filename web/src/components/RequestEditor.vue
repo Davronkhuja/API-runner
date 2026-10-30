@@ -111,7 +111,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         </div>
       </template>
       <KvTable v-else-if="section === 'headers'" :rows="d.headers" testid="headers-table" @change="touch" />
-      <AuthEditor v-else-if="section === 'auth'" :auth="d.auth" allow-inherit :inherit-note="inheritNote" @change="touch" />
+      <AuthEditor v-else-if="section === 'auth'" :auth="d.auth" allow-inherit :inherit-note="inheritNote" :scope-ref="tab.ref" @change="touch" />
       <BatchPanel v-else-if="section === 'batch'" :tab="tab" />
       <div v-else data-testid="body-panel">
         <select v-model="d.body.mode" data-testid="body-mode" @change="touch">

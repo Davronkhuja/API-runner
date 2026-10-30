@@ -48,7 +48,7 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 ### Qolganlari
 - [x] Collection/folder darajasidagi Auth, Variables, Description (meros) · Scripts saqlanadi, bajarilishi Bosqich 3 (v2.1.14)
 - [x] Variable scope'lar (Globals<Collection<Papka<Env), path variables, dinamik o'zgaruvchilar, secret maskalash (v2.1.13–14); Data/Local — Bosqich 3 skriptlari bilan
-- [ ] Auth turlari (API Key, Digest, OAuth 2.0, AWS SigV4, JWT)
+- [x] Auth turlari (API Key, Digest, OAuth 2.0 [CC/Password/Code/PKCE/Implicit], AWS SigV4, JWT HS*) — v2.1.15–16; JWT RS*/ES* ochiq
 - [ ] Body turlari (form-data, urlencoded jadval, binary, GraphQL)
 - [ ] Qator checkbox/tavsif/bulk edit
 - [ ] Sozlamalar (redirect, HTTP/2, proxy, client cert, CA)

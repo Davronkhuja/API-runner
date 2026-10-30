@@ -5,7 +5,7 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { post } from '../api/client'
 import { draftFromItem } from '../lib/draft'
-import { specFor } from '../lib/scope'
+import { prepareAuth, specFor } from '../lib/scope'
 import { parseDataFile, isDataFile } from '../lib/datafile'
 import DataPreview from './DataPreview.vue'
 import { isFolder, type RequestItem, type TreeItem } from '../types/model'
@@ -66,7 +66,7 @@ async function run() {
     st.results[x.id] = { status: '…' }
     const draft = draftFromItem(x.item)
     try {
-      const spec = specFor(draft, `${cid}:${x.id}`); spec.timeout = 30
+      await prepareAuth(draft, `${cid}:${x.id}`); const spec = specFor(draft, `${cid}:${x.id}`); spec.timeout = 30
       const r = await post('/run_one', spec)
       st.results[x.id] = { status: r.status, time: r.time }
     } catch (e: any) { st.results[x.id] = { status: 'ERR' } }

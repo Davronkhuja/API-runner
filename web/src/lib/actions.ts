@@ -4,7 +4,7 @@ import { useTree } from '../stores/tree'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { draftFromItem, requestFromDraft } from './draft'
-import { specFor } from './scope'
+import { prepareAuth, specFor } from './scope'
 import { showToast } from './ui'
 import type { RequestItem } from '../types/model'
 
@@ -45,6 +45,7 @@ export async function sendTab(tab: Tab) {
   await useTabs().flush()
   tab.response = { loading: true }
   try {
+    await prepareAuth(tab.draft, tab.ref)
     const spec = specFor(tab.draft, tab.ref)
     spec.timeout = 30
     const r = await post('/run_one', spec)

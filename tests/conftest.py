@@ -71,6 +71,15 @@ def _build_echo_app():
             return jsonify({"digest": "ok"})
         return "", 401, {"WWW-Authenticate": 'Digest realm="r", nonce="abc123", qop="auth", algorithm=MD5, opaque="op"'}
 
+    @app.route("/oauth/authorize")
+    def oauth_authorize():
+        from flask import redirect
+        ru, st = request.args["redirect_uri"], request.args.get("state", "")
+        if request.args.get("response_type") == "token":
+            return redirect(f"{ru}#access_token=IMP-TOK&token_type=Bearer&expires_in=3600&state={st}")
+        pk = "1" if request.args.get("code_challenge") and request.args.get("code_challenge_method") == "S256" else "0"
+        return redirect(f"{ru}?code=CODE1&state={st}&pkce={pk}")
+
     @app.route("/oauth/token", methods=["POST"])
     def oauth_token():
         form = request.form.to_dict()

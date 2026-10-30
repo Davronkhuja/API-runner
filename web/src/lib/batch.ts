@@ -1,5 +1,5 @@
 import { eventSource, post } from '../api/client'
-import { specFor } from './scope'
+import { prepareAuth, specFor } from './scope'
 import type { Tab } from '../stores/tabs'
 
 export interface BatchSettings { rowsMode: 'all' | 'custom'; count: number; delay: number; timeout: number; concurrency: number; retry: number; ssl: boolean }
@@ -27,6 +27,7 @@ export async function startBatch(tab: Tab, vars: Record<string, string>, onDone?
   const s = b.settings
   let rows = b.data?.rows?.length ? b.data.rows : [{}]
   if (s.rowsMode === 'custom') rows = rows.slice(0, Math.max(1, s.count || 1))
+  try { await prepareAuth(d, tab.ref, vars) } catch (e: any) { b.status = 'error'; b.statusText = e.message; return }
   const spec = specFor(d, tab.ref, vars)
   Object.assign(spec, { delay: s.delay, timeout: s.timeout, concurrency: s.concurrency, retry_count: s.retry, ssl_verify: s.ssl, rows })
   b.results = []; b.summary = null; b.total = rows.length; b.status = 'running'; b.statusText = `${rows.length} ta so'rov yuborilmoqda...`
