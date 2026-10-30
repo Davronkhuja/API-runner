@@ -7,6 +7,7 @@ from flask import Flask, Response
 
 from .api import legacy, oauth, security, workspace_api
 from .core.jobs import JobManager
+from .storage.cookies import CookieStore
 from .storage.db import StateDB
 from . import __version__
 from .storage import migrations
@@ -34,7 +35,8 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.extensions["db"] = StateDB(os.path.join(ws.root, "state.db"))
     app.extensions["backup_dir"] = backup_dir
     app.extensions["saved_file"] = saved_file
-    app.extensions["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root))
+    app.extensions["cookies"] = CookieStore(os.path.join(ws.root, "state.db"))
+    app.extensions["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root), cookies=app.extensions["cookies"])
     app.config.update(UPLOAD_DIR=upload_dir, SESSION_TOKEN=session_token or security.new_token(),
                       MIGRATION=result["legacy"], MIGRATION_RESULT=result)
 

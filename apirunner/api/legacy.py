@@ -243,10 +243,12 @@ def run_one():
         return jsonify({"error": "no url"}), 400
     spec = dict(cfg, url=cfg["url"].strip(), timeout=cfg.get("timeout") or 30)
     ctx = ExecContext(variables=cfg.get("env_vars") or {},
-                      allowed_file_roots=current_app.extensions["jobs"].allowed_file_roots)
+                      allowed_file_roots=current_app.extensions["jobs"].allowed_file_roots,
+                      cookies=current_app.extensions["cookies"])
     res = execute(spec, ctx)
     return jsonify({
         "status": "ERR" if res["status"] == "ERROR" else res["status"],
         "time": round(res["time"], 3), "size": res["size"], "response": res["response"],
         "resp_headers": res["resp_headers"], "url": res["url"],
+        "set_cookies": res.get("set_cookies", []), "redirects": res.get("redirects", 0),
     })

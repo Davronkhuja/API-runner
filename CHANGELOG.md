@@ -2,6 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.1.18] — 2026-10-30 — Bosqich 2 (4/5: cookie'lar va sozlamalar, backend)
+### Added
+- **Cookie jar** (SQLite `workspace/state.db`, `storage/cookies.py`): `Set-Cookie` avtomatik saqlanadi va keyingi so'rovlarga domen/yo'l/secure qoidalari bo'yicha yuboriladi (`http.cookiejar`); serverda o'chirilgan (muddati o'tgan) cookie bazadan ham ketadi; jarayon qayta ishga tushganda saqlanadi; Batch qatorlari bitta jar'ni ulashadi. `spec.use_cookies=false` — jar o'chiq. Natijada `set_cookies` (har bir Set-Cookie alohida) va `redirects`.
+- Cookie Manager API: `GET/POST/DELETE /api/cookies` (bittasini, butun domenni yoki hammasini o'chirish; qo'lda qo'shish; muddati o'tganlar ko'rinmaydi).
+- So'rov sozlamalari (`spec`): `follow_redirects`, `max_redirects`, `proxy` (http/https), `ca_bundle` (maxsus CA), `cert` + `cert_key` (+`cert_passphrase`) mijoz sertifikati (mTLS), `ssl_verify=false` sertifikat bilan birga; fayl topilmasa tushunarli xato. Global sozlamalar `workspace.json` → `settings` (`PUT /api/workspace/meta`).
+- 11 yangi test (`test_cookies_settings.py`: proxy serveri, `openssl` bilan CA/server/mijoz sertifikatlari va mTLS serveri, redirect zanjiri).
+### Changed
+- `/run_one` javobiga `set_cookies` va `redirects` qo'shildi. `_send(..., spec, ctx)` imzosi kengaydi.
+- Maxsus CA ishlatilganda `VERIFY_X509_STRICT` o'chiriladi (Python 3.13+ qat'iy rejimi AKI'siz xususiy CA sertifikatlarini rad etardi; requests/Postman kabi yumshoq).
+### Hali qilinmagan
+- Frontend: Cookie Manager tabi, Response → Cookies tabi, so'rov/global Sozlamalar UI.
+
 ## [2.1.17] — 2026-10-30 — Bosqich 2 (3/5: Response paneli)
 ### Added
 - Response paneli (`ResponsePanel.vue`): **Body** (Pretty / Raw / Preview) va **Headers** tablari; Preview faqat HTML javobda va `sandbox=""` iframe'da (skriptlar bloklangan).

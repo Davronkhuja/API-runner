@@ -8,6 +8,7 @@ HTTP kutubxonasi `_send()` ichida ajratilgan (ADR 0003: keyin httpx ga almashtir
 """
 import json
 import os
+import ssl
 import time
 from dataclasses import dataclass, field
 from typing import Callable, Optional
@@ -33,6 +34,7 @@ class ExecContext:
     stop: Optional[Callable[[], bool]] = None          # True bo'lsa — to'xta
     allowed_file_roots: tuple = ()                     # fayl parametrlari uchun ruxsat etilgan papkalar
     allowed_files: frozenset = frozenset()             # foydalanuvchi aniq tanlagan fayllar
+    cookies: object = None                             # CookieStore (None = cookie jar o'chiq)
 
     def stopped(self):
         return bool(self.stop and self.stop())
@@ -161,18 +163,50 @@ class _Trace:
         }
 
 
-def _send(method, url, kw):
+def _tls_verify(spec):
+    """verify: bool yoki ssl.SSLContext (CA to'plami / mijoz sertifikati berilganda)."""
+    verify = bool(spec.get("ssl_verify", True))
+    ca, cert, key = (spec.get("ca_bundle") or "").strip(), (spec.get("cert") or "").strip(), (spec.get("cert_key") or "").strip()
+    if not (ca or cert):
+        return verify
+    for label, p in (("CA fayli", ca), ("Sertifikat fayli", cert), ("Sertifikat kaliti", key)):
+        if p and not os.path.isfile(p):
+            raise ValueError(f"{label} topilmadi: {p}")
+    ctx = ssl.create_default_context(cafile=ca or None)
+    ctx.verify_flags &= ~ssl.VERIFY_X509_STRICT      # Python 3.13+ qat'iy rejimi: xususiy CA sertifikatlarida AKI yo'q bo'lishi mumkin (requests/Postman kabi yumshoq)
+    if not verify:
+        ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
+    if cert:
+        ctx.load_cert_chain(cert, key or None, spec.get("cert_passphrase") or None)
+    return ctx
+
+
+def _send(method, url, kw, spec=None, ctx=None):
+    spec = spec or {}
     kw = dict(kw)
     params = kw.pop("params", None)
     if params:                      # httpx params'ni URL query o'rniga qo'yadi; requests kabi qo'shamiz
         url = str(httpx.URL(url).copy_merge_params(params))
     http2 = kw.pop("http2", False)
-    timeout, verify = kw.pop("timeout"), kw.pop("verify")
+    timeout, kw_verify = kw.pop("timeout"), kw.pop("verify")
     if "data" in kw:
         kw["content"] = kw.pop("data")
+    opts = {"follow_redirects": bool(spec.get("follow_redirects", True))}
+    if spec.get("max_redirects") not in (None, ""):
+        opts["max_redirects"] = max(0, int(spec["max_redirects"]))
+    if (spec.get("proxy") or "").strip():
+        opts["proxy"] = spec["proxy"].strip()
+    store = ctx.cookies if ctx and spec.get("use_cookies", True) else None
+    jar, loaded = store.load_jar() if store else (None, set())
+    if jar is not None:
+        opts["cookies"] = httpx.Cookies(jar)
     trace = _Trace()
-    with httpx.Client(http2=http2, verify=verify, timeout=timeout, follow_redirects=True) as client:
-        resp = client.request(method, url, extensions={"trace": trace}, **kw)
+    with httpx.Client(http2=http2, verify=_tls_verify(spec) if (spec.get("ca_bundle") or spec.get("cert")) else kw_verify, timeout=timeout, **opts) as client:
+        try:
+            resp = client.request(method, url, extensions={"trace": trace}, **kw)
+        finally:
+            if store:
+                store.save_jar(client.cookies.jar, loaded)
     return resp, trace
 
 
@@ -207,7 +241,7 @@ def execute(spec, ctx=None):
         try:
             method, url, kw = _build_kwargs(spec, ctx, opened)
             url_for_error = url
-            resp, trace = _send(method, url, kw)
+            resp, trace = _send(method, url, kw, spec, ctx)
             elapsed = last_elapsed = time.perf_counter() - start
             ok = 200 <= resp.status_code < 300
             if not ok and attempt < ctx.retry_count:
@@ -216,7 +250,8 @@ def execute(spec, ctx=None):
             return {"status": resp.status_code, "time": elapsed, "size": len(resp.content),
                     "url": str(resp.url), "response": _parse_body(resp),
                     "resp_headers": dict(resp.headers), "error": not ok, "retries": attempt,
-                    "timing": trace.result(elapsed), "http_version": resp.http_version}
+                    "timing": trace.result(elapsed), "http_version": resp.http_version,
+                    "set_cookies": resp.headers.get_list("set-cookie"), "redirects": len(resp.history)}
         except httpx.TimeoutException:
             last_elapsed = time.perf_counter() - start
             last_err = "Request timed out ({:.0f}s)".format(timeout)

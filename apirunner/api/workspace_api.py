@@ -126,6 +126,27 @@ def put_globals():
     return jsonify({"ok": True})
 
 
+# cookie jar (SQLite)
+@bp.get("/cookies")
+def list_cookies():
+    return jsonify(current_app.extensions["cookies"].list())
+
+
+@bp.post("/cookies")
+def upsert_cookie():
+    try:
+        current_app.extensions["cookies"].upsert(request.get_json(silent=True) or {})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"ok": True})
+
+
+@bp.delete("/cookies")
+def delete_cookies():
+    n = current_app.extensions["cookies"].delete(request.args.get("domain"), request.args.get("path"), request.args.get("name"))
+    return jsonify({"ok": True, "deleted": n})
+
+
 # tarix (SQLite)
 @bp.get("/history")
 def history():
@@ -217,6 +238,8 @@ def put_ui_state():
 def put_meta():
     d = request.get_json(silent=True) or {}
     allowed = {k: d[k] for k in ("active_environment_id", "legacy_default_notified") if k in d}
+    if isinstance(d.get("settings"), dict):
+        allowed["settings"] = d["settings"]
     _ws().update_meta(**allowed)
     return jsonify({"ok": True, "meta": _ws().meta()})
 

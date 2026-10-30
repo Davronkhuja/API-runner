@@ -73,6 +73,33 @@ def _build_echo_app():
         n = int(request.args.get("n", "3000"))
         return jsonify({"items": list(range(n)), "tag": "needle"})
 
+    @app.route("/cookie/set")
+    def cookie_set():
+        resp = jsonify({"set": request.args.get("name")})
+        resp.set_cookie(request.args["name"], request.args.get("value", "1"), path="/", httponly=request.args.get("httponly") == "1")
+        return resp
+
+    @app.route("/cookie/echo")
+    def cookie_echo():
+        return jsonify(request.cookies.to_dict())
+
+    @app.route("/cookie/setecho")
+    def cookie_setecho():
+        resp = jsonify(request.cookies.to_dict())
+        resp.set_cookie("seen", "yes", path="/")
+        return resp
+
+    @app.route("/cookie/del")
+    def cookie_del():
+        resp = jsonify({"deleted": request.args["name"]})
+        resp.delete_cookie(request.args["name"], path="/")
+        return resp
+
+    @app.route("/redir/<int:n>")
+    def redir(n):
+        from flask import redirect
+        return redirect(f"/redir/{n - 1}" if n > 0 else "/echo")
+
     @app.route("/digest")
     def digest_endpoint():
         auth = request.headers.get("Authorization", "")

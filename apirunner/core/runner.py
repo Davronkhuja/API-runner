@@ -6,7 +6,7 @@ import time
 from .engine import ExecContext, execute
 
 
-def run_batch(config, emit, stop_event, allowed_file_roots=(), allowed_files=frozenset()):
+def run_batch(config, emit, stop_event, allowed_file_roots=(), allowed_files=frozenset(), cookies=None):
     """`config` — /run tanasi. `emit(type, data)` — "result" va yakunda "done" hodisalari."""
     rows = config.get("rows") or [{}]
     delay = float(config.get("delay", 0) or 0)
@@ -24,7 +24,7 @@ def run_batch(config, emit, stop_event, allowed_file_roots=(), allowed_files=fro
         if stop_event.is_set():
             return None
         ctx = ExecContext(variables=row, retry_count=retry_count, stop=stop_event.is_set,
-                          allowed_file_roots=allowed_file_roots, allowed_files=allowed_files)
+                          allowed_file_roots=allowed_file_roots, allowed_files=allowed_files, cookies=cookies)
         res = execute(config, ctx)
         with lock:
             counts["failed" if res["error"] else "successful"] += 1
