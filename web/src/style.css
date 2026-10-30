@@ -54,3 +54,7 @@ button.ghost{background:none;border-color:transparent}
 .body-editor{height:220px;margin-top:8px}
 .var-chips{display:flex;gap:6px;flex-wrap:wrap;padding:4px 10px;border-bottom:1px solid var(--bd)}
 .var-chip{font:11px ui-monospace,Menlo,monospace;padding:1px 7px;border-radius:9px;cursor:default}.var-ok{background:var(--ac2);color:var(--ac)}.var-undef{background:#dc262622;color:var(--err)}
+.rp-bar{display:flex;gap:4px;align-items:center;margin-bottom:6px;flex-wrap:wrap}.rp-bar button.on{background:var(--ac2);border-color:var(--ac)}.rp-sep{width:1px;height:18px;background:var(--bd);margin:0 4px}
+.rp-tools{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}.rp-frame{width:100%;height:360px;border:1px solid var(--bd);border-radius:5px;background:#fff}
+mark{background:#facc1566;color:inherit;border-radius:2px}mark.cur{background:#f97316aa}
+.vlist{overflow:auto;border:1px solid var(--bd);border-radius:5px;font:12px ui-monospace,Menlo,monospace}.vline{white-space:pre;padding:0 8px}

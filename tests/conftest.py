@@ -64,6 +64,15 @@ def _build_echo_app():
         from flask import redirect
         return redirect("/echo")
 
+    @app.route("/html")
+    def html_page():
+        return "<h1 id=hi>Salom HTML</h1>", 200, {"Content-Type": "text/html; charset=utf-8"}
+
+    @app.route("/bigjson")
+    def bigjson():
+        n = int(request.args.get("n", "3000"))
+        return jsonify({"items": list(range(n)), "tag": "needle"})
+
     @app.route("/digest")
     def digest_endpoint():
         auth = request.headers.get("Authorization", "")

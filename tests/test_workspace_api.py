@@ -100,4 +100,4 @@ def test_import_localstorage_tolerates_garbage(client):
 def test_version_endpoint_matches_package(client):
     import apirunner
     assert client.get("/api/version").get_json() == {"version": apirunner.__version__}
-    assert apirunner.__version__ == "2.1.16"
+    assert apirunner.__version__ == "2.1.17"

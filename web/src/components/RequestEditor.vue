@@ -7,12 +7,13 @@ import { sendTab, saveTab } from '../lib/actions'
 import { fmtBytes, fmtMs, showToast } from '../lib/ui'
 import KvTable from './KvTable.vue'
 import CodeEditor from './CodeEditor.vue'
+import ResponsePanel from './ResponsePanel.vue'
 import BatchPanel from './BatchPanel.vue'
 import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
 import { effectiveAuth, scopedVars } from '../lib/scope'
 import AuthEditor from './AuthEditor.vue'
 import { applyCurlToDraft, buildCurl, parseCurl } from '../lib/curl'
-import { highlightCurl, highlightJson } from '../lib/highlight'
+import { highlightCurl } from '../lib/highlight'
 
 const props = defineProps<{ tab: Tab }>()
 const tabs = useTabs(), ws = useWorkspace(), hist = useHistory()
@@ -66,11 +67,6 @@ function onPaste(e: ClipboardEvent) {
   d.value.pathVars = syncPathVars(d.value.url, [])
   touch()
 }
-const bodyText = computed(() => {
-  const r = props.tab.response
-  if (!r || r.loading) return ''
-  return typeof r.response === 'string' ? r.response : JSON.stringify(r.response, null, 2)
-})
 const statusClass = computed(() => { const s = props.tab.response?.status; return typeof s === 'number' && s < 400 ? 'ok' : 'err' })
 const urlHist = computed(() => hist.urls.map(h => h.payload).filter((p: any) => p?.url && p.url.toLowerCase().includes(d.value.url.toLowerCase())).slice(0, 8))
 
@@ -138,7 +134,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
             DNS — · connect {{ fmtMs(tab.response.timing?.connect) }} · TLS {{ fmtMs(tab.response.timing?.tls) }} · TTFB {{ fmtMs(tab.response.timing?.ttfb) }}
           </span>
         </div>
-        <pre data-testid="resp-body" v-html="highlightJson(bodyText)" />
+        <ResponsePanel :tab="tab" />
       </template>
     </div>
   </div>

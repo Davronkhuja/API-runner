@@ -53,7 +53,7 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [ ] Qator checkbox/tavsif/bulk edit
 - [ ] Sozlamalar (redirect, HTTP/2, proxy, client cert, CA)
 - [ ] Cookie jar + Cookie Manager
-- [ ] Response paneli (Pretty/Raw/Preview, qidiruv, JSONPath, virtual scroll, Save as Example)
+- [x] Response paneli (Pretty/Raw/Preview, Headers, qidiruv, JSONPath, virtual scroll, Save as Example) — v2.1.17; Cookies/Test natijalari tablari keyingi bandlarda
 - [ ] Code snippet generatori
 - [ ] Server tomonda tarix
 

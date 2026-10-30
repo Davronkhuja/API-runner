@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.1.17] — 2026-10-30 — Bosqich 2 (3/5: Response paneli)
+### Added
+- Response paneli (`ResponsePanel.vue`): **Body** (Pretty / Raw / Preview) va **Headers** tablari; Preview faqat HTML javobda va `sandbox=""` iframe'da (skriptlar bloklangan).
+- Qidiruv: moslashuvlar soni, ↑/↓ (Enter / Shift+Enter) bilan aylanib o'tish, joriy moslashuv ajratiladi.
+- **JSONPath** (`lib/jsonpath.ts`): `$ . .. [n] [-n] [a:b] [*] ['k']` va `[?(@.k OP qiymat)]`; natijalar soni, xato xabari; faqat JSON javobda.
+- **Virtual scroll**: 1500 qatordan katta javob faqat ko'rinadigan oynani chizadi (5000 elementli massivda DOM < 200 qator); qidiruv va JSONPath virtual rejimda ham ishlaydi.
+- **Save as Example**: javob so'rovga Postman namunasi sifatida (`response[]`: originalRequest, status/code, header, body) saqlanadi; "Namunalar (n)" ro'yxatidan panelga qayta yuklanadi. Saqlanmagan so'rovda tushunarli ogohlantirish.
+- 9 yangi e2e (`test_response_panel.py`), 5 JSONPath unit testi.
+### Changed
+- Javob matni `RequestEditor`dan `ResponsePanel`ga ko'chirildi (`resp-body` test identifikatori saqlangan).
+
 ## [2.1.16] — 2026-10-30 — Bosqich 2 (2/5: Auth, frontend)
 ### Added
 - Auth turlari formasi (so'rov, papka va collection darajasida; meros ishlaydi): **API Key**, **Digest**, **OAuth 2.0**, **AWS Signature V4**, **JWT Bearer** (+ mavjud Bearer/Basic/Custom). Postman formatida saqlanadi (`apikey`/`oauth2`/... massivlari).
