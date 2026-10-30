@@ -24,3 +24,15 @@ describe('parseCurl (eski UI bilan bir xil)', () => {
     expect(d.body).toMatchObject({ mode: 'json', contentType: 'application/json' }); expect(d.method).toBe('POST')
   })
 })
+
+import { buildCurl } from './curl'
+describe('buildCurl', () => {
+  it('roundtrips through parseCurl', () => {
+    const d = newDraft(); d.method = 'POST'; d.url = 'https://a.io/x'; d.params[0] = { key: 'q', value: 'a b', enabled: true }
+    d.headers[0] = { key: 'X-A', value: "it's", enabled: true }; d.body = { ...d.body, mode: 'json', raw: '{"k":1}', contentType: 'application/json' }
+    d.auth = { ...d.auth, type: 'bearer', token: 'T' }
+    const p = parseCurl(buildCurl(d))!
+    expect(p.method).toBe('POST'); expect(p.url).toBe('https://a.io/x?q=a%20b'); expect(p.body).toBe('{"k":1}')
+    expect(p.headers).toContainEqual({ name: 'X-A', value: "it's" }); expect(p.headers).toContainEqual({ name: 'Authorization', value: 'Bearer T' })
+  })
+})

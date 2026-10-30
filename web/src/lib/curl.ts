@@ -2,31 +2,34 @@
 export interface ParsedCurl { method: string | null; url: string; headers: { name: string; value: string }[]; body: string | null; auth: string | null }
 
 export function tokenizeCurl(str: string): string[] {
+  // Qo'shni segmentlar (masalan 'it'\''s' yoki a"b"c) bitta tokenga birlashadi — POSIX shell kabi.
   const tokens: string[] = []
   let i = 0
   while (i < str.length) {
     while (i < str.length && /\s/.test(str[i])) i++
     if (i >= str.length) break
-    if (str[i] === "'") {
-      i++; let t = ''
-      while (i < str.length && str[i] !== "'") t += str[i++]
-      i++; tokens.push(t)
-    } else if (str[i] === '"') {
-      i++; let t = ''
-      while (i < str.length && str[i] !== '"') {
-        if (str[i] === '\\' && i + 1 < str.length) {
-          i++
-          const c = str[i]
-          t += c === 'n' ? '\n' : c === 't' ? '\t' : c === '"' ? '"' : '\\' + c
-        } else t += str[i]
+    let t = ''
+    while (i < str.length && !/\s/.test(str[i])) {
+      if (str[i] === "'") {
         i++
-      }
-      i++; tokens.push(t)
-    } else {
-      let t = ''
-      while (i < str.length && !/\s/.test(str[i])) t += str[i++]
-      tokens.push(t)
+        while (i < str.length && str[i] !== "'") t += str[i++]
+        i++
+      } else if (str[i] === '"') {
+        i++
+        while (i < str.length && str[i] !== '"') {
+          if (str[i] === '\\' && i + 1 < str.length) {
+            i++
+            const c = str[i]
+            t += c === 'n' ? '\n' : c === 't' ? '\t' : c === '"' ? '"' : '\\' + c
+          } else t += str[i]
+          i++
+        }
+        i++
+      } else if (str[i] === '\\' && i + 1 < str.length && str[i + 1] === "'") {
+        t += "'"; i += 2
+      } else t += str[i++]
     }
+    tokens.push(t)
   }
   return tokens
 }
@@ -88,4 +91,21 @@ export function applyCurlToDraft(d: RequestDraft, p: ParsedCurl) {
     d.body.raw = p.body
     d.body.mode = /json/i.test(d.body.contentType) || /^\s*[\[{]/.test(p.body) ? 'json' : 'raw'
   }
+}
+
+import { specFromDraft } from './draft'
+
+const sq = (s: string) => "'" + s.replace(/'/g, "'\\''") + "'"
+
+/** Qoralamadan cURL buyrug'i (Copy as cURL). */
+export function buildCurl(d: RequestDraft): string {
+  const spec = specFromDraft(d)
+  const qs = spec.params.filter((p: any) => p.type !== 'file').map((p: any) => `${encodeURIComponent(p.name)}=${encodeURIComponent(p.value)}`).join('&')
+  const parts = [`curl -X ${spec.method} ${sq(spec.url + (qs ? '?' + qs : ''))}`]
+  if (spec.authorization) parts.push(`-H ${sq('Authorization: ' + spec.authorization)}`)
+  for (const h of spec.headers) parts.push(`-H ${sq(h.name + ': ' + h.value)}`)
+  if (spec.content_type && spec.body) parts.push(`-H ${sq('Content-Type: ' + spec.content_type)}`)
+  if (spec.body_type === 'multipart') for (const f of spec.multipart_fields) parts.push(`-F ${sq(f.name + '=' + f.value)}`)
+  else if (spec.body) parts.push(`-d ${sq(spec.body)}`)
+  return parts.join(' \\\n  ')
 }

@@ -224,8 +224,7 @@ def stream(job_id):
                 break
 
     return Response(stream_with_context(generate()), content_type="text/event-stream",
-                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no",
-                             "Connection": "keep-alive"})
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @bp.post("/stop/<job_id>")

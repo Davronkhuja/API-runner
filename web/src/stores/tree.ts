@@ -123,6 +123,16 @@ export const useTree = defineStore('tree', () => {
     return true
   }
 
+  /** Dublikat: elementdan keyin nusxa (yangi id), nomi " Copy" bilan. */
+  async function duplicate(cid: string, id: string) {
+    const r = await post('/api/items/move', { src: cid, dst: cid, ids: [id], target_id: id, position: 'after', copy: true })
+    const newId = r.mapping[id] as string
+    const orig = findItem(cid, id)
+    await reloadCollection(cid)
+    if (orig) await renameItem(cid, newId, orig.name + ' Copy')
+    return newId
+  }
+
   async function addItem(cid: string, item: any, parentId: string | null = null, index?: number) {
     const r = await post(`/api/collections/${cid}/items`, { parent_id: parentId, item, index })
     await reloadCollection(cid)
@@ -148,5 +158,5 @@ export const useTree = defineStore('tree', () => {
     return true
   }
 
-  return { metas, cols, expandedOverride, filter, selection, rows, load, reloadCollection, isExpanded, toggle, setExpanded, select, clearSelection, dragSet, canDrop, move, addItem, renameItem, updateItem, removeItem, createCollection, findItem, reveal }
+  return { metas, cols, expandedOverride, filter, selection, rows, load, reloadCollection, isExpanded, toggle, setExpanded, select, clearSelection, dragSet, canDrop, move, duplicate, addItem, renameItem, updateItem, removeItem, createCollection, findItem, reveal }
 })

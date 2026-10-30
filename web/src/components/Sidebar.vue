@@ -104,7 +104,7 @@ async function menuAct(a: string) {
   }
 }
 async function duplicate(r: Row) {
-  await tree.move([keyOf(r)], keyOf(r), 'after', true)
+  await tree.duplicate(r.collectionId, r.id)
 }
 async function commitRename(r: Row) {
   const name = renameVal.value.trim()

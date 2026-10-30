@@ -28,6 +28,7 @@ async function upload(i: number, ev: Event) {
   const fd = new FormData(); fd.append('file', f)
   try {
     const r = await fetch('/upload_temp', { method: 'POST', body: fd, headers: { 'X-Session-Token': window.__API_TOKEN__ ?? '' } }).then(x => x.json())
+    if (!props.rows[i].key) props.rows[i].key = 'file'
     props.rows[i].value = `${r.path}::${r.name}`; props.rows[i].kind = 'file'; touch()
   } catch { showToast('Fayl yuklanmadi', 'error') }
 }

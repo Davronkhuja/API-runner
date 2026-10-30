@@ -21,6 +21,37 @@ const tabs = useTabs(), tree = useTree(), ws = useWorkspace(), hist = useHistory
 const ready = ref(false)
 const saveAs = ref<{ tab: Tab; name: string; target: string; resolve: (ok: boolean) => void } | null>(null)
 const dropping = ref(false)
+const importInput = ref<HTMLInputElement>()
+const sbHidden = ref(false)
+const sbWidth = ref(280)
+try { sbHidden.value = localStorage.getItem('apiRunnerSbHidden') === '1'; sbWidth.value = Number(localStorage.getItem('apiRunnerSbWidth')) || 280 } catch { /* ixtiyoriy */ }
+function toggleSidebar() { sbHidden.value = !sbHidden.value; try { localStorage.setItem('apiRunnerSbHidden', sbHidden.value ? '1' : '0') } catch { /* ixtiyoriy */ } }
+function startResize(e: MouseEvent) {
+  const x0 = e.clientX, w0 = sbWidth.value
+  const move = (ev: MouseEvent) => { sbWidth.value = Math.max(180, Math.min(420, w0 + ev.clientX - x0)) }
+  const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); try { localStorage.setItem('apiRunnerSbWidth', String(sbWidth.value)) } catch { /* ixtiyoriy */ } }
+  window.addEventListener('mousemove', move); window.addEventListener('mouseup', up)
+}
+async function onImportFile(e: Event) {
+  const f = (e.target as HTMLInputElement).files?.[0]; if (!f) return
+  try { const r = await apiPost('/api/import', { content: await f.text() }); await tree.load(); showToast(`Import qilindi: ${r.name}`, 'success') } catch (err: any) { showToast(err.message, 'error') }
+  ;(e.target as HTMLInputElement).value = ''
+}
+async function importLocalStorage() {
+  const keys = ['apiRunnerEnvs', 'apiRunnerActiveEnvId', 'apiRunnerEnvVars', 'apiRunnerHistory', 'apiRunnerRunHistory', 'apiRunnerUrlHistory']
+  const data: Record<string, string> = {}
+  try { keys.forEach(k => { const v = localStorage.getItem(k); if (v != null) data[k] = v }) } catch { /* ixtiyoriy */ }
+  if (!Object.keys(data).length) return showToast("localStorage'da ko'chiriladigan ma'lumot yo'q", 'warn')
+  try {
+    const r = await apiPost('/api/import/localstorage', { data })
+    await Promise.all([ws.load(), hist.load()])
+    showToast(`Ko'chirildi: ${r.stats.environments} env, ${r.stats.history + r.stats.run_history + r.stats.url_history} tarix yozuvi`, 'success')
+  } catch (err: any) { showToast('Import xatosi: ' + err.message, 'error') }
+}
+async function exportLegacy() {
+  const r = await fetch('/api/export/legacy', { headers: { 'X-Session-Token': window.__API_TOKEN__ ?? '' } })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(await r.blob()); a.download = 'saved_requests.json'; a.click()
+}
 
 const saveTargets = computed(() => tree.rows.filter(r => r.isCollection || r.folder).map(r => ({ key: `${r.collectionId}:${r.id}`, label: '　'.repeat(r.depth) + r.name })))
 
@@ -116,9 +147,20 @@ function toggleTheme() {
 
 <template>
   <div class="app" data-testid="app" :class="{ 'dropzone-active': dropping }" @dragover="onWindowDragOver" @dragleave="dropping = false" @drop="onWindowDrop" v-if="ready">
-    <Sidebar />
+    <div v-show="!sbHidden" :style="{ width: sbWidth + 'px' }" style="display:flex;position:relative" data-testid="sb-wrap"><Sidebar style="width:100%" /><div class="sb-resizer" data-testid="sb-resizer" @mousedown="startResize" /></div>
     <div class="main">
-      <div style="display:flex;align-items:stretch"><div style="flex:1;min-width:0"><TabBar /></div><button class="ghost" title="Tema" data-testid="theme" style="border-radius:0" @click="toggleTheme">◐</button></div>
+      <div style="display:flex;align-items:stretch">
+        <button class="ghost" style="border-radius:0" data-testid="sb-toggle" title="Sidebar" @click="toggleSidebar">☰</button>
+        <div style="flex:1;min-width:0"><TabBar /></div>
+        <select :value="ws.activeEnvId ?? ''" data-testid="env-select" style="max-width:160px;margin:3px" @change="ws.setActive(($event.target as HTMLSelectElement).value || null)">
+          <option value="">Muhit yo'q</option><option v-for="e in ws.environments" :key="e.id" :value="e.id">{{ e.name }}</option>
+        </select>
+        <button class="ghost" style="border-radius:0" data-testid="import-btn" title="Postman/OpenAPI import" @click="importInput?.click()">⤒</button>
+        <input ref="importInput" type="file" accept=".json" hidden data-testid="import-file" @change="onImportFile">
+        <button class="ghost" style="border-radius:0" data-testid="ls-import" title="Brauzer (localStorage) ma'lumotlarini serverga ko'chirish" @click="importLocalStorage">⇪</button>
+        <button class="ghost" style="border-radius:0" data-testid="export-legacy" title="saved_requests.json formatiga eksport (orqaga qaytish)" @click="exportLegacy">⤓</button>
+        <button class="ghost" title="Tema" data-testid="theme" style="border-radius:0" @click="toggleTheme">◐</button>
+      </div>
       <template v-if="tabs.active">
         <RequestEditor v-if="tabs.active.kind === 'request' && tabs.active.draft" :key="tabs.active.id" :tab="tabs.active" />
         <EnvTab v-else-if="tabs.active.kind === 'environment'" :key="tabs.active.id" :tab="tabs.active" />

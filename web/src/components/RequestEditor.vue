@@ -4,15 +4,23 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { sendTab, saveTab } from '../lib/actions'
-import { fmtBytes, fmtMs } from '../lib/ui'
+import { fmtBytes, fmtMs, showToast } from '../lib/ui'
 import KvTable from './KvTable.vue'
-import { applyCurlToDraft, parseCurl } from '../lib/curl'
+import BatchPanel from './BatchPanel.vue'
+import { applyCurlToDraft, buildCurl, parseCurl } from '../lib/curl'
 
 const props = defineProps<{ tab: Tab }>()
 const tabs = useTabs(), ws = useWorkspace(), hist = useHistory()
 const d = computed(() => props.tab.draft!)
 const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
 const touch = () => tabs.touch(props.tab.id)
+const curlOpen = ref(false)
+const curlText = computed(() => buildCurl(d.value))
+function copyCurl() { navigator.clipboard?.writeText(curlText.value); showToast('Nusxalandi', 'success') }
+function beautify() {
+  try { d.value.body.raw = JSON.stringify(JSON.parse(d.value.body.raw), null, 2); touch() } catch { showToast('JSON noto\'g\'ri — formatlab bo\'lmadi', 'warn') }
+}
+const showPass = ref(false)
 const showHist = ref(false)
 const hideHist = () => { setTimeout(() => (showHist.value = false), 150) }
 const reqEl = ref<HTMLElement>(), respEl = ref<HTMLElement>()
@@ -62,11 +70,12 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <button v-for="(h, i) in urlHist" :key="i" @mousedown.prevent="d.method = h.method; d.url = h.url; touch()"><b>{{ h.method }}</b> {{ h.url }}</button>
       </div>
       <button class="primary" data-testid="send" :disabled="tab.response?.loading" @click="sendTab(tab)">▶ Yuborish</button>
+      <button data-testid="curl-btn" title="Copy as cURL" @click="curlOpen = true">cURL</button>
       <button data-testid="save" :disabled="!tab.dirty && !!tab.ref" @click="saveTab(tab)">Saqlash</button>
     </div>
     <div class="sections" data-testid="sections">
-      <button v-for="s in ['params', 'headers', 'auth', 'body']" :key="s" :class="{ on: section === s }" :data-section="s" @click="section = s">
-        {{ { params: 'Params', headers: 'Headers', auth: 'Auth', body: 'Body' }[s] }}
+      <button v-for="s in ['params', 'headers', 'auth', 'body', 'batch']" :key="s" :class="{ on: section === s }" :data-section="s" @click="section = s">
+        {{ { params: 'Params', headers: 'Headers', auth: 'Auth', body: 'Body', batch: 'Batch / Runner' }[s] }}
       </button>
     </div>
     <div class="editor" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
@@ -77,14 +86,17 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
           <option value="none">Auth yo'q</option><option value="bearer">Bearer Token</option><option value="basic">Basic Auth</option><option value="custom">Custom</option>
         </select>
         <p v-if="d.auth.type === 'bearer'"><input v-model="d.auth.token" placeholder="Token" style="width:100%" data-testid="auth-token" @input="touch"></p>
-        <p v-if="d.auth.type === 'basic'"><input v-model="d.auth.user" placeholder="Username" @input="touch"> <input v-model="d.auth.pass" type="password" placeholder="Password" @input="touch"></p>
+        <p v-if="d.auth.type === 'basic'"><input v-model="d.auth.user" placeholder="Username" @input="touch"> <input v-model="d.auth.pass" :type="showPass ? 'text' : 'password'" placeholder="Password" data-testid="auth-pass" @input="touch"> <button class="ghost" data-testid="auth-eye" @click="showPass = !showPass">👁</button> <span class="muted" data-testid="auth-preview">Authorization: Basic {{ (d.auth.user || d.auth.pass) ? '••••' : '' }}</span></p>
         <p v-if="d.auth.type === 'custom'"><input v-model="d.auth.custom" placeholder="Authorization qiymati" style="width:100%" @input="touch"></p>
       </div>
+      <BatchPanel v-else-if="section === 'batch'" :tab="tab" />
       <div v-else data-testid="body-panel">
         <select v-model="d.body.mode" data-testid="body-mode" @change="touch">
           <option value="none">none</option><option value="json">JSON</option><option value="raw">Raw</option><option value="form">x-www-form-urlencoded</option><option value="multipart">form-data</option>
         </select>
-        <textarea v-if="d.body.mode === 'json' || d.body.mode === 'raw'" v-model="d.body.raw" data-testid="body-raw" style="width:100%;height:220px;margin-top:8px;font-family:ui-monospace,monospace" @input="touch" />
+        <button v-if="d.body.mode === 'json'" data-testid="beautify" style="margin-left:8px" @click="beautify" title="Cmd/Ctrl+B">Beautify</button>
+        <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart'" v-model="d.body.contentType" placeholder="Content-Type" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
+        <textarea v-if="d.body.mode === 'json' || d.body.mode === 'raw'" @keydown.meta.b.prevent="beautify" @keydown.ctrl.b.prevent="beautify" v-model="d.body.raw" data-testid="body-raw" style="width:100%;height:220px;margin-top:8px;font-family:ui-monospace,monospace" @input="touch" />
         <KvTable v-else-if="d.body.mode === 'form'" :rows="d.body.fields" testid="form-table" @change="touch" />
         <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" files testid="formdata-table" @change="touch" />
       </div>
@@ -105,4 +117,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       </template>
     </div>
   </div>
+  <div v-if="curlOpen" class="overlay" @click.self="curlOpen = false"><div class="dialog" style="width:640px" data-testid="curl-drawer">
+    <div style="display:flex;gap:8px"><b style="flex:1">cURL</b><button data-testid="curl-copy" @click="copyCurl">Nusxa</button><button @click="curlOpen = false">×</button></div>
+    <pre style="margin-top:10px" data-testid="curl-output">{{ curlText }}</pre></div></div>
 </template>
