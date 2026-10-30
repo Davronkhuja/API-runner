@@ -17,6 +17,13 @@ export async function api<T = any>(path: string, init: RequestInit & { json?: un
   return data as T
 }
 
+/** Sahifa yopilayotganda yuboriladigan PUT (keepalive: navigatsiyadan keyin ham yetib boradi). */
+export function keepalivePut(path: string, json: unknown) {
+  try {
+    fetch(path, { method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json', 'X-Session-Token': token() }, body: JSON.stringify(json) }).catch(() => {})
+  } catch { /* sahifa yopilmoqda */ }
+}
+
 export const get = <T = any>(p: string) => api<T>(p)
 export const post = <T = any>(p: string, json?: unknown) => api<T>(p, { method: 'POST', json })
 export const put = <T = any>(p: string, json?: unknown) => api<T>(p, { method: 'PUT', json })

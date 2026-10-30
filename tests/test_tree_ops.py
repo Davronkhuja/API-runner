@@ -156,3 +156,11 @@ def test_history_add_delete_and_active_env(client):
     client.delete("/api/history")
     assert client.get("/api/history").get_json() == []
     assert client.put("/api/workspace/meta", json={"active_environment_id": "e1", "evil": 1}).get_json()["meta"]["active_environment_id"] == "e1"
+
+
+def test_ui_state_put_merges_top_level_keys(client):
+    client.put("/api/ui-state", json={"tabs": {"v": 1}})
+    client.put("/api/ui-state", json={"expanded": {"a:b": False}})
+    assert client.get("/api/ui-state").get_json() == {"tabs": {"v": 1}, "expanded": {"a:b": False}}
+    client.put("/api/ui-state", json={"tabs": {"v": 2}})
+    assert client.get("/api/ui-state").get_json()["expanded"] == {"a:b": False}      # boshqa kalit yo'qolmadi

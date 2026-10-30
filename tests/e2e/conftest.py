@@ -86,3 +86,19 @@ def new_page(page, app):
     page.goto(app.url)
     page.wait_for_selector("[data-testid=app]")
     return page
+
+
+def eventually(fn, timeout=8.0, interval=0.05):
+    """Shart bajarilguncha kutadi (qat'iy sleep emas). `fn` True qaytarsa yoki AssertionError tashlamasa — tayyor."""
+    import time
+    end = time.monotonic() + timeout
+    last = None
+    while time.monotonic() < end:
+        try:
+            r = fn()
+            if r is None or r:
+                return
+        except AssertionError as e:
+            last = e
+        time.sleep(interval)
+    raise AssertionError(f"shart {timeout}s ichida bajarilmadi" + (f": {last}" if last else ""))

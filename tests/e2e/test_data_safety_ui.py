@@ -76,7 +76,7 @@ def test_default_env_notice_once_and_localstorage_untouched(app, page):
     assert all(ls_dump(page)[k] == v for k, v in LS.items())     # localStorage O'CHIRILMAGAN
     page.reload()
     page.wait_for_selector("[data-testid=app]")
-    page.wait_for_timeout(600)
+    page.wait_for_load_state("networkidle")                                                  # startup so'rovlari tugadi
     expect(T(page, "toast")).to_have_count(0)                                              # xabar bir marta
     assert all(ls_dump(page)[k] == v for k, v in LS.items())
 
@@ -88,8 +88,8 @@ def test_import_button_twice_no_duplicates_and_keeps_localstorage(app, page):
     h1 = len(app.api("GET", "/api/history"))
     envs1 = len(app.api("GET", "/api/workspace")["environments"])
     for _ in range(2):
-        T(page, "ls-import").click()
-        page.wait_for_timeout(400)
+        with page.expect_response(lambda r: "/api/import/localstorage" in r.url):
+            T(page, "ls-import").click()
     assert len(app.api("GET", "/api/history")) == h1 == 3
     assert len(app.api("GET", "/api/workspace")["environments"]) == envs1 == 1
     assert all(ls_dump(page)[k] == v for k, v in LS.items())
@@ -99,8 +99,8 @@ def test_legacy_ui_import_button_keeps_localstorage_and_is_idempotent(app, page)
     init_ls(page, LS)
     page.goto(app.url + "/legacy")
     for _ in range(2):
-        page.click("#lsImportBtn")
-        page.wait_for_timeout(400)
+        with page.expect_response(lambda r: "/api/import/localstorage" in r.url):
+            page.click("#lsImportBtn")
     assert len(app.api("GET", "/api/history")) == 3
     assert all(ls_dump(page)[k] == v for k, v in LS.items())
 

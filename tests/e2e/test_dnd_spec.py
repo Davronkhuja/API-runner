@@ -5,6 +5,8 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from tests.e2e.conftest import eventually
+
 TREE = [
     ("f1", "F1", [("a", "A", None), ("b", "B", None), ("f2", "F2", [("c", "C", None)])]),
     ("f3", "F3", []),
@@ -70,8 +72,7 @@ def test_collapse_expand_state_persisted(ui, app):
     expect(row(ui, "C")).to_have_count(0)
     row(ui, "F1").click()
     expect(row(ui, "A")).to_have_count(0)
-    ui.wait_for_timeout(800)
-    ui.reload()
+    ui.reload()                                           # darhol: yopilishda keepalive bilan yoziladi
     ui.wait_for_selector("[data-testid=tree-row][data-name=E]")
     expect(row(ui, "A")).to_have_count(0)
     row(ui, "F1").click()
@@ -84,8 +85,7 @@ def test_collapse_expand_state_persisted(ui, app):
 def test_move_request_between_folders(ui, app):
     drag(ui, "A", "F3", "inside")
     expect(row(ui, "A")).to_be_visible()
-    assert server_shape(app, app.cid)[0] == ("f1", ["b", ("f2", ["c"])])
-    assert server_shape(app, app.cid)[1] == ("f3", ["a"])
+    eventually(lambda: server_shape(app, app.cid)[:2] == [("f1", ["b", ("f2", ["c"])]), ("f3", ["a"])])
 
 
 def test_move_request_between_collections(app, page):
@@ -93,9 +93,8 @@ def test_move_request_between_collections(app, page):
     c2 = app.seed([("z", "Z", None), ("g", "G", [])], name="Two")
     page.goto(app.url)
     drag(page, "A", "G", "inside")
-    page.wait_for_timeout(300)
-    assert server_shape(app, c1) == [("f", [])]
-    assert server_shape(app, c2) == [("z",), ("g", ["a"])] or server_shape(app, c2) == ["z", ("g", ["a"])]
+    eventually(lambda: server_shape(app, c1) == [("f", [])])
+    assert server_shape(app, c2) == ["z", ("g", ["a"])]
     # collection qatoriga tashlash — ildizga
     drag(page, "Z", page.locator("[data-testid=tree-row][data-name=One]"), "inside") if False else None
 
@@ -156,8 +155,7 @@ def test_hover_while_dragging_auto_expands_folder(ui):
     begin_drag(ui, row(ui, "E"))
     box = row(ui, "F2").bounding_box()
     hover(ui, box["x"] + 40, box["y"] + 14)
-    ui.wait_for_timeout(1000)
-    expect(row(ui, "C")).to_be_visible()
+    expect(row(ui, "C")).to_be_visible()                  # 600ms hover taymeri — expect avtomatik kutadi
     ui.mouse.up()
 
 
@@ -169,12 +167,9 @@ def test_autoscroll_near_edge_of_long_list(app, page):
     begin_drag(page, row(page, "R000"))
     box = tree.bounding_box()
     page.mouse.move(box["x"] + 60, box["y"] + box["height"] - 8, steps=10)
-    page.wait_for_timeout(100)
     page.mouse.move(box["x"] + 60, box["y"] + box["height"] - 6, steps=3)
-    page.wait_for_timeout(700)
-    top = tree.evaluate("e => e.scrollTop")
+    page.wait_for_function("document.querySelector('[data-testid=tree]').scrollTop > 100")     # sudrash davomida avto-scroll
     page.mouse.up()
-    assert top > 100
 
 
 def test_dropping_folder_into_its_own_descendant_is_forbidden(ui, app):
@@ -182,7 +177,7 @@ def test_dropping_folder_into_its_own_descendant_is_forbidden(ui, app):
     drag(ui, "F1", "F2", "inside")
     drag(ui, "F1", "C", "before")
     drag(ui, "F1", "F1", "inside")
-    ui.wait_for_timeout(300)
+    ui.wait_for_load_state("networkidle")                  # taqiqlangan tashlashlar hech qanday so'rov yubormaydi
     assert server_shape(app, app.cid) == before
     # server ham rad etadi
     with pytest.raises(Exception):
@@ -193,10 +188,10 @@ def test_alt_option_drag_copies_instead_of_moves(ui, app):
     ui.keyboard.down("Alt")
     drag(ui, "A", "F3", "inside")
     ui.keyboard.up("Alt")
-    ui.wait_for_timeout(300)
+    eventually(lambda: len(server_shape(app, app.cid)[1][1]) == 1)
     shape = server_shape(app, app.cid)
     assert shape[0][1][0] == "a"                              # asl joyida qoldi
-    assert len(shape[1][1]) == 1 and shape[1][1][0] != "a"    # nusxa yangi id bilan
+    assert shape[1][1][0] != "a"                              # nusxa yangi id bilan
 
 
 # ── tartib saqlanishi ──
@@ -238,8 +233,7 @@ def test_drag_multiple_items_together(ui, app):
     row(ui, "D").click()
     row(ui, "E").click(modifiers=["Meta"])
     drag(ui, "D", "F3", "inside")
-    ui.wait_for_timeout(300)
-    assert server_shape(app, app.cid) == [("f1", ["a", "b", ("f2", ["c"])]), ("f3", ["d", "e"])]
+    eventually(lambda: server_shape(app, app.cid) == [("f1", ["a", "b", ("f2", ["c"])]), ("f3", ["d", "e"])])
 
 
 # ── runner / jadval qatorlari ──
@@ -352,13 +346,11 @@ def test_keyboard_move_via_context_menu_move_to(ui, app):
     idx = opts.evaluate_all("os => os.findIndex(o => o.textContent.trim() === 'F3')")
     ui.select_option("[data-testid=move-target]", index=idx)
     ui.click("[data-testid=move-ok]")
-    ui.wait_for_timeout(300)
-    assert server_shape(app, app.cid)[1] == ("f3", ["d"])
+    eventually(lambda: server_shape(app, app.cid)[1] == ("f3", ["d"]))
 
 
 def test_dnd_works_while_search_filter_active(ui, app):
     ui.fill("[data-testid=sb-search]", "F")                  # F1, F2, F3 va ularning ota-onalari
     expect(row(ui, "E")).to_have_count(0)
     drag(ui, "F2", "F3", "inside")
-    ui.wait_for_timeout(300)
-    assert server_shape(app, app.cid) == [("f1", ["a", "b"]), ("f3", [("f2", ["c"])]), "d", "e"]
+    eventually(lambda: server_shape(app, app.cid) == [("f1", ["a", "b"]), ("f3", [("f2", ["c"])]), "d", "e"])

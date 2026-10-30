@@ -128,7 +128,10 @@ def run_batch(client):
         job_id = r.get_json()["job_id"]
         if stop_after is not None:
             import time
-            time.sleep(stop_after)
+            job = client.application.extensions["jobs"].get(job_id)
+            end = time.monotonic() + 10
+            while job["queue"].qsize() < 1 and time.monotonic() < end:     # kamida bitta natija kelguncha (shart)
+                time.sleep(0.01)
             client.post(f"/stop/{job_id}")
         body = client.get(f"/stream/{job_id}").get_data(as_text=True)
         results, summary = [], None

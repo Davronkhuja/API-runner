@@ -205,7 +205,11 @@ def put_ui_state():
     d = request.get_json(silent=True)
     if not isinstance(d, dict):
         return jsonify({"error": "obyekt kerak"}), 400
-    _ws().save_ui_state(d)
+    ws = _ws()
+    with ws.lock:                                   # tablar va daraxt holati alohida yoziladi — kalitlar bo'yicha birlashtiriladi
+        cur = ws.get_ui_state()
+        cur.update(d)
+        ws.save_ui_state(cur)
     return jsonify({"ok": True})
 
 

@@ -4,7 +4,7 @@ import { useTabs, type Tab } from './stores/tabs'
 import { useTree } from './stores/tree'
 import { useWorkspace } from './stores/workspace'
 import { useHistory } from './stores/history'
-import { put, get } from './api/client'
+import { put, get, keepalivePut } from './api/client'
 import { askClose, closeDialog, confirmDialog, toast } from './lib/ui'
 import { createRequestIn, saveAsHandler, saveTab, sendTab, openRequest } from './lib/actions'
 import Sidebar from './components/Sidebar.vue'
@@ -96,9 +96,11 @@ async function ensureCollection() {
   if (!tree.metas.length) await tree.createCollection('Mening collection')
 }
 
-// UI holati (tree ochiq/yopiq) — server tomonda; tablar tabs store ichida
+// UI holati (tree ochiq/yopiq) — server tomonda (PUT kalitlar bo'yicha birlashtiriladi); tablar tabs store ichida
 let uiTimer: ReturnType<typeof setTimeout> | null = null
-function persistTree() { if (uiTimer) clearTimeout(uiTimer); uiTimer = setTimeout(async () => { const cur = await get('/api/ui-state').catch(() => ({})); await put('/api/ui-state', { ...cur, expanded: tree.expandedOverride }).catch(() => {}) }, 400) }
+function persistTree() { if (uiTimer) clearTimeout(uiTimer); uiTimer = setTimeout(flushTree, 300) }
+function flushTree() { if (uiTimer) { clearTimeout(uiTimer); uiTimer = null; put('/api/ui-state', { expanded: tree.expandedOverride }).catch(() => {}) } }
+function flushTreeOnUnload() { if (uiTimer) { clearTimeout(uiTimer); uiTimer = null; keepalivePut('/api/ui-state', { expanded: tree.expandedOverride }) } }
 
 function onKey(e: KeyboardEvent) {
   const mod = e.metaKey || e.ctrlKey
@@ -113,6 +115,8 @@ function onKey(e: KeyboardEvent) {
 // Hozircha faqat tab/daraxt yorliqlari; Cmd+T brauzerda band bo'lishi mumkin — Alt muqobili ham
 onMounted(async () => {
   window.addEventListener('keydown', onKey)
+  window.addEventListener('pagehide', flushTreeOnUnload)
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushTreeOnUnload() })
   await Promise.all([tree.load(), ws.load(), hist.load()])
   const st = await get('/api/ui-state').catch(() => ({}))
   if (st.expanded) tree.expandedOverride = st.expanded

@@ -43,6 +43,7 @@ async function onFile(e: Event) {
   } catch (err: any) { showToast('Fayl o\'qilmadi: ' + err.message, 'error') }
 }
 async function run() {
+  await tabs.flush()
   await startBatch(props.tab, ws.activeVars, async done => {
     try { await hist.add('run', { ts: Date.now(), label: props.tab.draft!.url, count: done.results.length, results: done.results.map(r => ({ index: r.index, status: r.status, time: r.time, size: r.size, url: r.url })) }) } catch { /* tarix yozilmasa ham natija ko'rinadi */ }
   })

@@ -95,3 +95,30 @@ describe('persistence', () => {
     store.dropRef('c:a'); expect(store.tabs).toHaveLength(0)
   })
 })
+
+describe('flush (ma\'lumot yo\'qolmasligi)', () => {
+  it('edits are debounced but flush() sends immediately; nothing pending -> no request', async () => {
+    const a = store.openNew(); await Promise.resolve()
+    const base = m.saved.length
+    a.draft!.url = 'http://changed'; store.touch(a.id)
+    expect(m.saved.length).toBe(base)                       // debounce: hali yozilmadi
+    await store.flush()
+    expect(m.saved.length).toBe(base + 1)
+    expect(m.saved.at(-1).tabs.tabs[0].draft.url).toBe('http://changed')
+    await store.flush(); expect(m.saved.length).toBe(base + 1)   // kutilayotgani yo'q
+  })
+  it('structural changes (activate/open/close) persist immediately', async () => {
+    const a = store.open('request', 'c:a', 'A', { permanent: true }); const b = store.open('request', 'c:b', 'B', { permanent: true })
+    await Promise.resolve(); const n = m.saved.length
+    store.activate(a.id); expect(m.saved.length).toBe(n + 1)
+    await store.close(b.id); expect(m.saved.length).toBe(n + 2)
+  })
+  it('flushOnUnload uses the keepalive path with the pending edit', () => {
+    const unload: any[] = []
+    store.setPersistence({ ...m.p, saveUnload: s => unload.push(JSON.parse(JSON.stringify(s))) })
+    const a = store.openNew(); a.draft!.url = 'http://last-keystroke'; store.touch(a.id)
+    store.flushOnUnload()
+    expect(unload).toHaveLength(1); expect(unload[0].tabs.tabs[0].draft.url).toBe('http://last-keystroke')
+    store.flushOnUnload(); expect(unload).toHaveLength(1)         // ikki marta yuborilmaydi
+  })
+})

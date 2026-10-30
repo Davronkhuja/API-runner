@@ -2,6 +2,8 @@
 import pytest
 from playwright.sync_api import expect
 
+from tests.e2e.conftest import eventually
+
 TREE = [("f1", "Papka", [("a", "Alfa", None), ("b", "Beta", None)]), ("c", "Gamma", None), ("d", "Delta", None)]
 TABS = "[data-testid=tab]"
 
@@ -102,12 +104,10 @@ def test_response_scroll_is_kept_per_tab(ui, echo_server):
     ui.fill("[data-testid=url]", echo_server + "/big")
     ui.click("[data-testid=send]")
     expect(ui.locator("[data-testid=resp-status]")).to_have_text("200")
-    ui.locator("[data-testid=response]").evaluate("e => { e.scrollTop = 300 }")
-    ui.wait_for_timeout(100)
+    ui.locator("[data-testid=response]").evaluate("e => new Promise(r => { e.addEventListener('scroll', r, { once: true }); e.scrollTop = 300 })")
     open_perm(ui, "Delta")
     ui.locator(TABS, has_text="Gamma").click()
-    ui.wait_for_timeout(200)
-    assert ui.locator("[data-testid=response]").evaluate("e => e.scrollTop") > 100
+    ui.wait_for_function("document.querySelector('[data-testid=response]').scrollTop > 100")
 
 
 def test_dirty_indicator_dot_on_edit_and_cleared_on_save(ui):
@@ -239,8 +239,7 @@ def test_open_tabs_and_active_tab_restored_after_page_reload(ui):
     _three(ui)
     ui.locator(TABS, has_text="Gamma").click()
     edit_url(ui, "http://drafted")
-    ui.wait_for_timeout(700)                           # debounce
-    ui.reload()
+    ui.reload()                                        # DARHOL: kutish yo'q — pagehide'da flush qilinadi
     ui.wait_for_selector(TABS)
     assert titles(ui) == ["Alfa", "Gamma", "Delta"]
     expect(ui.locator(f"{TABS}.active .title")).to_have_text("Gamma")
@@ -250,7 +249,7 @@ def test_open_tabs_and_active_tab_restored_after_page_reload(ui):
 def test_open_tabs_and_active_tab_restored_after_server_restart(ui, app):
     _three(ui)
     ui.locator(TABS, has_text="Delta").click()
-    ui.wait_for_timeout(700)
+    eventually(lambda: len(app.api("GET", "/api/ui-state")["tabs"]["tabs"]) == 3)       # serverda ekanini shart bilan kutamiz
     app.restart()
     ui.goto(app.url)
     ui.wait_for_selector(TABS)

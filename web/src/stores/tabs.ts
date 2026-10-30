@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { get, put } from '../api/client'
+import { get, keepalivePut, put } from '../api/client'
 import { newDraft, type RequestDraft } from '../lib/draft'
 
 export type TabKind = 'request' | 'environment' | 'collection' | 'runner' | 'settings'
@@ -21,10 +21,16 @@ export interface Tab {
   state?: Record<string, any>   // runner: tartib, belgilar, data fayl
 }
 
-export interface Persistence { load(): Promise<any>; save(state: any): Promise<void> }
+export interface Persistence {
+  load(): Promise<any>
+  save(state: any): Promise<void>
+  /** Sahifa yopilayotganda: keepalive so'rov (sahifa tugagandan keyin ham yetib boradi). */
+  saveUnload?(state: any): void
+}
 export const serverPersistence: Persistence = {
   load: () => get('/api/ui-state'),
   save: s => put('/api/ui-state', s).then(() => undefined),
+  saveUnload: s => keepalivePut('/api/ui-state', s),
 }
 
 let seq = 0
@@ -47,13 +53,31 @@ export const useTabs = defineStore('tabs', () => {
       tabs: tabs.value.map(t => ({ ...t, response: t.response ? { ...t.response, response: undefined, truncated: true } : null })),
     }
   }
-  function persistNow() { return persistence.save({ ...(window as any).__uiStateExtra, tabs: snapshot() }).catch(() => {}) }
-  function persistSoon() { if (timer) clearTimeout(timer); timer = setTimeout(persistNow, 300) }
+  let pending = false
+  function persistNow() {
+    if (timer) { clearTimeout(timer); timer = null }
+    pending = false
+    return persistence.save({ tabs: snapshot() }).catch(() => {})
+  }
+  /** Tahrirlar (har bir tugma bosilishi) debounce bilan yoziladi... */
+  function persistSoon() { pending = true; if (timer) clearTimeout(timer); timer = setTimeout(persistNow, 300) }
+  /** ...lekin tab almashtirish/yopish/ochish, Save, Run va sahifa yopilishida kutilayotgan yozuv DARHOL yuboriladi. */
+  function flush(): Promise<void> | void { if (pending || timer) return persistNow() }
+  function flushOnUnload() {
+    if (!(pending || timer)) return
+    if (timer) { clearTimeout(timer); timer = null }
+    pending = false
+    if (persistence.saveUnload) persistence.saveUnload({ tabs: snapshot() })
+  }
+  if (typeof document !== 'undefined') {
+    window.addEventListener('pagehide', flushOnUnload)
+    window.addEventListener('beforeunload', flushOnUnload)
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushOnUnload() })
+  }
   function setPersistence(p: Persistence) { persistence = p }
   async function restore() {
     try {
       const st = await persistence.load()
-      ;(window as any).__uiStateExtra = { ...st, tabs: undefined }
       const s = st?.tabs
       if (s?.tabs?.length) {
         tabs.value = s.tabs
@@ -69,7 +93,7 @@ export const useTabs = defineStore('tabs', () => {
     }
     if (at === undefined) tabs.value.push(tab); else tabs.value.splice(at, 0, tab)
     activeId.value = tab.id
-    persistSoon()
+    persistNow()
     return tab
   }
 
@@ -79,7 +103,7 @@ export const useTabs = defineStore('tabs', () => {
     if (same) {
       activeId.value = same.id
       if (opts.permanent) same.preview = false
-      persistSoon()
+      persistNow()
       return same
     }
     const previewIdx = tabs.value.findIndex(t => t.preview && !t.dirty)
@@ -88,7 +112,7 @@ export const useTabs = defineStore('tabs', () => {
       const tab: Tab = { ...tabs.value[previewIdx], ...base, id: uid(), response: null, scroll: { req: 0, resp: 0 }, dirty: false }
       tabs.value.splice(previewIdx, 1, tab)
       activeId.value = tab.id
-      persistSoon()
+      persistNow()
       return tab
     }
     return add(base)
@@ -96,7 +120,7 @@ export const useTabs = defineStore('tabs', () => {
 
   function openNew(): Tab { return add({ kind: 'request', title: 'Yangi so\'rov', draft: newDraft() }) }
 
-  function activate(id: string) { if (indexOf(id) >= 0) { activeId.value = id; persistSoon() } }
+  function activate(id: string) { if (indexOf(id) >= 0) { activeId.value = id; persistNow() } }
   function next(dir = 1) {
     if (!tabs.value.length) return
     const i = indexOf(activeId.value ?? '')
@@ -113,7 +137,7 @@ export const useTabs = defineStore('tabs', () => {
   }
   function markSaved(id: string, patch: Partial<Tab> = {}) {
     const t = tabs.value.find(x => x.id === id)
-    if (t) { Object.assign(t, patch, { dirty: false }); persistSoon() }
+    if (t) { Object.assign(t, patch, { dirty: false }); persistNow() }
   }
 
   /** Dirty tabni yopish `confirm` orqali: 'save' | 'discard' | 'cancel'. Yopilsa true. */
@@ -130,7 +154,7 @@ export const useTabs = defineStore('tabs', () => {
     closed.value.push({ ...t, dirty: false })
     if (closed.value.length > 20) closed.value.shift()
     if (activeId.value === id) activeId.value = (tabs.value[i] ?? tabs.value[i - 1])?.id ?? null
-    persistSoon()
+    persistNow()
     return true
   }
   async function closeMany(ids: string[], confirm?: Parameters<typeof close>[1], save?: Parameters<typeof close>[2]) {
@@ -165,12 +189,12 @@ export const useTabs = defineStore('tabs', () => {
     if (from < 0) return
     const [t] = tabs.value.splice(from, 1)
     tabs.value.splice(Math.max(0, Math.min(toIndex, tabs.value.length)), 0, t)
-    persistSoon()
+    persistNow()
   }
 
   /** Daraxtdagi o'zgarishlar tabga ta'sir qiladi (o'chirish / nom o'zgarishi). */
-  function retitle(ref: string, title: string) { tabs.value.filter(t => t.ref === ref).forEach(t => (t.title = title)); persistSoon() }
-  function dropRef(ref: string) { tabs.value = tabs.value.filter(t => t.ref !== ref); if (!tabs.value.some(t => t.id === activeId.value)) activeId.value = tabs.value[0]?.id ?? null; persistSoon() }
+  function retitle(ref: string, title: string) { tabs.value.filter(t => t.ref === ref).forEach(t => (t.title = title)); persistNow() }
+  function dropRef(ref: string) { tabs.value = tabs.value.filter(t => t.ref !== ref); if (!tabs.value.some(t => t.id === activeId.value)) activeId.value = tabs.value[0]?.id ?? null; persistNow() }
 
-  return { tabs, activeId, active, closed, restore, persistNow, setPersistence, add, open, openNew, activate, next, touch, markSaved, close, closeMany, closeOthers, closeRight, closeAll, reopenClosed, duplicate, reorder, retitle, dropRef }
+  return { tabs, activeId, active, closed, restore, persistNow, flush, flushOnUnload, setPersistence, add, open, openNew, activate, next, touch, markSaved, close, closeMany, closeOthers, closeRight, closeAll, reopenClosed, duplicate, reorder, retitle, dropRef }
 })

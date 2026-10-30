@@ -75,7 +75,6 @@ def test_saved_request_roundtrip_keeps_query_and_params(ui, app, echo_server):
     ui.locator("[data-testid=params-table] input[type=checkbox]").nth(1).uncheck()
     T(ui, "save").click()
     T(ui, "saveas-ok").click()
-    ui.wait_for_timeout(800)                                  # tab holati debounce bilan serverga yoziladi
     ui.reload()
     ui.wait_for_selector("[data-testid=tab]")
     expect(T(ui, "url")).to_have_value(echo_server + "/echo?a=1")

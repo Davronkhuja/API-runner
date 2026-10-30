@@ -12,6 +12,7 @@ export const saveAsHandler: { fn: ((tab: Tab) => Promise<boolean>) | null } = { 
 
 export async function saveTab(tab: Tab): Promise<boolean> {
   const tabs = useTabs(), tree = useTree()
+  await tabs.flush()
   if (tab.kind !== 'request' || !tab.draft) return true
   if (!tab.ref) return saveAsHandler.fn ? saveAsHandler.fn(tab) : false
   const [cid, id] = tab.ref.split(':')
@@ -40,6 +41,7 @@ export function openRequest(cid: string, id: string, permanent = false) {
 export async function sendTab(tab: Tab) {
   if (!tab.draft || !tab.draft.url.trim()) { showToast('URL kiriting!', 'warn'); return }
   const ws = useWorkspace(), hist = useHistory()
+  await useTabs().flush()
   tab.response = { loading: true }
   try {
     const spec = specFromDraft(tab.draft, ws.activeVars)

@@ -250,7 +250,7 @@ def test_batch_stop(ui, echo_server, tmp_path):
     T(ui, "batch-file").set_input_files(str(f))
     T(ui, "batch-run").click()
     expect(T(ui, "batch-stop")).to_be_enabled()
-    ui.wait_for_timeout(800)
+    expect(T(ui, "result-card").first).to_be_visible()      # kamida bitta natija kelgach to'xtatamiz
     T(ui, "batch-stop").click()
     expect(T(ui, "batch-status")).to_contain_text("To'xtatildi")
     n = len(ui.locator("[data-testid=result-card]").all())
@@ -287,7 +287,7 @@ def test_compare_runs(ui, echo_server):
     for _ in range(2):
         T(ui, "batch-run").click()
         expect(T(ui, "batch-status")).to_contain_text("Bajarildi")
-        ui.wait_for_timeout(1100)
+        expect(T(ui, "batch-run")).to_be_enabled()
     T(ui, "compare-open").click()
     expect(T(ui, "cmp-table")).to_be_visible()
     expect(T(ui, "cmp-table").locator("tbody tr")).to_have_count(1)
