@@ -21,7 +21,25 @@ Branch: `feature/postman-level`. Testlar: `.venv/bin/python -m pytest` (dev: `pi
 - [ ] Frontend yangi stackka ko'chirish boshlanishi — **tasdiqni kutadi** (UI hozircha `apirunner/static/index.html`)
 - [ ] (Bosqich 2 ga qoldi) UI env/tarixni localStorage o'rniga serverdan o'qishi
 
-## Bosqich 2 — Asosiy so'rov imkoniyatlari
+## Bosqich 2 — Frontend skeleti va PARITET (tasdiqlangan shartlar: ADR 0006)
+Qoidalar: eski UI `/legacy` da ishlab turadi; paritet e2e yashil bo'lgach o'chiriladi. Tab store, tree store, `order` boshidan arxitekturada. Env va tarix serverdan o'qiladi (localStorage faqat UI sozlamalari: tema, panel kengligi). Build `apirunner/static/app/` ga commit qilinadi.
+
+### Paritet checklisti (eski UI → yangi frontend; har biri uchun e2e)
+**URL bar:** [ ] method select + rang · [ ] URL input · [ ] Run/Stop · [ ] cURL paste → parse + badge + toast · [ ] URL ↔ Params ikki tomonlama sinxron · [ ] URL tarixi dropdown (focus/filtr/tanlash/Enter) · [ ] Save (dirty bo'lmasa disabled) · [ ] Copy as cURL drawer
+**Tablar:** [ ] Params/Headers kv jadval + qator qo'shish/o'chirish · [ ] 📎 fayl yuklash (`/upload_temp`, `path::nom`) + rad etilgan yo'l xabari · [ ] Auth: None/Bearer/Basic/Custom (+ parol ko'rsatish, preview, URL/Authorization detect) · [ ] Body: JSON/Raw/Form/Multipart, Content-Type, Beautify (Cmd+B), highlight, Tab/scroll sync, multipart jadval
+**Runner kartasi:** [ ] data fayl CSV/JSON (drag-drop, preview, tozalash) · [ ] rows mode all/custom+count · [ ] delay · [ ] timeout · [ ] parallel · [ ] retry · [ ] SSL verify · [ ] collapse · [ ] Postman collection runner (yuklash, ro'yxat, check-all, ketma-ket `/run_one`, holat) · [ ] `/run` + SSE + Stop · [ ] status line
+**Natijalar:** [ ] progress · [ ] stats (jami/ok/xato/o'rtacha, 2xx/4xx/5xx) · [ ] filtrlar · [ ] result kartalar (badge, vaqt, hajm, retry, headers, JSON highlight, copy) · [ ] fullscreen viewer (copy, TXT, Esc) · [ ] time chart (oxirgi 60) · [ ] export JSON/CSV · [ ] run'larni solishtirish · [ ] resizer + yopish/ochish
+**Sidebar:** [ ] collapse + kenglik · [ ] Collections: qidiruv, daraxt, papka ochish/yopish, yangi so'rov, yuklash · [ ] Save modal (nom+papka) · [ ] papka yaratish/tahrirlash/o'chirish (confirm) · [ ] Move modal · [ ] kontekst menyu (rename/duplicate/move/delete, papka edit/delete) · [ ] inline rename (sarlavha va sidebar) · [ ] duplicate (" Copy") · [ ] Postman import (flatten) · [ ] Environments: ro'yxat, activate, yaratish, tahrirlash modal, o'chirish, header selector, `env_vars` ni run'ga berish, eski yagona env → "Default" · [ ] History: ro'yxat, yuklash, bittasini o'chirish, hammasini tozalash, drawer (max 30)
+**Umumiy:** [ ] tema · [ ] yorliqlar: Esc, Cmd+Enter, Cmd+S, Cmd+B · [ ] toast · [ ] confirm dialog · [ ] dirty tracking · [ ] ⇪ localStorage import · [ ] versiya yorlig'i · [ ] workspace → saved_requests.json eksport tugmasi
+
+### Skelet va arxitektura
+- [x] Backend: daraxt API (`order` = `item[]` tartibi, move/copy/cycle-guard), `/api/ui-state`, server tarixi, faol env
+- [ ] `web/` Vite+Vue3+TS+Pinia+CodeMirror6; stores: `tabs`, `tree`, `workspace`, `history`, `runner`
+- [ ] Build → `apirunner/static/app/` (commit), `/` yangi UI, `/legacy` eski
+- [ ] Vitest unit (stores), Playwright paritet e2e
+
+### Oraliq hisobot → keyin yangi funksiyalar
+## Bosqich 2b — Asosiy so'rov imkoniyatlari (paritetdan keyin)
 ### Multi-tab (majburiy) — e2e: `tests/e2e/test_multitab_spec.py`
 - [ ] 30 ta band (spetsifikatsiya faylida to'liq ro'yxat)
 ### Sidebar va drag&drop (majburiy) — e2e: `tests/e2e/test_dnd_spec.py`

@@ -1,7 +1,7 @@
 """Yangi workspace API (/api/*): collection, environment, globals, localStorage importi."""
 from flask import Blueprint, current_app, jsonify, request
 
-from ..storage import model
+from ..storage import model, tree_ops
 from ..storage.migrate import import_localstorage
 from ..storage.workspace import NotFound
 
@@ -136,3 +136,91 @@ def import_ls():
     stats = import_localstorage(_ws(), current_app.extensions["db"], dump)
     _ws().update_meta(localstorage_imported=True)
     return jsonify({"ok": True, "stats": stats})
+
+
+# ── daraxt (item) operatsiyalari ──
+@bp.errorhandler(tree_ops.TreeError)
+def _tree_error(e):
+    return jsonify({"error": str(e)}), 400
+
+
+@bp.post("/collections/<cid>/items")
+def add_item(cid):
+    d = request.get_json(silent=True) or {}
+    item = d.get("item")
+    if not isinstance(item, dict):
+        return jsonify({"error": "item kerak"}), 400
+    ws = _ws()
+    with ws.lock:
+        col = ws.get_collection(cid)
+        new_id = tree_ops.add_item(col, d.get("parent_id"), item, d.get("index"))
+        ws.save_collection(col)
+    return jsonify({"ok": True, "id": new_id})
+
+
+@bp.patch("/collections/<cid>/items/<iid>")
+def patch_item(cid, iid):
+    ws = _ws()
+    with ws.lock:
+        col = ws.get_collection(cid)
+        node = tree_ops.update_item(col, iid, request.get_json(silent=True) or {})
+        ws.save_collection(col)
+    return jsonify({"ok": True, "item": node})
+
+
+@bp.delete("/collections/<cid>/items/<iid>")
+def delete_item(cid, iid):
+    ws = _ws()
+    with ws.lock:
+        col = ws.get_collection(cid)
+        tree_ops.delete_item(col, iid)
+        ws.save_collection(col)
+    return jsonify({"ok": True})
+
+
+@bp.post("/items/move")
+def move_items():
+    """{src, dst, ids[], target_id, position: before|after|inside, copy}"""
+    d = request.get_json(silent=True) or {}
+    mapping = tree_ops.move(_ws(), d.get("src"), d.get("ids") or [], d.get("dst") or d.get("src"),
+                            d.get("target_id"), d.get("position", "inside"), bool(d.get("copy")))
+    return jsonify({"ok": True, "mapping": mapping})
+
+
+# ── UI holati (ochiq tablar va h.k. — sahifa yangilanganda va server qayta ishga tushganda tiklanadi) ──
+@bp.get("/ui-state")
+def get_ui_state():
+    return jsonify(_ws().get_ui_state())
+
+
+@bp.put("/ui-state")
+def put_ui_state():
+    d = request.get_json(silent=True)
+    if not isinstance(d, dict):
+        return jsonify({"error": "obyekt kerak"}), 400
+    _ws().save_ui_state(d)
+    return jsonify({"ok": True})
+
+
+@bp.put("/workspace/meta")
+def put_meta():
+    d = request.get_json(silent=True) or {}
+    allowed = {k: d[k] for k in ("active_environment_id",) if k in d}
+    _ws().update_meta(**allowed)
+    return jsonify({"ok": True, "meta": _ws().meta()})
+
+
+# ── tarix (server tomonda) ──
+@bp.post("/history")
+def add_history():
+    d = request.get_json(silent=True) or {}
+    if d.get("kind") not in ("request", "run", "url"):
+        return jsonify({"error": "kind noto'g'ri"}), 400
+    current_app.extensions["db"].add_history(d["kind"], d.get("payload"))
+    return jsonify({"ok": True})
+
+
+@bp.delete("/history")
+def clear_history():
+    current_app.extensions["db"].delete_history(request.args.get("kind"), request.args.get("id", type=int))
+    return jsonify({"ok": True})

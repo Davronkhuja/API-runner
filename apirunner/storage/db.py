@@ -49,3 +49,12 @@ class StateDB:
             if source:
                 return c.execute("SELECT COUNT(*) FROM history WHERE source=?", (source,)).fetchone()[0]
             return c.execute("SELECT COUNT(*) FROM history").fetchone()[0]
+
+    def delete_history(self, kind=None, item_id=None):
+        with self._lock, self._conn() as c:
+            if item_id is not None:
+                c.execute("DELETE FROM history WHERE id=?", (item_id,))
+            elif kind:
+                c.execute("DELETE FROM history WHERE kind=?", (kind,))
+            else:
+                c.execute("DELETE FROM history")

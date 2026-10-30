@@ -133,3 +133,18 @@ class Workspace:
     def save_globals(self, g):
         with self.lock:
             self._write(self._p("globals.json"), g)
+
+    # ── UI holati ──
+    def get_ui_state(self):
+        path = self._p("ui_state.json")
+        with self.lock:
+            if not os.path.exists(path):
+                return {}
+            try:
+                return self._read(path)
+            except json.JSONDecodeError:
+                return {}
+
+    def save_ui_state(self, state):
+        with self.lock:
+            self._write(self._p("ui_state.json"), state)
