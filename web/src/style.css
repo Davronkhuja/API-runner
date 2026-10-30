@@ -48,3 +48,6 @@ button.ghost{background:none;border-color:transparent}
 .drop-zone{border:2px dashed var(--bd);border-radius:6px;padding:10px;text-align:center;color:var(--fg2);margin:8px 0}.drop-zone.over{border-color:var(--ac);background:var(--ac2)}
 .data-preview{overflow:auto;max-height:180px;margin:8px 0}.data-preview th{text-align:left;font-weight:600;padding:2px 6px;border-bottom:1px solid var(--bd)}.data-preview td{padding:2px 6px;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
 .v-resizer{height:5px;cursor:row-resize;background:var(--bd);flex:none}.v-resizer:hover{background:var(--ac)}
+
+.drawer-backdrop{position:fixed;inset:0;background:#0003;z-index:70}
+.hist-drawer{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:92vw;background:var(--bg);border-left:1px solid var(--bd);box-shadow:-6px 0 24px #0003;z-index:71;display:flex;flex-direction:column}

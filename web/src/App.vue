@@ -17,12 +17,15 @@ import SettingsTab from './components/SettingsTab.vue'
 import { post as apiPost } from './api/client'
 import { parseCurl, applyCurlToDraft } from './lib/curl'
 import { parseDataFile, isDataFile } from './lib/datafile'
+import HistoryDrawer from './components/HistoryDrawer.vue'
 import { showToast } from './lib/ui'
 
 const tabs = useTabs(), tree = useTree(), ws = useWorkspace(), hist = useHistory()
 const ready = ref(false)
 const saveAs = ref<{ tab: Tab; name: string; target: string; resolve: (ok: boolean) => void } | null>(null)
 const dropping = ref(false)
+const histOpen = ref(false)
+function openHist() { hist.load(); histOpen.value = true }
 const importInput = ref<HTMLInputElement>()
 const migrationWarning = ref('')
 const sbHidden = ref(false)
@@ -192,6 +195,7 @@ function toggleTheme() {
         <input ref="importInput" type="file" accept=".json" hidden data-testid="import-file" @change="onImportFile">
         <button class="ghost" style="border-radius:0" data-testid="ls-import" title="Brauzer (localStorage) ma'lumotlarini serverga ko'chirish" @click="importLocalStorage">⇪</button>
         <button class="ghost" style="border-radius:0" data-testid="export-legacy" title="saved_requests.json formatiga eksport (orqaga qaytish)" @click="exportLegacy">⤓</button>
+        <button class="ghost" style="border-radius:0" data-testid="history-btn" title="So'rovlar tarixi" @click="openHist">🕘</button>
         <button class="ghost" style="border-radius:0" data-testid="settings-btn" title="Sozlamalar → Zaxiralar" @click="tabs.open('settings', 'settings', 'Sozlamalar', { permanent: true })">⚙</button>
         <button class="ghost" title="Tema" data-testid="theme" style="border-radius:0" @click="toggleTheme">◐</button>
       </div>
@@ -226,4 +230,5 @@ function toggleTheme() {
     <div v-if="toast" class="toast" data-testid="toast">{{ toast.msg }}</div>
   </div>
   <div v-else class="empty">Yuklanmoqda…</div>
+  <HistoryDrawer v-model="histOpen" />
 </template>

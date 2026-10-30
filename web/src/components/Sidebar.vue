@@ -4,6 +4,7 @@ import { useTree, rowKey, dropPositionFor, type Row } from '../stores/tree'
 import { useTabs } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
+import { openFromHistory } from '../lib/history'
 import { openRequest } from '../lib/actions'
 import { askConfirm, showToast } from '../lib/ui'
 import { isFolder, type DropPosition, type RequestItem } from '../types/model'
@@ -123,7 +124,7 @@ async function confirmMove() {
 async function newCollection() { await tree.createCollection('Yangi collection') }
 
 // ── Environments / History ──
-const loadHistory = (h: any) => { const t = tabs.openNew(); const p = h.payload; t.draft = draftFromItem({ id: 'h', name: 'Tarixdan', request: { method: 'GET', header: [], url: { raw: '' } }, response: [], 'x-apirunner': { legacy: { ...p, headers: p.headers ?? [], params: p.params ?? [] } } } as RequestItem); t.title = 'Tarixdan'; tabs.touch(t.id) }
+const loadHistory = openFromHistory
 const openEnv = (id: string, name: string) => tabs.open('environment', id, name, { permanent: true })
 async function delEnv(id: string, name: string) { if (await askConfirm(`'${name}' o'chirilsinmi?`, "O'chirish")) await ws.deleteEnv(id) }
 async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(id, 'Yangi muhit') }

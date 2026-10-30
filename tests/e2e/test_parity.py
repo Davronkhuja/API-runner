@@ -541,3 +541,39 @@ def test_response_resizer_changes_height(ui):
     ui.mouse.move(bb["x"] + 20, bb["y"] - 80, steps=5)
     ui.mouse.up()
     assert T(ui, "response").bounding_box()["height"] > h0 + 40
+
+
+# ── v2.1.10: History drawer, karta yig'ish ──
+def test_history_drawer_open_load_clear_esc(ui, echo_server):
+    new_req(ui, echo_server + "/echo?hd=1")
+    T(ui, "send").click()
+    expect(T(ui, "resp-status")).to_have_text("200")
+    T(ui, "history-btn").click()
+    expect(T(ui, "history-drawer")).to_be_visible()
+    expect(T(ui, "hd-row").first).to_contain_text("/echo")
+    ui.keyboard.press("Escape")
+    expect(T(ui, "history-drawer")).to_have_count(0)
+    T(ui, "history-btn").click()
+    T(ui, "hd-row").first.click()
+    expect(T(ui, "history-drawer")).to_have_count(0)
+    expect(T(ui, "url")).to_have_value(re.compile(r"/echo"))
+    T(ui, "history-btn").click()
+    T(ui, "hd-clear").click()
+    expect(T(ui, "hd-empty")).to_be_visible()
+    T(ui, "drawer-backdrop").click(position={"x": 5, "y": 5})
+    expect(T(ui, "history-drawer")).to_have_count(0)
+
+
+def test_result_card_collapse_and_fold_all(ui, echo_server, tmp_path):
+    new_req(ui, echo_server + "/echo?i={{id}}")
+    open_batch(ui)
+    T(ui, "batch-file").set_input_files(csv_file(tmp_path, 3))
+    T(ui, "batch-run").click()
+    expect(T(ui, "result-card")).to_have_count(3)
+    expect(T(ui, "card-body")).to_have_count(3)
+    T(ui, "card-toggle").first.click()
+    expect(T(ui, "card-body")).to_have_count(2)
+    T(ui, "fold-all").click()
+    expect(T(ui, "card-body")).to_have_count(0)
+    T(ui, "fold-all").click()
+    expect(T(ui, "card-body")).to_have_count(3)

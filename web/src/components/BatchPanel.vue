@@ -20,6 +20,8 @@ const full = ref<any | null>(null)
 const showCmp = ref(false)
 const cmpId = ref<number | null>(null)
 const hdrOpen = ref<Record<number, boolean>>({})
+const folded = ref<Record<number, boolean>>({})
+const foldAll = (v: boolean) => { folded.value = v ? Object.fromEntries(b.value.results.map(r => [r.index, true])) : {} }
 const fileInput = ref<HTMLInputElement>()
 const visible = computed(() => b.value.results.filter(r => b.value.filter === 'all' || (b.value.filter === 'error' ? r.error : !r.error)))
 const pct = computed(() => (b.value.total ? (b.value.results.length / b.value.total) * 100 : 0))
@@ -86,6 +88,7 @@ void tabs
       <div style="display:flex;align-items:center;gap:8px">
         <span :class="b.status === 'done' ? 'ok' : b.status === 'error' ? 'err' : 'muted'" data-testid="batch-status">{{ b.statusText }}</span>
         <button class="ghost" @click="collapsed = !collapsed" title="Yig'ish">{{ collapsed ? '▸' : '▾' }}</button>
+        <button class="ghost" data-testid="fold-all" title="Kartalarni yig'ish / yoyish" @click="foldAll(!b.results.every(r => folded[r.index]))">⇅</button>
         <span style="flex:1" />
         <button data-testid="export-json" :disabled="!b.results.length" @click="download('results.json', JSON.stringify(b.results, null, 2), 'application/json')">JSON</button>
         <button data-testid="export-csv" :disabled="!b.results.length" @click="download('results.csv', toCSV(b.results), 'text/csv')">CSV</button>
@@ -111,12 +114,13 @@ void tabs
             <span class="status-pill" :class="badge(r.status)">{{ r.status }}</span><span>#{{ r.index }}</span><span>{{ fmtMs(r.time) }}</span><span>{{ fmtBytes(r.size) }}</span>
             <span v-if="r.retries" class="muted" data-testid="retry-badge">↻{{ r.retries }}</span>
             <span class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">{{ r.url }}</span>
+            <button class="ghost" data-testid="card-toggle" title="Yig'ish" @click="folded[r.index] = !folded[r.index]">{{ folded[r.index] ? '▸' : '▾' }}</button>
             <button class="ghost" @click="toggleHdr(r.index)">Headers</button>
             <button class="ghost" data-testid="copy-resp" @click="copy(body(r))">Nusxa</button>
             <button class="ghost" data-testid="open-full" @click="full = r">⤢</button>
           </div>
-          <pre v-if="hdrOpen[r.index]" class="muted">{{ Object.entries(r.resp_headers ?? {}).map(([k, v]) => k + ': ' + v).join('\n') }}</pre>
-          <pre style="max-height:140px;overflow:auto;margin-top:6px" v-html="highlightJson(body(r).slice(0, 100_000))" />
+          <pre v-if="hdrOpen[r.index] && !folded[r.index]" class="muted">{{ Object.entries(r.resp_headers ?? {}).map(([k, v]) => k + ': ' + v).join('\n') }}</pre>
+          <pre v-if="!folded[r.index]" data-testid="card-body" style="max-height:140px;overflow:auto;margin-top:6px" v-html="highlightJson(body(r).slice(0, 100_000))" />
         </div>
       </template>
     </div>
