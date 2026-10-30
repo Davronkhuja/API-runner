@@ -34,3 +34,13 @@ def test_existing_run_still_works_with_token(app_page, echo_server):
     app_page.fill("#url", echo_server + "/echo")
     app_page.click("#runBtn")
     expect(app_page.locator("#statusTxt")).to_contain_text("Bajarildi")
+
+
+def test_rejected_absolute_path_shows_clear_message(app_page, echo_server, tmp_path):
+    f = tmp_path / "x.txt"
+    f.write_text("a")
+    app_page.evaluate("""([url, path]) => fetch('/run_one', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({url, method:'POST', params:[{name:'d', value:path, type:'file'}]})}).then(r => r.json())
+        .then(d => { window.__r = d; })""", [echo_server + "/echo", str(f)])
+    app_page.wait_for_function("window.__r")
+    assert "📎 orqali faylni qayta tanlang" in app_page.evaluate("window.__r.response")

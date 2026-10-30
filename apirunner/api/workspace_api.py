@@ -23,6 +23,17 @@ def version():
     return jsonify({"version": __version__})
 
 
+@bp.get("/export/legacy")
+def export_legacy_route():
+    """Orqaga qaytish: workspace -> saved_requests.json formati (yuklab olinadi)."""
+    from flask import Response
+    import json as _json
+    from ..storage.legacy_view import export_workspace
+    body = _json.dumps(export_workspace(_ws()), ensure_ascii=False, indent=2)
+    return Response(body, content_type="application/json",
+                    headers={"Content-Disposition": "attachment; filename=saved_requests.json"})
+
+
 @bp.get("/workspace")
 def summary():
     ws = _ws()

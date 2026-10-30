@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 from flask import jsonify, request
 
 ALLOWED_HOSTNAMES = {"127.0.0.1", "localhost", "::1"}
-PUBLIC_PATHS = ("/", "/favicon.ico")
+PUBLIC_PATHS = ("/", "/legacy", "/favicon.ico")
 
 
 def new_token():

@@ -60,3 +60,10 @@ def test_tokens_are_random_per_app(isolated):
 def test_workspace_ids_cannot_traverse(client):
     assert client.get("/api/collections/..%2f..%2fetc").status_code == 404
     assert client.get("/api/environments/..").status_code == 404
+
+
+def test_legacy_ui_served_at_legacy_path(make_client):
+    c = make_client()
+    del c.environ_base["HTTP_X_SESSION_TOKEN"]
+    r = c.get("/legacy")
+    assert r.status_code == 200 and TOKEN in r.get_data(as_text=True) and "RUN" in r.get_data(as_text=True)

@@ -96,6 +96,7 @@ def test_file_param_outside_allowed_roots_is_denied(run_batch, echo, tmp_path):
     results, summary = run_batch(cfg(echo, method="POST",
                                      params=[{"name": "d", "value": str(f), "type": "file"}]))
     assert results[0]["status"] == "ERROR" and "ruxsat yo'q" in results[0]["response"]
+    assert "📎 orqali faylni qayta tanlang" in results[0]["response"] and results[0]["error_code"] == "file_policy"
     assert "maxfiy" not in str(results) and summary["failed"] == 1
 
 

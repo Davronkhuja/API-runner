@@ -33,16 +33,25 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.register_blueprint(legacy.bp)
     app.register_blueprint(workspace_api.bp)
 
-    index_html = os.path.join(PKG_DIR, "static", "index.html")
+    static = os.path.join(PKG_DIR, "static")
 
-    @app.get("/")
-    def index():
-        with open(index_html, "r", encoding="utf-8") as f:
-            html = f.read()
+    def page(path):
         import json as _json
+        with open(path, "r", encoding="utf-8") as f:
+            html = f.read()
         boot = security.BOOTSTRAP_JS % _json.dumps(app.config["SESSION_TOKEN"])
         html = html.replace("<head>", "<head>\n" + boot, 1)
         return Response(html, content_type="text/html; charset=utf-8", headers={"Cache-Control": "no-store"})
+
+    @app.get("/legacy")
+    def legacy_index():
+        """Eski UI — yangi frontend paritetga yetib, e2e yashil bo'lguncha saqlanadi."""
+        return page(os.path.join(static, "index.html"))
+
+    @app.get("/")
+    def index():
+        new = os.path.join(static, "app", "index.html")
+        return page(new if os.path.exists(new) else os.path.join(static, "index.html"))
 
     return app
 

@@ -52,7 +52,7 @@ def _resolve_file(path, ctx):
         root_real = os.path.realpath(root)
         if real == root_real or real.startswith(root_real + os.sep):
             return real
-    raise FilePolicyError("Fayl yo'liga ruxsat yo'q: " + path)
+    raise FilePolicyError("Fayl yo'liga ruxsat yo'q: " + path + ". 📎 orqali faylni qayta tanlang")
 
 
 def _build_kwargs(spec, ctx, opened):
@@ -185,7 +185,7 @@ def execute(spec, ctx=None):
     """
     ctx = ctx or ExecContext()
     timeout = float(spec.get("timeout") or 120)
-    last_err, last_elapsed = "Unknown error", 0.0
+    last_err, last_elapsed, error_code = "Unknown error", 0.0, None
     url_for_error = replace_variables(spec.get("url", ""), ctx.variables)
 
     for attempt in range(ctx.retry_count + 1):
@@ -214,6 +214,7 @@ def execute(spec, ctx=None):
         except FilePolicyError as exc:
             last_elapsed = time.perf_counter() - start
             last_err = str(exc)
+            error_code = "file_policy"
             break                                   # siyosat xatosini qayta urinish bema'ni
         except Exception as exc:                    # noqa: BLE001 — engine hech qachon tashlamaydi
             last_elapsed = time.perf_counter() - start
@@ -227,4 +228,4 @@ def execute(spec, ctx=None):
 
     return {"status": "ERROR", "time": last_elapsed, "size": 0, "url": url_for_error,
             "response": last_err, "resp_headers": {}, "error": True, "retries": ctx.retry_count,
-            "timing": None, "http_version": None}
+            "timing": None, "http_version": None, "error_code": error_code}

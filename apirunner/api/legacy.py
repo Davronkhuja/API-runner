@@ -12,6 +12,7 @@ from flask import Blueprint, Response, current_app, jsonify, request, stream_wit
 from ..core.engine import ExecContext, execute
 from ..storage import model
 from ..storage.migrate import LEGACY_COLLECTION_ID, LEGACY_COLLECTION_NAME
+from ..storage.legacy_view import flat_view
 from ..storage.workspace import NotFound
 from .util import now_iso
 
@@ -41,27 +42,9 @@ def _find(items, rid, parent=None):
     return None
 
 
-def _flat_view(col):
-    folders, requests = [], []
-
-    def walk(items, top_folder_id):
-        for it in items:
-            if model.is_folder(it):
-                ext = it.get("x-apirunner", {})
-                f = dict(ext.get("legacy") or {})
-                f.update(id=it["id"], name=it["name"], expanded=ext.get("expanded", True))
-                folders.append(f)
-                walk(it["item"], it["id"])
-            else:
-                requests.append(model.request_item_to_legacy(it, top_folder_id))
-
-    walk(col["item"], None)
-    return {"folders": folders, "requests": requests}
-
-
 @bp.get("/saved")
 def get_saved():
-    return jsonify(_flat_view(_load_col(_ws())))
+    return jsonify(flat_view(_load_col(_ws())))
 
 
 # ── papkalar ──
