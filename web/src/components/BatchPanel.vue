@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { newBatchState, startBatch, stopBatch, statsOf, toCSV, download, type BatchState } from '../lib/batch'
 import { fmtBytes, fmtMs, showToast } from '../lib/ui'
+import { parseDataFile, isDataFile } from '../lib/datafile'
+import { highlightJson } from '../lib/highlight'
+import DataPreview from './DataPreview.vue'
 
 const props = defineProps<{ tab: Tab }>()
 const tabs = useTabs(), ws = useWorkspace(), hist = useHistory()
@@ -25,23 +28,19 @@ const maxT = computed(() => Math.max(0.001, ...last60.value.map(r => r.time)))
 const badge = (s: any) => (typeof s === 'number' ? (s < 300 ? 'ok' : 'err') : 'err')
 const body = (r: any) => (typeof r.response === 'string' ? r.response : JSON.stringify(r.response, null, 2))
 
-function parseCSV(text: string): Record<string, string>[] {
-  const lines = text.split(/\r?\n/).filter(l => l.trim())
-  if (!lines.length) return []
-  const split = (l: string) => { const out: string[] = []; let cur = '', q = false; for (let i = 0; i < l.length; i++) { const c = l[i]; if (q) { if (c === '"') { if (l[i + 1] === '"') { cur += '"'; i++ } else q = false } else cur += c } else if (c === '"') q = true; else if (c === ',') { out.push(cur); cur = '' } else cur += c } out.push(cur); return out }
-  const head = split(lines[0]).map(h => h.trim())
-  return lines.slice(1).map(l => Object.fromEntries(split(l).map((v, i) => [head[i] ?? `col${i}`, v])))
+async function loadFile(f: File) {
+  try { b.value.data = { name: f.name, rows: parseDataFile(f.name, await f.text()) } } catch (err: any) { showToast('Fayl o\'qilmadi: ' + err.message, 'error') }
 }
-async function onFile(e: Event) {
-  const f = (e.target as HTMLInputElement).files?.[0]
-  if (!f) return
-  const text = await f.text()
-  try {
-    const rows = /\.json$/i.test(f.name) ? JSON.parse(text) : parseCSV(text)
-    if (!Array.isArray(rows)) throw new Error('JSON massiv bo\'lishi kerak')
-    b.value.data = { name: f.name, rows }
-  } catch (err: any) { showToast('Fayl o\'qilmadi: ' + err.message, 'error') }
+const onFile = (e: Event) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) loadFile(f) }
+const zone = ref(false)
+function onZoneDrop(e: DragEvent) {
+  zone.value = false
+  const f = e.dataTransfer?.files?.[0]
+  if (f && isDataFile(f)) { e.preventDefault(); e.stopPropagation(); loadFile(f) }
 }
+function onEsc(e: KeyboardEvent) { if (e.key === 'Escape') { if (full.value) full.value = null; else if (showCmp.value) showCmp.value = false } }
+onMounted(() => window.addEventListener('keydown', onEsc))
+onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
 async function run() {
   await tabs.flush()
   await startBatch(props.tab, ws.activeVars, async done => {
@@ -80,6 +79,9 @@ void tabs
       <button data-testid="batch-stop" :disabled="b.status !== 'running'" @click="stopBatch(tab)">■ STOP</button>
     </div>
 
+    <div class="drop-zone" :class="{ over: zone }" data-testid="batch-dropzone" @dragover.prevent="zone = true" @dragleave="zone = false" @drop="onZoneDrop">CSV/JSON faylni shu yerga tashlang</div>
+    <DataPreview v-if="b.data?.rows.length" :rows="b.data.rows" />
+
     <div v-if="b.status !== 'idle'" style="margin-top:14px" data-testid="results-pane">
       <div style="display:flex;align-items:center;gap:8px">
         <span :class="b.status === 'done' ? 'ok' : b.status === 'error' ? 'err' : 'muted'" data-testid="batch-status">{{ b.statusText }}</span>
@@ -114,7 +116,7 @@ void tabs
             <button class="ghost" data-testid="open-full" @click="full = r">⤢</button>
           </div>
           <pre v-if="hdrOpen[r.index]" class="muted">{{ Object.entries(r.resp_headers ?? {}).map(([k, v]) => k + ': ' + v).join('\n') }}</pre>
-          <pre style="max-height:140px;overflow:auto;margin-top:6px">{{ body(r).slice(0, 100_000) }}</pre>
+          <pre style="max-height:140px;overflow:auto;margin-top:6px" v-html="highlightJson(body(r).slice(0, 100_000))" />
         </div>
       </template>
     </div>
@@ -123,7 +125,7 @@ void tabs
       <div class="dialog" style="width:80vw;max-height:85vh;overflow:auto">
         <div style="display:flex;gap:10px;align-items:center"><span class="status-pill" :class="badge(full.status)">{{ full.status }}</span><span>{{ fmtMs(full.time) }}</span><span class="muted" style="flex:1">{{ full.url }}</span>
           <button @click="copy(body(full))">Nusxa</button><button data-testid="full-txt" @click="download('result.txt', body(full))">TXT</button><button data-testid="full-close" @click="full = null">×</button></div>
-        <pre style="margin-top:10px" data-testid="full-body">{{ body(full).slice(0, 200_000) }}</pre>
+        <pre style="margin-top:10px" data-testid="full-body" v-html="highlightJson(body(full).slice(0, 200_000))" />
       </div>
     </div>
 

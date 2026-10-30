@@ -42,3 +42,9 @@ button.ghost{background:none;border-color:transparent}
 .version{position:fixed;right:8px;bottom:4px;font-size:10px;opacity:.5}
 .dropzone-active{outline:3px dashed var(--ac);outline-offset:-6px}
 .sb-resizer{position:absolute;right:-3px;top:0;bottom:0;width:6px;cursor:col-resize;z-index:4}.sb-resizer:hover{background:var(--ac2)}
+
+.m-GET{color:var(--ok)}select.m-GET,select.m-POST,select.m-PUT,select.m-PATCH,select.m-DELETE{font-weight:700}
+.hl-key{color:var(--ac)}.hl-str{color:var(--ok)}.hl-num{color:var(--warn)}.hl-lit{color:var(--err)}.hl-cmd{color:var(--ac);font-weight:700}.hl-flag{color:var(--warn)}
+.drop-zone{border:2px dashed var(--bd);border-radius:6px;padding:10px;text-align:center;color:var(--fg2);margin:8px 0}.drop-zone.over{border-color:var(--ac);background:var(--ac2)}
+.data-preview{overflow:auto;max-height:180px;margin:8px 0}.data-preview th{text-align:left;font-weight:600;padding:2px 6px;border-bottom:1px solid var(--bd)}.data-preview td{padding:2px 6px;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.v-resizer{height:5px;cursor:row-resize;background:var(--bd);flex:none}.v-resizer:hover{background:var(--ac)}

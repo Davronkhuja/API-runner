@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
@@ -9,6 +9,7 @@ import KvTable from './KvTable.vue'
 import BatchPanel from './BatchPanel.vue'
 import { composeUrl, paramsFromUrl } from '../lib/draft'
 import { applyCurlToDraft, buildCurl, parseCurl } from '../lib/curl'
+import { highlightCurl, highlightJson } from '../lib/highlight'
 
 const props = defineProps<{ tab: Tab }>()
 const tabs = useTabs(), ws = useWorkspace(), hist = useHistory()
@@ -17,6 +18,19 @@ const section = computed({ get: () => props.tab.activeSection ?? 'params', set: 
 const touch = () => tabs.touch(props.tab.id)
 const curlOpen = ref(false)
 const curlText = computed(() => buildCurl(d.value))
+const autoCT = computed(() => ({ json: 'application/json', form: 'application/x-www-form-urlencoded', multipart: 'multipart/form-data' } as Record<string, string>)[d.value.body.mode] ?? '')
+const effectiveCT = computed(() => (d.value.body.mode === 'json' || d.value.body.mode === 'raw') && d.value.body.contentType ? d.value.body.contentType : autoCT.value)
+function onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && curlOpen.value) curlOpen.value = false }
+onMounted(() => window.addEventListener('keydown', onEsc))
+onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
+// Editor / javob ajratgichi (vertikal)
+const respH = ref<number | null>(null)
+function startResize(e: PointerEvent) {
+  const startY = e.clientY, startH = respEl.value?.offsetHeight ?? 200
+  const move = (ev: PointerEvent) => { respH.value = Math.max(80, startH + (startY - ev.clientY)) }
+  const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+  window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
+}
 function copyCurl() { navigator.clipboard?.writeText(curlText.value); showToast('Nusxalandi', 'success') }
 function beautify() {
   try { d.value.body.raw = JSON.stringify(JSON.parse(d.value.body.raw), null, 2); touch() } catch { showToast('JSON noto\'g\'ri — formatlab bo\'lmadi', 'warn') }
@@ -52,8 +66,8 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
 <template>
   <div style="display:flex;flex-direction:column;flex:1;min-height:0" data-testid="request-editor">
     <div class="urlbar" style="position:relative">
-      <select v-model="d.method" data-testid="method" @change="touch">
-        <option v-for="m in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']" :key="m">{{ m }}</option>
+      <select v-model="d.method" data-testid="method" :class="'m-' + d.method" @change="touch">
+        <option v-for="m in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']" :key="m" :class="'m-' + m">{{ m }}</option>
       </select>
       <input v-model="d.url" data-testid="url" placeholder="https://api.example.com/endpoint/{{id}}  yoki  curl '...' ni bu yerga joylashtiring"
              @input="onUrlInput" @paste="onPaste" @focus="showHist = true; hist.load()" @blur="hideHist"
@@ -87,13 +101,15 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
           <option value="none">none</option><option value="json">JSON</option><option value="raw">Raw</option><option value="form">x-www-form-urlencoded</option><option value="multipart">form-data</option>
         </select>
         <button v-if="d.body.mode === 'json'" data-testid="beautify" style="margin-left:8px" @click="beautify" title="Cmd/Ctrl+B">Beautify</button>
-        <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart'" v-model="d.body.contentType" placeholder="Content-Type" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
+        <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart'" v-model="d.body.contentType" :placeholder="autoCT || 'Content-Type'" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
+        <span v-if="effectiveCT" class="muted" style="margin-left:8px" data-testid="content-type-auto">Content-Type: {{ effectiveCT }}</span>
         <textarea v-if="d.body.mode === 'json' || d.body.mode === 'raw'" @keydown.meta.b.prevent="beautify" @keydown.ctrl.b.prevent="beautify" v-model="d.body.raw" data-testid="body-raw" style="width:100%;height:220px;margin-top:8px;font-family:ui-monospace,monospace" @input="touch" />
         <KvTable v-else-if="d.body.mode === 'form'" :rows="d.body.fields" testid="form-table" @change="touch" />
         <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" files testid="formdata-table" @change="touch" />
       </div>
     </div>
-    <div class="resp" ref="respEl" data-testid="response" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
+    <div class="v-resizer" data-testid="resp-resizer" @pointerdown.prevent="startResize" />
+    <div class="resp" ref="respEl" data-testid="response" :style="respH ? { flex: 'none', height: respH + 'px' } : {}" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
       <div v-if="!tab.response" class="empty">Javob shu yerda ko'rinadi</div>
       <div v-else-if="tab.response.loading" class="muted">Yuborilmoqda…</div>
       <template v-else>
@@ -105,11 +121,11 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
             DNS — · connect {{ fmtMs(tab.response.timing?.connect) }} · TLS {{ fmtMs(tab.response.timing?.tls) }} · TTFB {{ fmtMs(tab.response.timing?.ttfb) }}
           </span>
         </div>
-        <pre data-testid="resp-body">{{ bodyText }}</pre>
+        <pre data-testid="resp-body" v-html="highlightJson(bodyText)" />
       </template>
     </div>
   </div>
   <div v-if="curlOpen" class="overlay" @click.self="curlOpen = false"><div class="dialog" style="width:640px" data-testid="curl-drawer">
     <div style="display:flex;gap:8px"><b style="flex:1">cURL</b><button data-testid="curl-copy" @click="copyCurl">Nusxa</button><button @click="curlOpen = false">×</button></div>
-    <pre style="margin-top:10px" data-testid="curl-output">{{ curlText }}</pre></div></div>
+    <pre style="margin-top:10px" data-testid="curl-output" v-html="highlightCurl(curlText)" /></div></div>
 </template>

@@ -471,3 +471,73 @@ def test_response_timing_dash_for_missing_values(ui, echo_server):
     t = T(ui, "resp-timing")
     expect(t).to_contain_text("DNS —")
     expect(t).to_contain_text("TLS —")                          # oddiy HTTP'da TLS yo'q → "—", xato emas
+
+
+# ── v2.1.9: ranglash, Content-Type, preview, drop zona, resizer ──
+def test_method_select_has_color_class(ui):
+    T(ui, "new-tab").click()
+    ui.select_option("[data-testid=method]", "DELETE")
+    expect(T(ui, "method")).to_have_class(re.compile(r"m-DELETE"))
+
+
+def test_curl_drawer_is_syntax_highlighted_and_esc_closes(ui):
+    new_req(ui, "https://a.io/x", "POST")
+    T(ui, "curl-btn").click()
+    expect(ui.locator("[data-testid=curl-output] .hl-cmd")).to_have_text("curl")
+    expect(ui.locator("[data-testid=curl-output] .hl-flag").first).to_be_visible()
+    ui.keyboard.press("Escape")
+    expect(T(ui, "curl-drawer")).to_have_count(0)
+
+
+def test_response_json_is_highlighted(ui, echo_server):
+    new_req(ui, echo_server + "/echo?q=1")
+    T(ui, "send").click()
+    expect(ui.locator("[data-testid=resp-body] .hl-key").first).to_be_visible()
+
+
+def test_content_type_auto_shown(ui):
+    T(ui, "new-tab").click()
+    ui.click("[data-section=body]")
+    ui.select_option("[data-testid=body-mode]", "json")
+    expect(T(ui, "content-type-auto")).to_contain_text("application/json")
+    ui.select_option("[data-testid=body-mode]", "multipart")
+    expect(T(ui, "content-type-auto")).to_contain_text("multipart/form-data")
+    ui.select_option("[data-testid=body-mode]", "none")
+    expect(T(ui, "content-type-auto")).to_have_count(0)
+
+
+def test_batch_data_preview_table_and_dropzone(ui, tmp_path):
+    T(ui, "new-tab").click()
+    open_batch(ui)
+    f = tmp_path / "d.csv"
+    f.write_text("a,b\n1,x\n2,y\n3,z\n4,w\n5,v\n6,u\n")
+    T(ui, "batch-file").set_input_files(str(f))
+    expect(T(ui, "data-preview")).to_contain_text("x")
+    expect(T(ui, "data-preview")).to_contain_text("yana 1 qator")
+    T(ui, "batch-file-clear").click()
+    expect(T(ui, "data-preview")).to_have_count(0)
+    ui.evaluate("""() => { const z = document.querySelector('[data-testid=batch-dropzone]');
+      const dt = new DataTransfer(); dt.items.add(new File(['k\\nv1\\nv2\\n'], 'drop.csv', {type: 'text/csv'}));
+      z.dispatchEvent(new DragEvent('drop', {dataTransfer: dt, bubbles: true, cancelable: true})); }""")
+    expect(T(ui, "batch-data-info")).to_contain_text("drop.csv: 2 qator")
+
+
+def test_window_drop_csv_opens_runner_with_preview(ui, app):
+    app.seed([("r1", "r1", None)])
+    ui.reload()
+    ui.wait_for_selector("[data-testid=app]")
+    ui.evaluate("""() => { const dt = new DataTransfer(); dt.items.add(new File(['k\\nv1\\n'], 'w.csv', {type: 'text/csv'}));
+      document.querySelector('[data-testid=app]').dispatchEvent(new DragEvent('drop', {dataTransfer: dt, bubbles: true, cancelable: true})); }""")
+    expect(T(ui, "runner-data-info")).to_contain_text("w.csv: 1 qator")
+    expect(T(ui, "data-preview")).to_contain_text("v1")
+
+
+def test_response_resizer_changes_height(ui):
+    T(ui, "new-tab").click()
+    h0 = T(ui, "response").bounding_box()["height"]
+    bb = T(ui, "resp-resizer").bounding_box()
+    ui.mouse.move(bb["x"] + 20, bb["y"] + 2)
+    ui.mouse.down()
+    ui.mouse.move(bb["x"] + 20, bb["y"] - 80, steps=5)
+    ui.mouse.up()
+    assert T(ui, "response").bounding_box()["height"] > h0 + 40

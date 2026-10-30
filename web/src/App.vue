@@ -16,6 +16,7 @@ import CollectionTab from './components/CollectionTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
 import { post as apiPost } from './api/client'
 import { parseCurl, applyCurlToDraft } from './lib/curl'
+import { parseDataFile, isDataFile } from './lib/datafile'
 import { showToast } from './lib/ui'
 
 const tabs = useTabs(), tree = useTree(), ws = useWorkspace(), hist = useHistory()
@@ -146,7 +147,7 @@ async function onWindowDrop(e: DragEvent) {
   if (file) {
     e.preventDefault()
     const text = await file.text()
-    if (/\.csv$/i.test(file.name) || /text\/csv/.test(file.type)) return openRunnerWithData(file.name, text)
+    if (isDataFile(file) && (!/\.json$/i.test(file.name) || text.trimStart().startsWith('['))) return openRunnerWithData(file.name, text)
     try {
       const r = await apiPost('/api/import', { content: text })
       await tree.load()
@@ -165,8 +166,7 @@ function openRunnerWithData(name: string, text: string) {
   if (!cid) return
   const t = tabs.open('runner', cid, 'Runner: ' + tree.cols[cid].info.name, { permanent: true })
   t.state ??= {}
-  const rows = /\.json$/i.test(name) ? JSON.parse(text) : text.split(/\r?\n/).filter(l => l.trim()).slice(1).map(l => l.split(','))
-  t.state.data = { name, rows }
+  try { t.state.data = { name, rows: parseDataFile(name, text) } } catch (err: any) { showToast('Fayl o\'qilmadi: ' + err.message, 'error') }
   tabs.touch(t.id)
 }
 

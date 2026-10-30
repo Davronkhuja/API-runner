@@ -5,6 +5,8 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { post } from '../api/client'
 import { draftFromItem, specFromDraft } from '../lib/draft'
+import { parseDataFile, isDataFile } from '../lib/datafile'
+import DataPreview from './DataPreview.vue'
 import { isFolder, type RequestItem, type TreeItem } from '../types/model'
 
 const props = defineProps<{ tab: Tab }>()
@@ -41,20 +43,19 @@ function drop(idx: number) {
 }
 
 // Data fayl (CSV/JSON) — Bosqich 4 da iteratsiyalar bilan bog'lanadi
-function parseCSV(text: string): Record<string, string>[] {
-  const lines = text.split(/\r?\n/).filter(l => l.trim())
-  if (!lines.length) return []
-  const split = (l: string) => { const out: string[] = []; let cur = '', q = false; for (let i = 0; i < l.length; i++) { const c = l[i]; if (q) { if (c === '"') { if (l[i + 1] === '"') { cur += '"'; i++ } else q = false } else cur += c } else if (c === '"') q = true; else if (c === ',') { out.push(cur); cur = '' } else cur += c } out.push(cur); return out }
-  const head = split(lines[0]).map(h => h.trim())
-  return lines.slice(1).map(l => Object.fromEntries(split(l).map((v, i) => [head[i] ?? `col${i}`, v])))
-}
 function loadData(name: string, text: string) {
-  try { st.data = { name, rows: /\.json$/i.test(name) ? JSON.parse(text) : parseCSV(text) } } catch { st.data = null }
+  try { st.data = { name, rows: parseDataFile(name, text) } } catch { st.data = null }
   tabs.touch(props.tab.id)
 }
 defineExpose({ loadData })
 ;(props.tab as any)._loadData = loadData
 
+const zone = ref(false)
+async function onZoneDrop(e: DragEvent) {
+  zone.value = false
+  const f = e.dataTransfer?.files?.[0]
+  if (f && isDataFile(f)) { e.preventDefault(); e.stopPropagation(); loadData(f.name, await f.text()) }
+}
 const running = ref(false)
 async function run() {
   running.value = true
@@ -80,6 +81,8 @@ async function run() {
       <button class="primary" data-testid="runner-run" :disabled="running" @click="run">▶ Ishga tushirish</button>
       <span class="muted" data-testid="runner-data-info">{{ st.data ? `${st.data.name}: ${st.data.rows.length} qator` : 'Data fayl yo\'q (CSV/JSON ni shu oynaga tashlang)' }}</span>
     </div>
+    <div class="drop-zone" :class="{ over: zone }" data-testid="runner-dropzone" @dragover.prevent="zone = true" @dragleave="zone = false" @drop="onZoneDrop">CSV/JSON faylni shu yerga tashlang</div>
+    <DataPreview v-if="st.data?.rows?.length" :rows="st.data.rows" />
     <div v-for="(x, i) in items" :key="x.id" class="row" data-testid="runner-item" draggable="true" :class="{ 'drop-before': overIdx === i }"
          @dragstart="dragId = x.id" @dragover.prevent="overIdx = i" @dragleave="overIdx = null" @drop.prevent="drop(i)" @dragend="dragId = overIdx = null">
       <span class="grip">⋮⋮</span>
