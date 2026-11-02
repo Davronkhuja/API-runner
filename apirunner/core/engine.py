@@ -108,6 +108,12 @@ def _build_kwargs(spec, ctx, opened):
                 files[fname] = (None, fpath)
         kw["files"] = files
         kw["headers"] = {k: x for k, x in headers.items() if k.lower() != "content-type"}
+    elif method in MUTATING and spec.get("body_file"):
+        # binary body: faylning xom baytlari (fayl siyosati bo'yicha tekshiriladi)
+        with open(_resolve_file(spec["body_file"], ctx), "rb") as fh:
+            kw["data"] = fh.read()
+        if not has_ct():
+            headers["Content-Type"] = ctype or "application/octet-stream"
     elif method in MUTATING and (body or body_type == "multipart"):
         if body_type == "multipart":
             files = {}

@@ -28,7 +28,8 @@ export async function startBatch(tab: Tab, vars: Record<string, string>, onDone?
   let rows = b.data?.rows?.length ? b.data.rows : [{}]
   if (s.rowsMode === 'custom') rows = rows.slice(0, Math.max(1, s.count || 1))
   try { await prepareAuth(d, tab.ref, vars) } catch (e: any) { b.status = 'error'; b.statusText = e.message; return }
-  const spec = specFor(d, tab.ref, vars)
+  let spec: Record<string, any>
+  try { spec = specFor(d, tab.ref, vars) } catch (e: any) { b.status = 'error'; b.statusText = e.message; return }
   Object.assign(spec, { delay: s.delay, timeout: s.timeout, concurrency: s.concurrency, retry_count: s.retry, ssl_verify: s.ssl, rows })
   b.results = []; b.summary = null; b.total = rows.length; b.status = 'running'; b.statusText = `${rows.length} ta so'rov yuborilmoqda...`
   tab.state!.mode = 'batch'

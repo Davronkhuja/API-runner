@@ -74,3 +74,17 @@ def test_engine_applies_path_variables_and_dynamic(echo):
                 ExecContext(variables={"n": "77"}))
     assert r["status"] != "ERROR", r["response"]
     assert "/echo/77" in r["url"] and "%7B" not in r["url"] and "$guid" not in r["url"]
+
+
+def test_binary_body_sends_raw_bytes_and_respects_file_policy(echo, tmp_path):
+    from apirunner.core.engine import ExecContext, execute
+    f = tmp_path / "blob.bin"
+    f.write_bytes(b"\x00\x01raw-bytes")
+    spec = {"method": "POST", "url": echo + "/echo", "body_file": str(f)}
+    r = execute(spec, ExecContext(allowed_files=frozenset({str(f.resolve())})))
+    assert r["status"] == 200 and r["response"]["headers"]["Content-Type"] == "application/octet-stream"
+    assert "raw-bytes" in r["response"]["data"]
+    r = execute({**spec, "content_type": "image/png"}, ExecContext(allowed_files=frozenset({str(f.resolve())})))
+    assert r["response"]["headers"]["Content-Type"] == "image/png"
+    r = execute(spec, ExecContext())                                             # ruxsat berilmagan yo'l
+    assert r["status"] == "ERROR" and r["error_code"] == "file_policy"

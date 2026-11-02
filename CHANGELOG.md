@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.2.0] — 2026-11-02 — Bosqich 2 tugadi
+### Added
+- **Code snippet generatori** (`</> Kod`): cURL, Python requests, JavaScript fetch, axios, Node.js http, Go net/http, PHP cURL, Java OkHttp, C# HttpClient. O'zgaruvchilar qiymat bilan almashtiriladi, meros auth/API Key kiradi (JWT/Digest/SigV4 haqida eslatma), multipart va xom tana qo'llab-quvvatlanadi; yaroqsiz URL sahifani buzmaydi. cURL, Python va Node snippetlari e2e testda **haqiqatan bajarilib** tekshiriladi. 9 til uchun 6 unit test.
+- **Body**: *binary* (fayl xom baytlar bilan, fayl siyosati bo'yicha) va *GraphQL* (Query + Variables JSON → `{"query","variables"}`; noto'g'ri JSON aniq xato beradi); Postman `file`/`graphql` formatida saqlanadi.
+- **Qator tavsifi** (Params/Headers/Form) va **Bulk Edit** (`kalit:qiymat`, `//` — o'chirilgan; tavsif va fayl turi kalit bo'yicha saqlanadi).
+- 8 e2e (`test_body_rows.py`), 6 e2e (`test_snippets.py`), 1 engine testi.
+### Bosqich 2 yakuni
+Bosqich 2 ning barcha bandlari (collection/papka sozlamalari va meros, scope'li o'zgaruvchilar, Auth turlari + OAuth 2.0, Response paneli, cookie'lar va sozlamalar, snippetlar, body turlari, qator tavsifi/bulk edit, server tarixi) bajarildi. Ochiq qolganlari: JWT RS*/ES*, SOCKS proxy, cookie'larni sozlamalardan domen bo'yicha o'chirish, Data/Local scope (Bosqich 3 skriptlari bilan).
+
 ## [2.1.19] — 2026-11-02 — Bosqich 2 (4/5: cookie'lar va sozlamalar, frontend)
 ### Added
 - **Cookie Manager** tabi (🍪): domenlar bo'yicha guruhlangan jar; qiymatni joyida tahrirlash, bittasini/domenni (tasdiq bilan)/hammasini o'chirish, qo'lda qo'shish, tekshiruv xabari.

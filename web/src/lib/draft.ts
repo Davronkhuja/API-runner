@@ -13,7 +13,7 @@ export interface RequestDraft {
   auth: AuthDraft
   pathVars: { key: string; value: string }[]
   settings: ReqSettings
-  body: { mode: 'none' | 'raw' | 'json' | 'form' | 'multipart'; raw: string; contentType: string; fields: KV[] }
+  body: { mode: 'none' | 'raw' | 'json' | 'form' | 'multipart' | 'binary' | 'graphql'; raw: string; contentType: string; fields: KV[]; file: { path: string; name: string }; gql: { query: string; variables: string } }
 }
 
 export const emptyKV = (): KV => ({ key: '', value: '', enabled: true })
@@ -44,7 +44,7 @@ export function newDraft(name = 'Yangi so\'rov'): RequestDraft {
   return {
     name, method: 'GET', url: '', params: [emptyKV()], headers: [emptyKV()],
     auth: emptyAuth('inherit'), pathVars: [], settings: {},
-    body: { mode: 'none', raw: '', contentType: '', fields: [emptyKV()] },
+    body: { mode: 'none', raw: '', contentType: '', fields: [emptyKV()], file: { path: '', name: '' }, gql: { query: '', variables: '' } },
   }
 }
 
@@ -87,6 +87,8 @@ export function draftFromItem(item: RequestItem): RequestDraft {
   else if (b?.mode === 'urlencoded') { d.body.mode = 'form'; d.body.fields = withTrailing((b.urlencoded ?? []).map(q => ({ key: q.key, value: q.value, enabled: !q.disabled }))) }
   else if (b?.mode === 'formdata') d.body.fields = withTrailing((b.formdata ?? []).map(f => ({ key: f.key, value: f.value ?? f.src ?? '', enabled: !f.disabled, kind: f.type })))
   if (b?.mode === 'formdata') d.body.mode = 'multipart'
+  if (b?.mode === 'file') { d.body.mode = 'binary'; d.body.file = { path: b.file?.src ?? '', name: b.file?.name ?? b.file?.src?.split('/').pop() ?? '' } }
+  if (b?.mode === 'graphql') { d.body.mode = 'graphql'; d.body.gql = { query: b.graphql?.query ?? '', variables: b.graphql?.variables ?? '' } }
   return d
 }
 
@@ -105,6 +107,8 @@ export function requestFromDraft(d: RequestDraft): PmRequest {
   const m = d.body.mode
   if (m === 'raw' || m === 'json') req.body = { mode: 'raw', raw: d.body.raw, options: { raw: { language: m === 'json' ? 'json' : 'text' } } }
   else if (m === 'form') req.body = { mode: 'urlencoded', urlencoded: rows(d.body.fields).map(f => ({ key: f.key, value: f.value, ...(f.enabled ? {} : { disabled: true }) })) }
+  else if (m === 'binary') req.body = { mode: 'file', file: { src: d.body.file.path, name: d.body.file.name } }
+  else if (m === 'graphql') req.body = { mode: 'graphql', graphql: { query: d.body.gql.query, variables: d.body.gql.variables } }
   else if (m === 'multipart') req.body = { mode: 'formdata', formdata: rows(d.body.fields).map(f => ({ key: f.key, value: f.value, type: f.kind === 'file' ? 'file' : 'text', ...(f.enabled ? {} : { disabled: true }) })) }
   return req
 }
@@ -128,6 +132,14 @@ export function specFromDraft(d: RequestDraft, vars: Record<string, string> = {}
     spec.body_type = 'form'
     spec.body = on(d.body.fields).map(f => `${encodeURIComponent(f.key)}=${encodeURIComponent(f.value)}`).join('&')
     spec.content_type ||= 'application/x-www-form-urlencoded'
+  } else if (m === 'binary') {
+    spec.body_file = d.body.file.path
+    spec.content_type ||= 'application/octet-stream'
+  } else if (m === 'graphql') {
+    let variables: unknown
+    if (d.body.gql.variables.trim()) { try { variables = JSON.parse(d.body.gql.variables) } catch { throw new Error('GraphQL Variables: JSON noto\'g\'ri') } }
+    spec.body_type = 'json'
+    spec.body = JSON.stringify({ query: d.body.gql.query, ...(variables !== undefined ? { variables } : {}) })
   } else if (m === 'multipart') {
     spec.body_type = 'multipart'
     spec.multipart_fields = on(d.body.fields).map(f => ({ name: f.key, value: f.value }))

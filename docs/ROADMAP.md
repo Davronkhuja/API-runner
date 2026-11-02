@@ -49,13 +49,13 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] Collection/folder darajasidagi Auth, Variables, Description (meros) · Scripts saqlanadi, bajarilishi Bosqich 3 (v2.1.14)
 - [x] Variable scope'lar (Globals<Collection<Papka<Env), path variables, dinamik o'zgaruvchilar, secret maskalash (v2.1.13–14); Data/Local — Bosqich 3 skriptlari bilan
 - [x] Auth turlari (API Key, Digest, OAuth 2.0 [CC/Password/Code/PKCE/Implicit], AWS SigV4, JWT HS*) — v2.1.15–16; JWT RS*/ES* ochiq
-- [ ] Body turlari (form-data, urlencoded jadval, binary, GraphQL)
-- [ ] Qator checkbox/tavsif/bulk edit
+- [x] Body turlari (form-data, urlencoded jadval, binary, GraphQL) — v2.2.0
+- [x] Qator checkbox/tavsif/bulk edit — v2.2.0
 - [x] Sozlamalar (redirect, HTTP/2, proxy, client cert, CA, SSL, cookie jar) — v2.1.18–19; SOCKS proxy ochiq
 - [x] Cookie jar (SQLite) + Cookie Manager + Response Cookies tabi — v2.1.18–19
 - [x] Response paneli (Pretty/Raw/Preview, Headers, qidiruv, JSONPath, virtual scroll, Save as Example) — v2.1.17; Cookies/Test natijalari tablari keyingi bandlarda
-- [ ] Code snippet generatori
-- [ ] Server tomonda tarix
+- [x] Code snippet generatori (9 til) — v2.2.0
+- [x] Server tomonda tarix (SQLite; v2.1.x)
 
 ## Bosqich 3 — Skriptlar va testlar
 - [ ] Pre-request / Tests skriptlari (meros tartibida), `pm.*` API, kutubxonalar

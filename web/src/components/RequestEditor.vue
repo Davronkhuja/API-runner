@@ -14,8 +14,9 @@ import BatchPanel from './BatchPanel.vue'
 import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
 import { effectiveAuth, scopedVars } from '../lib/scope'
 import AuthEditor from './AuthEditor.vue'
-import { applyCurlToDraft, buildCurl, parseCurl } from '../lib/curl'
-import { highlightCurl } from '../lib/highlight'
+import { applyCurlToDraft, parseCurl } from '../lib/curl'
+import { generate, LANGS, snipReqFromDraft, type Lang } from '../lib/snippets'
+import { esc, highlightCurl } from '../lib/highlight'
 
 const props = defineProps<{ tab: Tab }>()
 const wsStore = _ws()
@@ -24,7 +25,12 @@ const d = computed(() => props.tab.draft!)
 const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
 const touch = () => tabs.touch(props.tab.id)
 const curlOpen = ref(false)
-const curlText = computed(() => buildCurl({ ...d.value, auth: effectiveAuth(d.value.auth, props.tab.ref) }))
+const lang = ref<Lang>('curl')
+const curlText = computed(() => {
+  if (!curlOpen.value) return ''
+  try { return generate(lang.value, snipReqFromDraft(d.value, props.tab.ref)) } catch (e: any) { return `// Kod hosil qilib bo'lmadi: ${e.message}` }
+})
+const curlHtml = computed(() => (lang.value === 'curl' ? highlightCurl(curlText.value) : esc(curlText.value)))
 const inheritNote = computed(() => { const t = effectiveAuth(d.value.auth, props.tab.ref).type; return t === 'none' ? 'Meros: ota papka/collection auth\'i yo\'q — Auth yuborilmaydi.' : `Meros: ${t} (ota papka/collection)` })
 // {{o'zgaruvchi}} chiplari: scope va qiymat hoverda, aniqlanmagani qizil
 const usedVars = computed(() => {
@@ -37,7 +43,7 @@ const usedVars = computed(() => {
     return { name, ok: false, title: 'Aniqlanmagan o\'zgaruvchi' }
   })
 })
-const autoCT = computed(() => ({ json: 'application/json', form: 'application/x-www-form-urlencoded', multipart: 'multipart/form-data' } as Record<string, string>)[d.value.body.mode] ?? '')
+const autoCT = computed(() => ({ json: 'application/json', graphql: 'application/json', binary: 'application/octet-stream', form: 'application/x-www-form-urlencoded', multipart: 'multipart/form-data' } as Record<string, string>)[d.value.body.mode] ?? '')
 const effectiveCT = computed(() => (d.value.body.mode === 'json' || d.value.body.mode === 'raw') && d.value.body.contentType ? d.value.body.contentType : autoCT.value)
 function onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && curlOpen.value) curlOpen.value = false }
 onMounted(() => window.addEventListener('keydown', onEsc))
@@ -57,6 +63,16 @@ function beautify() {
 const showHist = ref(false)
 const hideHist = () => { setTimeout(() => (showHist.value = false), 150) }
 const reqEl = ref<HTMLElement>(), respEl = ref<HTMLElement>()
+const binInput = ref<HTMLInputElement>()
+async function pickBinary(e: Event) {
+  const f = (e.target as HTMLInputElement).files?.[0]
+  if (!f) return
+  const fd = new FormData(); fd.append('file', f)
+  try {
+    const r = await fetch('/upload_temp', { method: 'POST', body: fd, headers: { 'X-Session-Token': window.__API_TOKEN__ ?? '' } }).then(x => x.json())
+    d.value.body.file = { path: r.path, name: r.name }; touch()
+  } catch { showToast('Fayl yuklanmadi', 'error') }
+}
 
 // URL ↔ Params ikki tomonlama sinxron
 function onUrlInput() { d.value.params = paramsFromUrl(d.value.url, d.value.params); d.value.pathVars = syncPathVars(d.value.url, d.value.pathVars); touch() }
@@ -90,7 +106,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <button v-for="(h, i) in urlHist" :key="i" @mousedown.prevent="d.method = h.method; d.url = h.url; d.pathVars = syncPathVars(d.url, d.pathVars); touch()"><b>{{ h.method }}</b> {{ h.url }}</button>
       </div>
       <button class="primary" data-testid="send" :disabled="tab.response?.loading" @click="sendTab(tab)">▶ Yuborish</button>
-      <button data-testid="curl-btn" title="Copy as cURL" @click="curlOpen = true">cURL</button>
+      <button data-testid="curl-btn" title="Kod namunasi (cURL, Python, JS, Go, ...)" @click="curlOpen = true">&lt;/&gt; Kod</button>
       <button data-testid="save" :disabled="!tab.dirty && !!tab.ref" @click="saveTab(tab)">Saqlash</button>
     </div>
     <div v-if="usedVars.length" class="var-chips" data-testid="var-chips">
@@ -118,12 +134,21 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       <BatchPanel v-else-if="section === 'batch'" :tab="tab" />
       <div v-else data-testid="body-panel">
         <select v-model="d.body.mode" data-testid="body-mode" @change="touch">
-          <option value="none">none</option><option value="json">JSON</option><option value="raw">Raw</option><option value="form">x-www-form-urlencoded</option><option value="multipart">form-data</option>
+          <option value="none">none</option><option value="json">JSON</option><option value="raw">Raw</option><option value="form">x-www-form-urlencoded</option><option value="multipart">form-data</option><option value="binary">binary</option><option value="graphql">GraphQL</option>
         </select>
         <button v-if="d.body.mode === 'json'" data-testid="beautify" style="margin-left:8px" @click="beautify" title="Cmd/Ctrl+B">Beautify</button>
-        <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart'" v-model="d.body.contentType" :placeholder="autoCT || 'Content-Type'" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
+        <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart' && d.body.mode !== 'graphql'" v-model="d.body.contentType" :placeholder="autoCT || 'Content-Type'" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
         <span v-if="effectiveCT" class="muted" style="margin-left:8px" data-testid="content-type-auto">Content-Type: {{ effectiveCT }}</span>
         <CodeEditor v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :key="d.body.mode" v-model="d.body.raw" :lang="d.body.mode === 'json' ? 'json' : 'raw'" testid="body-raw" placeholder='{ "key": "{{value}}" }' class="body-editor" @update:model-value="touch" @beautify="beautify" />
+        <div v-else-if="d.body.mode === 'binary'" data-testid="binary-panel" style="margin-top:8px">
+          <button @click="binInput?.click()">Fayl tanlash…</button><input ref="binInput" type="file" hidden data-testid="binary-file" @change="pickBinary">
+          <span v-if="d.body.file.name" data-testid="binary-name"> 📎 {{ d.body.file.name }} <button class="ghost" data-testid="binary-clear" @click="d.body.file = { path: '', name: '' }; touch()">×</button></span>
+          <span v-else class="muted"> Fayl tanlanmagan</span>
+        </div>
+        <div v-else-if="d.body.mode === 'graphql'" data-testid="graphql-panel" style="margin-top:8px">
+          <b>Query</b><CodeEditor v-model="d.body.gql.query" lang="raw" testid="gql-query" placeholder="query { users { id name } }" class="body-editor" style="height:160px" @update:model-value="touch" />
+          <b>Variables (JSON)</b><CodeEditor v-model="d.body.gql.variables" lang="json" testid="gql-vars" placeholder='{ "id": 1 }' class="body-editor" style="height:90px" @update:model-value="touch" />
+        </div>
         <KvTable v-else-if="d.body.mode === 'form'" :rows="d.body.fields" testid="form-table" @change="touch" />
         <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" files testid="formdata-table" @change="touch" />
       </div>
@@ -146,6 +171,6 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
     </div>
   </div>
   <div v-if="curlOpen" class="overlay" @click.self="curlOpen = false"><div class="dialog" style="width:640px" data-testid="curl-drawer">
-    <div style="display:flex;gap:8px"><b style="flex:1">cURL</b><button data-testid="curl-copy" @click="copyCurl">Nusxa</button><button @click="curlOpen = false">×</button></div>
-    <pre style="margin-top:10px" data-testid="curl-output" v-html="highlightCurl(curlText)" /></div></div>
+    <div style="display:flex;gap:8px;align-items:center"><b style="flex:1">Kod</b><select v-model="lang" data-testid="snippet-lang"><option v-for="l in LANGS" :key="l[0]" :value="l[0]">{{ l[1] }}</option></select><button data-testid="curl-copy" @click="copyCurl">Nusxa</button><button @click="curlOpen = false">×</button></div>
+    <pre style="margin-top:10px" data-testid="curl-output" v-html="curlHtml" /></div></div>
 </template>

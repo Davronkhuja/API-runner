@@ -253,7 +253,7 @@ def _rows_reorder(ui, section, table):
     ui.locator("[data-testid=new-tab]").click()
     ui.click(f"[data-section={section}]")
     for i, v in enumerate(("one", "two", "three")):
-        ui.locator(f"[data-testid={table}] input[type=text]").nth(i * 2).fill(v)
+        ui.locator(f"[data-testid={table}] tr").nth(i).locator("input[type=text]").first.fill(v)
     inputs = lambda: ui.locator(f"[data-testid={table}] tr td:nth-child(3) input").evaluate_all("els => els.map(e => e.value)")
     assert inputs()[:3] == ["one", "two", "three"]
     ui.locator(f"[data-testid={table}] tr").nth(2).locator(".grip").drag_to(ui.locator(f"[data-testid={table}] tr").first, target_position={"x": 20, "y": 3})
@@ -278,7 +278,7 @@ def test_form_data_rows_reorder_by_dnd(ui):
 def _rows_reorder_fields(ui):
     t = "formdata-table"
     for i, v in enumerate(("one", "two", "three")):
-        ui.locator(f"[data-testid={t}] input[type=text]").nth(i * 2).fill(v)
+        ui.locator(f"[data-testid={t}] tr").nth(i).locator("input[type=text]").first.fill(v)
     vals = lambda: ui.locator(f"[data-testid={t}] tr td:nth-child(3) input").evaluate_all("els => els.map(e => e.value)")
     ui.locator(f"[data-testid={t}] tr").nth(2).locator(".grip").drag_to(ui.locator(f"[data-testid={t}] tr").first, target_position={"x": 20, "y": 3})
     assert vals()[:3] == ["three", "one", "two"]

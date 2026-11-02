@@ -8,6 +8,8 @@ export interface PmRequest {
   body?: {
     mode: 'raw' | 'urlencoded' | 'formdata' | 'file' | 'graphql'
     raw?: string
+    file?: { src?: string; name?: string }
+    graphql?: { query?: string; variables?: string }
     urlencoded?: PmQuery[]
     formdata?: { key: string; value?: string; src?: string; type: 'text' | 'file'; disabled?: boolean }[]
     options?: { raw?: { language?: string } }
