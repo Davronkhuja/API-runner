@@ -1,6 +1,7 @@
 import type { PmRequest, RequestItem } from '../types/model'
 
 export interface KV { key: string; value: string; enabled: boolean; description?: string; kind?: 'text' | 'file' }
+import { cleanSettings, type ReqSettings } from './settings'
 import { authFromPm, authHeader, authToPm, emptyAuth, type AuthDraft, type AuthType } from './auth'
 export { authHeader, type AuthType }
 export interface RequestDraft {
@@ -11,6 +12,7 @@ export interface RequestDraft {
   headers: KV[]
   auth: AuthDraft
   pathVars: { key: string; value: string }[]
+  settings: ReqSettings
   body: { mode: 'none' | 'raw' | 'json' | 'form' | 'multipart'; raw: string; contentType: string; fields: KV[] }
 }
 
@@ -41,7 +43,7 @@ export function paramsFromUrl(url: string, existing: KV[]): KV[] {
 export function newDraft(name = 'Yangi so\'rov'): RequestDraft {
   return {
     name, method: 'GET', url: '', params: [emptyKV()], headers: [emptyKV()],
-    auth: emptyAuth('inherit'), pathVars: [],
+    auth: emptyAuth('inherit'), pathVars: [], settings: {},
     body: { mode: 'none', raw: '', contentType: '', fields: [emptyKV()] },
   }
 }
@@ -51,6 +53,7 @@ const withTrailing = (rows: KV[]) => (rows.length && !rows[rows.length - 1].key 
 /** Saqlangan element -> tahrir qoralamasi. Eski (legacy) yozuv bo'lsa, undan aniq o'qiladi. */
 export function draftFromItem(item: RequestItem): RequestDraft {
   const d = newDraft(item.name)
+  d.settings = cleanSettings(item['x-apirunner']?.settings)
   const lg = item['x-apirunner']?.legacy
   if (lg) {
     d.method = lg.method ?? 'GET'
@@ -105,6 +108,9 @@ export function requestFromDraft(d: RequestDraft): PmRequest {
   else if (m === 'multipart') req.body = { mode: 'formdata', formdata: rows(d.body.fields).map(f => ({ key: f.key, value: f.value, type: f.kind === 'file' ? 'file' : 'text', ...(f.enabled ? {} : { disabled: true }) })) }
   return req
 }
+
+/** Saqlashda `x-apirunner` kengaytmasi (faqat bo'sh bo'lmagan sozlamalar). */
+export const extFromDraft = (d: RequestDraft) => { const s = cleanSettings(d.settings); return Object.keys(s).length ? { settings: s } : {} }
 
 /** Qoralama -> backend engine spec (/run_one, /run). Faqat yoqilgan qatorlar. */
 export function specFromDraft(d: RequestDraft, vars: Record<string, string> = {}) {

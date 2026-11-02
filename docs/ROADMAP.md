@@ -51,8 +51,8 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] Auth turlari (API Key, Digest, OAuth 2.0 [CC/Password/Code/PKCE/Implicit], AWS SigV4, JWT HS*) — v2.1.15–16; JWT RS*/ES* ochiq
 - [ ] Body turlari (form-data, urlencoded jadval, binary, GraphQL)
 - [ ] Qator checkbox/tavsif/bulk edit
-- [ ] Sozlamalar (redirect, HTTP/2, proxy, client cert, CA)
-- [ ] Cookie jar + Cookie Manager
+- [x] Sozlamalar (redirect, HTTP/2, proxy, client cert, CA, SSL, cookie jar) — v2.1.18–19; SOCKS proxy ochiq
+- [x] Cookie jar (SQLite) + Cookie Manager + Response Cookies tabi — v2.1.18–19
 - [x] Response paneli (Pretty/Raw/Preview, Headers, qidiruv, JSONPath, virtual scroll, Save as Example) — v2.1.17; Cookies/Test natijalari tablari keyingi bandlarda
 - [ ] Code snippet generatori
 - [ ] Server tomonda tarix

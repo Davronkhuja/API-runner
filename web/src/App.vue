@@ -14,6 +14,7 @@ import EnvTab from './components/EnvTab.vue'
 import RunnerTab from './components/RunnerTab.vue'
 import CollectionTab from './components/CollectionTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
+import CookiesTab from './components/CookiesTab.vue'
 import { post as apiPost } from './api/client'
 import { parseCurl, applyCurlToDraft } from './lib/curl'
 import { parseDataFile, isDataFile } from './lib/datafile'
@@ -196,6 +197,7 @@ function toggleTheme() {
         <button class="ghost" style="border-radius:0" data-testid="ls-import" title="Brauzer (localStorage) ma'lumotlarini serverga ko'chirish" @click="importLocalStorage">⇪</button>
         <button class="ghost" style="border-radius:0" data-testid="export-legacy" title="saved_requests.json formatiga eksport (orqaga qaytish)" @click="exportLegacy">⤓</button>
         <button class="ghost" style="border-radius:0" data-testid="history-btn" title="So'rovlar tarixi" @click="openHist">🕘</button>
+        <button class="ghost" style="border-radius:0" data-testid="cookies-btn" title="Cookie Manager" @click="tabs.open('cookies', 'cookies', 'Cookie\'lar', { permanent: true })">🍪</button>
         <button class="ghost" style="border-radius:0" data-testid="settings-btn" title="Sozlamalar → Zaxiralar" @click="tabs.open('settings', 'settings', 'Sozlamalar', { permanent: true })">⚙</button>
         <button class="ghost" title="Tema" data-testid="theme" style="border-radius:0" @click="toggleTheme">◐</button>
       </div>
@@ -204,6 +206,7 @@ function toggleTheme() {
         <EnvTab v-else-if="tabs.active.kind === 'environment'" :key="tabs.active.id" :tab="tabs.active" />
         <RunnerTab v-else-if="tabs.active.kind === 'runner'" :key="tabs.active.id" :tab="tabs.active" />
         <SettingsTab v-else-if="tabs.active.kind === 'settings'" :key="tabs.active.id" />
+        <CookiesTab v-else-if="tabs.active.kind === 'cookies'" :key="tabs.active.id" />
         <CollectionTab v-else-if="tabs.active.kind === 'collection'" :key="tabs.active.id" :tab="tabs.active" />
       </template>
       <div v-else class="empty" data-testid="no-tabs">

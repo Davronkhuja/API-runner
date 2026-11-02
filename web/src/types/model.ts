@@ -19,7 +19,7 @@ export interface RequestItem {
   name: string
   request: PmRequest
   response: unknown[] // Examples
-  'x-apirunner'?: { legacy?: Record<string, any> }
+  'x-apirunner'?: { legacy?: Record<string, any>; settings?: Record<string, any> }
 }
 export interface FolderItem {
   id: string

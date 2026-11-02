@@ -5,6 +5,7 @@ import { isFolder, type Collection, type FolderItem, type TreeItem } from '../ty
 import { resolveAuth, authHeader, type AuthDraft, type PmAuth } from './auth'
 import { specFromDraft, type RequestDraft } from './draft'
 import { ensureToken, tokenFor } from './oauth'
+import { mergeSettings } from './settings'
 
 export interface VarInfo { value: string; scope: string; secret: boolean }
 export type VarMap = Record<string, VarInfo>
@@ -68,6 +69,7 @@ export async function prepareAuth(d: RequestDraft, ref: string | null, extraVars
 /** Qoralama + meros auth + scope'li o'zgaruvchilar → engine spec. */
 export function specFor(d: RequestDraft, ref: string | null, extraVars: Record<string, string> = {}) {
   const spec = specFromDraft(d, { ...flatVars(ref), ...extraVars })
+  Object.assign(spec, mergeSettings(useWorkspace().settings, d.settings))
   const a = effectiveAuth(d.auth, ref)
   spec.authorization = authHeader(a)
   if (a.type === 'apikey' || a.type === 'digest' || a.type === 'awsv4' || a.type === 'jwt') spec.auth_config = { type: a.type, ...a.cfg }

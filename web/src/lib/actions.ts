@@ -3,7 +3,7 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
-import { draftFromItem, requestFromDraft } from './draft'
+import { draftFromItem, extFromDraft, requestFromDraft } from './draft'
 import { prepareAuth, specFor } from './scope'
 import { showToast } from './ui'
 import type { RequestItem } from '../types/model'
@@ -18,7 +18,7 @@ export async function saveTab(tab: Tab): Promise<boolean> {
   if (!tab.ref) return saveAsHandler.fn ? saveAsHandler.fn(tab) : false
   const [cid, id] = tab.ref.split(':')
   const request = requestFromDraft(tab.draft)
-  await tree.updateItem(cid, id, { name: tab.draft.name, request, 'x-apirunner': {} })
+  await tree.updateItem(cid, id, { name: tab.draft.name, request, 'x-apirunner': extFromDraft(tab.draft) })
   tabs.markSaved(tab.id, { title: tab.draft.name })
   return true
 }
@@ -26,7 +26,7 @@ export async function saveTab(tab: Tab): Promise<boolean> {
 export async function createRequestIn(tab: Tab, cid: string, parentId: string | null, name: string) {
   const tabs = useTabs(), tree = useTree()
   tab.draft!.name = name
-  const id = await tree.addItem(cid, { name, request: requestFromDraft(tab.draft!), response: [] }, parentId)
+  const id = await tree.addItem(cid, { name, request: requestFromDraft(tab.draft!), response: [], 'x-apirunner': extFromDraft(tab.draft!) }, parentId)
   tabs.markSaved(tab.id, { ref: `${cid}:${id}`, title: name })
   tree.reveal(cid, id)
 }

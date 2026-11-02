@@ -8,6 +8,8 @@ import { fmtBytes, fmtMs, showToast } from '../lib/ui'
 import KvTable from './KvTable.vue'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
+import SettingsForm from './SettingsForm.vue'
+import { useWorkspace as _ws } from '../stores/workspace'
 import BatchPanel from './BatchPanel.vue'
 import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
 import { effectiveAuth, scopedVars } from '../lib/scope'
@@ -16,6 +18,7 @@ import { applyCurlToDraft, buildCurl, parseCurl } from '../lib/curl'
 import { highlightCurl } from '../lib/highlight'
 
 const props = defineProps<{ tab: Tab }>()
+const wsStore = _ws()
 const tabs = useTabs(), ws = useWorkspace(), hist = useHistory()
 const d = computed(() => props.tab.draft!)
 const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
@@ -94,8 +97,8 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       <span v-for="v in usedVars" :key="v.name" class="var-chip" :class="v.ok ? 'var-ok' : 'var-undef'" data-testid="var-chip" :title="v.title">{{ v.name }}</span>
     </div>
     <div class="sections" data-testid="sections">
-      <button v-for="s in ['params', 'headers', 'auth', 'body', 'batch']" :key="s" :class="{ on: section === s }" :data-section="s" @click="section = s">
-        {{ { params: 'Params', headers: 'Headers', auth: 'Auth', body: 'Body', batch: 'Batch / Runner' }[s] }}
+      <button v-for="s in ['params', 'headers', 'auth', 'body', 'settings', 'batch']" :key="s" :class="{ on: section === s }" :data-section="s" @click="section = s">
+        {{ { params: 'Params', headers: 'Headers', auth: 'Auth', body: 'Body', settings: 'Sozlamalar', batch: 'Batch / Runner' }[s] }}
       </button>
     </div>
     <div class="editor" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
@@ -108,6 +111,10 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       </template>
       <KvTable v-else-if="section === 'headers'" :rows="d.headers" testid="headers-table" @change="touch" />
       <AuthEditor v-else-if="section === 'auth'" :auth="d.auth" allow-inherit :inherit-note="inheritNote" :scope-ref="tab.ref" @change="touch" />
+      <div v-else-if="section === 'settings'" data-testid="req-settings">
+        <p class="muted">Faqat shu so'rov uchun qayta belgilash; "Sukut" — global sozlama (⚙ Sozlamalar).</p>
+        <SettingsForm :model="d.settings" :fallback="wsStore.settings" @change="touch" />
+      </div>
       <BatchPanel v-else-if="section === 'batch'" :tab="tab" />
       <div v-else data-testid="body-panel">
         <select v-model="d.body.mode" data-testid="body-mode" @change="touch">

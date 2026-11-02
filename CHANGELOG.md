@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.1.19] — 2026-11-02 — Bosqich 2 (4/5: cookie'lar va sozlamalar, frontend)
+### Added
+- **Cookie Manager** tabi (🍪): domenlar bo'yicha guruhlangan jar; qiymatni joyida tahrirlash, bittasini/domenni (tasdiq bilan)/hammasini o'chirish, qo'lda qo'shish, tekshiruv xabari.
+- Response → **Cookies** tabi: `Set-Cookie` atributlari (domen, yo'l, muddat, HttpOnly/Secure/SameSite).
+- **Sozlamalar**: so'rov tabida "Sozlamalar" bo'limi va ⚙ → global sozlamalar (redirect'larga ergashish, maks. redirect, HTTP/2, SSL tekshiruvi, cookie jar, proxy, CA fayli, mijoz sertifikati/kaliti). "Sukut" global qiymatni ko'rsatadi; so'rov sozlamasi globalni bosadi; so'rov bilan birga `x-apirunner.settings` ga saqlanadi; Batch va Runner ham ishlatadi.
+- 9 yangi e2e (`test_cookies_ui.py`), 2 unit test.
+### Fixed
+- Cookie qo'shishda maydonlar so'rov javobini kutmasdan tozalanadi (keyingi yozuv oldingi so'rov tomonidan o'chib ketmasin); ro'yxat yuklash "oxirgisi g'olib" (eskirgan javob yangisini bosmaydi).
+
 ## [2.1.18] — 2026-10-30 — Bosqich 2 (4/5: cookie'lar va sozlamalar, backend)
 ### Added
 - **Cookie jar** (SQLite `workspace/state.db`, `storage/cookies.py`): `Set-Cookie` avtomatik saqlanadi va keyingi so'rovlarga domen/yo'l/secure qoidalari bo'yicha yuboriladi (`http.cookiejar`); serverda o'chirilgan (muddati o'tgan) cookie bazadan ham ketadi; jarayon qayta ishga tushganda saqlanadi; Batch qatorlari bitta jar'ni ulashadi. `spec.use_cookies=false` — jar o'chiq. Natijada `set_cookies` (har bir Set-Cookie alohida) va `redirects`.
@@ -11,8 +20,6 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bo
 ### Changed
 - `/run_one` javobiga `set_cookies` va `redirects` qo'shildi. `_send(..., spec, ctx)` imzosi kengaydi.
 - Maxsus CA ishlatilganda `VERIFY_X509_STRICT` o'chiriladi (Python 3.13+ qat'iy rejimi AKI'siz xususiy CA sertifikatlarini rad etardi; requests/Postman kabi yumshoq).
-### Hali qilinmagan
-- Frontend: Cookie Manager tabi, Response → Cookies tabi, so'rov/global Sozlamalar UI.
 
 ## [2.1.17] — 2026-10-30 — Bosqich 2 (3/5: Response paneli)
 ### Added

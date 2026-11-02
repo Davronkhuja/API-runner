@@ -6,11 +6,13 @@ import { requestFromDraft } from '../lib/draft'
 import { esc, highlightJson } from '../lib/highlight'
 import { jsonPath } from '../lib/jsonpath'
 import { showToast } from '../lib/ui'
+import { parseSetCookie } from '../lib/cookies'
 
 const props = defineProps<{ tab: Tab }>()
 const tree = useTree()
 const r = computed(() => props.tab.response)
-const view = ref<'body' | 'headers'>('body')
+const view = ref<'body' | 'headers' | 'cookies'>('body')
+const setCookies = computed(() => ((r.value?.set_cookies ?? []) as string[]).map(parseSetCookie))
 const mode = ref<'pretty' | 'raw' | 'preview'>('pretty')
 const search = ref(''), cur = ref(0), jpath = ref('')
 
@@ -112,6 +114,7 @@ const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusx
     <div class="rp-bar" data-testid="resp-bar">
       <button :class="{ on: view === 'body' }" data-testid="rp-body-tab" @click="view = 'body'">Body</button>
       <button :class="{ on: view === 'headers' }" data-testid="rp-headers-tab" @click="view = 'headers'">Headers ({{ headers.length }})</button>
+      <button :class="{ on: view === 'cookies' }" data-testid="rp-cookies-tab" @click="view = 'cookies'">Cookies ({{ setCookies.length }})</button>
       <template v-if="view === 'body'">
         <span class="rp-sep" />
         <button v-for="m in (['pretty', 'raw', 'preview'] as const)" :key="m" :class="{ on: mode === m }" :data-mode="m" :disabled="m === 'preview' && !isHtml" @click="mode = m">{{ { pretty: 'Pretty', raw: 'Raw', preview: 'Preview' }[m] }}</button>
@@ -141,6 +144,10 @@ const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusx
       <div v-if="virtual" class="muted" data-testid="rp-virtual-note">{{ lines.length }} qator (virtual scroll)</div>
     </template>
 
+    <table v-else-if="view === 'cookies'" class="kv" data-testid="rp-cookies"><thead><tr><th style="text-align:left">Nom</th><th style="text-align:left">Qiymat</th><th style="text-align:left">Domen</th><th style="text-align:left">Yo'l</th><th style="text-align:left">Muddat</th><th style="text-align:left">Bayroqlar</th></tr></thead><tbody>
+      <tr v-for="c in setCookies" :key="c.name" data-testid="rp-cookie-row"><td><b>{{ c.name }}</b></td><td style="word-break:break-all">{{ c.value }}</td><td>{{ c.domain }}</td><td>{{ c.path }}</td><td>{{ c.expires || (c.maxAge ? c.maxAge + ' s' : 'sessiya') }}</td><td>{{ [c.httpOnly && 'HttpOnly', c.secure && 'Secure', c.sameSite && 'SameSite=' + c.sameSite].filter(Boolean).join(' · ') }}</td></tr>
+      <tr v-if="!setCookies.length"><td colspan="6" class="muted">Bu javob cookie o'rnatmadi</td></tr>
+    </tbody></table>
     <table v-else class="kv" data-testid="rp-headers"><tbody>
       <tr v-for="[k, v] in headers" :key="k"><td style="width:240px"><b>{{ k }}</b></td><td style="word-break:break-all">{{ v }}</td></tr>
       <tr v-if="!headers.length"><td class="muted">Header yo'q</td></tr>
