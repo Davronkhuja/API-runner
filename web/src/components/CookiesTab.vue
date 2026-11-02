@@ -29,7 +29,7 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="editor" data-testid="cookies-tab">
+  <div class="page" data-testid="cookies-tab">
     <div style="display:flex;gap:10px;align-items:center">
       <h3 style="flex:1;margin:0">Cookie Manager</h3>
       <button data-testid="cookies-refresh" @click="load">⟳ Yangilash</button>
@@ -52,7 +52,7 @@ onMounted(load)
           <td class="muted" style="width:60px">{{ c.path }}</td>
           <td class="muted" style="width:150px">{{ exp(c.expires) }}</td>
           <td class="muted" style="width:90px">{{ c.httponly ? 'HttpOnly ' : '' }}{{ c.secure ? 'Secure' : '' }}</td>
-          <td style="width:26px"><button class="ghost" data-testid="cookie-del" @click="remove(c)">×</button></td>
+          <td style="width:26px"><button class="ghost" aria-label="Cookie'ni o'chirish" data-testid="cookie-del" @click="remove(c)">×</button></td>
         </tr>
       </tbody></table>
     </div>

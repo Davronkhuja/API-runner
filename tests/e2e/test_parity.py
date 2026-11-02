@@ -399,7 +399,7 @@ def test_environment_delete_confirm(ui, app):
     ui.reload()
     ui.click("[data-testid=sb-environments]")
     expect(T(ui, "env-row")).to_have_count(1)
-    T(ui, "env-row").locator("button", has_text="×").click()
+    T(ui, "env-row").locator("button[aria-label=\"Muhitni o'chirish\"]").click()
     T(ui, "confirm-ok").click()
     expect(T(ui, "env-row")).to_have_count(0)
 
@@ -442,6 +442,7 @@ def test_empty_url_warns(ui):
 
 def test_localstorage_import_button(ui):
     ui.evaluate("""() => localStorage.setItem('apiRunnerEnvs', JSON.stringify([{id:'e9', name:'LS', vars:{k:'v'}}]))""")
+    T(ui, "settings-btn").click()
     T(ui, "ls-import").click()
     expect(T(ui, "toast")).to_contain_text("Ko'chirildi")
     ui.click("[data-testid=sb-environments]")
@@ -450,6 +451,7 @@ def test_localstorage_import_button(ui):
 
 def test_localstorage_import_empty_warns(ui):
     ui.evaluate("() => localStorage.clear()")
+    T(ui, "settings-btn").click()
     T(ui, "ls-import").click()
     expect(T(ui, "toast")).to_contain_text("ko'chiriladigan ma'lumot yo'q")
 
@@ -457,6 +459,7 @@ def test_localstorage_import_empty_warns(ui):
 def test_export_to_legacy_format_button(ui, app):
     app.seed([("a", "Alfa", None)])
     ui.reload()
+    T(ui, "settings-btn").click()
     with ui.expect_download() as d:
         T(ui, "export-legacy").click()
     data = json.load(open(d.value.path()))
@@ -550,6 +553,7 @@ def test_history_drawer_open_load_clear_esc(ui, echo_server):
     new_req(ui, echo_server + "/echo?hd=1")
     T(ui, "send").click()
     expect(T(ui, "resp-status")).to_have_text("200")
+    ui.click("[data-testid=sb-history]")
     T(ui, "history-btn").click()
     expect(T(ui, "history-drawer")).to_be_visible()
     expect(T(ui, "hd-row").first).to_contain_text("/echo")

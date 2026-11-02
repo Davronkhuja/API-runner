@@ -20,8 +20,8 @@ async function save() {
 </script>
 
 <template>
-  <div v-if="env" class="editor" data-testid="env-tab">
-    <p><input v-model="env.name" data-testid="env-name" :disabled="isGlobals" @input="tabs.touch(tab.id)"> <button class="primary" data-testid="env-save" @click="save">Saqlash</button>
+  <div v-if="env" class="page" data-testid="env-tab">
+    <p><input v-model="env.name" aria-label="Muhit nomi" data-testid="env-name" :disabled="isGlobals" @input="tabs.touch(tab.id)"> <button class="primary" data-testid="env-save" @click="save">Saqlash</button>
       <button v-if="!isGlobals" data-testid="env-activate" @click="ws.setActive(ws.activeEnvId === env!.id ? null : env!.id)">{{ ws.activeEnvId === env.id ? 'Faol ✓' : 'Faollashtirish' }}</button></p>
     <table class="kv"><tbody>
       <tr v-for="(v, i) in env.values" :key="i">
@@ -29,7 +29,7 @@ async function save() {
         <td><input v-model="v.key" placeholder="O'zgaruvchi" data-testid="env-key" @input="tabs.touch(tab.id)"></td>
         <td><input v-model="v.value" :type="v.type === 'secret' ? 'password' : 'text'" placeholder="Qiymat" data-testid="env-val" @input="tabs.touch(tab.id)"></td>
         <td style="width:90px"><select v-model="v.type" @change="tabs.touch(tab.id)"><option value="default">default</option><option value="secret">secret</option></select></td>
-        <td style="width:24px"><button class="ghost" @click="env!.values.splice(i, 1); tabs.touch(tab.id)">×</button></td>
+        <td style="width:24px"><button class="ghost" aria-label="O'zgaruvchini o'chirish" @click="env!.values.splice(i, 1); tabs.touch(tab.id)">×</button></td>
       </tr>
     </tbody></table>
     <button data-testid="env-add" @click="add">＋ O'zgaruvchi</button>

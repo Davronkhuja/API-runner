@@ -100,7 +100,7 @@ def test_var_chips_defined_dynamic_undefined_and_hover_scope(ui):
     chips = T(ui, "var-chip")
     expect(chips).to_have_count(2)
     who = ui.locator("[data-testid=var-chip]", has_text="who")
-    expect(who).to_have_attribute("title", re.compile(r"Folder: Fold: folder"))
+    expect(who).to_have_attribute("data-tip", re.compile(r"Folder: Fold: folder"))
     expect(who).to_have_class(re.compile("var-ok"))
     ui.fill("[data-testid=url]", "{{host}}/echo/{{missing}}/{{$guid}}")
     miss = ui.locator("[data-testid=var-chip]", has_text="missing")
@@ -118,7 +118,7 @@ def test_secret_variable_is_masked_in_chip_title_and_input(ui, app):
     open_req(ui, "AtRoot")
     ui.fill("[data-testid=url]", "{{host}}/echo?t={{tok}}")
     chip = ui.locator("[data-testid=var-chip]", has_text="tok")
-    assert "SUPERSECRET" not in chip.get_attribute("title")
+    assert "SUPERSECRET" not in chip.get_attribute("data-tip")
     ui.locator("[data-name='Col']").dblclick()
     ui.click("[data-scope-section=vars]")
     ui.locator("[data-testid=scope-vars] [data-testid=var-key]", has=ui.locator("xpath=.")).last  # jadval mavjud

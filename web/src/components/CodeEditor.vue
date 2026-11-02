@@ -14,17 +14,18 @@ let view: EditorView | undefined
 
 // Ranglar tema o'zgaruvchilaridan (yorug/qorong'i avtomatik)
 const style = HighlightStyle.define([
-  { tag: t.propertyName, color: 'var(--ac)' },
-  { tag: [t.string, t.special(t.string)], color: 'var(--ok)' },
-  { tag: [t.number, t.bool, t.null], color: 'var(--warn)' },
-  { tag: [t.keyword, t.atom], color: 'var(--err)' },
+  { tag: t.propertyName, color: 'var(--j-key)' },
+  { tag: [t.string, t.special(t.string)], color: 'var(--j-str)' },
+  { tag: [t.number], color: 'var(--j-num)' },
+  { tag: [t.bool, t.null], color: 'var(--j-bool)' },
+  { tag: [t.keyword, t.atom], color: 'var(--j-bool)' },
 ])
 const theme = EditorView.theme({
-  '&': { backgroundColor: 'var(--bg)', color: 'var(--fg)', border: '1px solid var(--bd)', borderRadius: '5px', height: '100%' },
-  '&.cm-focused': { outline: '1px solid var(--ac)' },
-  '.cm-scroller': { fontFamily: 'ui-monospace,Menlo,monospace', fontSize: '12px', overflow: 'auto' },
-  '.cm-content': { caretColor: 'var(--fg)', padding: '6px 0' },
-  '.cm-cursor': { borderLeftColor: 'var(--fg)' },
+  '&': { backgroundColor: 'var(--code)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '9px', height: '100%' },
+  '&.cm-focused': { outline: '1px solid var(--accent)' },
+  '.cm-scroller': { fontFamily: 'var(--font-mono)', fontSize: '12.5px', overflow: 'auto' },
+  '.cm-content': { caretColor: 'var(--text)', padding: '6px 0' },
+  '.cm-cursor': { borderLeftColor: 'var(--text)' },
 })
 
 onMounted(() => {

@@ -2,6 +2,27 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.2.1] — 2026-11-02 — Yangi dizayn (docs/design maketlari)
+### Changed
+- **Dizayn tizimi**: `web/src/styles/tokens.css` — `.th-light`/`.th-dark` tokenlari (ranglar, metod ranglari GET/POST/PUT/PATCH/DELETE, JSON ranglari, ok/err, o'zgaruvchi chiplari). Barcha komponentlar faqat shu o'zgaruvchilardan foydalanadi (tekshiruv testi: aniqlanmagan token yoki qattiq yozilgan rang yo'q). Eski `--fg/--bd/--ac…` o'zgaruvchilari olib tashlandi.
+- **Tema**: headerdagi almashtirgich, tanlov `localStorage`da saqlanadi va sahifa chizilishidan oldin qo'llanadi (miltillashsiz); saqlanmagan bo'lsa tizim sozlamasi.
+- **Shriftlar**: Inter (UI) va JetBrains Mono (kod, URL, metodlar) — lokal woff2 (`@fontsource-variable`, lotin / lotin-ext / kirill), CDN'ga bog'lanmaydi (oflayn ishlaydi).
+- **Qobiq**: header (logo, workspace, ⌘K qidiruv, Import, muhit tanlash, muhit o'zgaruvchilari, tema, sozlamalar) → chap ikonka rail (Kolleksiya / Muhitlar / Tarix / Runner) → sidebar → tablar → breadcrumb + URL bar + so'rov tablari (hisoblagich badge'lari) → sudraladigan ajratgich → javob paneli → pastki status bar (server holati, Console, Cookie'lar, zaxira vaqti, versiya).
+- **Mikro-detallar**: faol tabning yuqori chizig'i, saqlanmagan tabda nuqta, tabda metod yorlig'i, URL ichidagi `{{var}}` rangli chip (aniqlanmagan — qizil) va hover'da scope/qiymat tooltip'i, status pill (`200 OK` yashil, 4xx/5xx qizil), vaqt ustida timing tooltip'i, bo'sh holatlar (javob yo'q, tab yo'q → bosh sahifa).
+- **Bosh sahifa** (tab ochiq emas): boshlash kartalari, ⌘V bilan cURL joylashtirish, import zonasi, oxirgi so'rovlar, yorliqlar.
+- **Runner** maketga mos: sozlamalar paneli (so'rovlar tartibi + tanlash, iteratsiyalar, kechikish, ma'lumot fayli, birinchi xatoda to'xtash), progress, 4 ta statistika kartasi, filtrlangan natijalar jadvali, To'xtatish.
+### Added
+- **⌘K** qidiruv palitrasi (so'rov nom/URL/metod, muhit, amallar; ↑↓ Enter Esc).
+- **Klaviatura**: daraxt (↑↓ ←→ Enter F2), tablar va so'rov bo'limlari (←→ Home End, Delete), sidebar/javob ajratgichi (strelkalar), global fokus halqasi.
+- **A11y**: ikonka-tugmalarda `aria-label`, `role=tablist/tab/tree/dialog`, `aria-pressed/expanded/selected`, progress `role=progressbar`; matn kontrasti WCAG AA — ikkala temada tekshiriladi (light'da GET/POST rangi `hover`/`accent-weak` fonida 4.5:1 uchun sal quyuqlashtirildi).
+- Har ekran uchun Playwright skrinshot testi (light + dark, 1440×900); `docs/screenshots/{before,after}/…` va oldin/keyin jadvali (`docs/screenshots/README.md`, `tools/shots_readme.py`).
+- 33 yangi e2e (`test_redesign.py`) va 9 token testi (`test_design_tokens.py`).
+### Moved (funksiya yo'qolmadi)
+- ⇪ localStorage import va ⤓ `saved_requests.json` eksport → Sozlamalar → "Ma'lumotlar"; 🕘 kengaytirilgan tarix → Tarix paneli sarlavhasi; 🍪 Cookie Manager → status bar.
+### Eslatma
+- Maketdagi Console va ⌘O/⌘R yorliqlari: Console faol emas (Bosqich 3 skriptlari bilan), brauzer yorliqlari bosib o'tilmadi.
+- Testlar: ko'chgan elementlar uchun yo'l yangilandi; DnD testlari qatorlarni indeks emas, qator ichidagi birinchi maydon bo'yicha to'ldiradi.
+
 ## [2.2.0] — 2026-11-02 — Bosqich 2 tugadi
 ### Added
 - **Code snippet generatori** (`</> Kod`): cURL, Python requests, JavaScript fetch, axios, Node.js http, Go net/http, PHP cURL, Java OkHttp, C# HttpClient. O'zgaruvchilar qiymat bilan almashtiriladi, meros auth/API Key kiradi (JWT/Digest/SigV4 haqida eslatma), multipart va xom tana qo'llab-quvvatlanadi; yaroqsiz URL sahifani buzmaydi. cURL, Python va Node snippetlari e2e testda **haqiqatan bajarilib** tekshiriladi. 9 til uchun 6 unit test.

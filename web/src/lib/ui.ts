@@ -1,5 +1,10 @@
 import { ref } from 'vue'
 
+/** Chap panel (rail bilan boshqariladi) va ⌘K palitrasi holati. */
+export type SidePanel = 'collections' | 'environments' | 'history' | 'runner'
+export const sidePanel = ref<SidePanel>('collections')
+export const cmdkOpen = ref(false)
+
 export const toast = ref<{ msg: string; kind: string } | null>(null)
 let tt: ReturnType<typeof setTimeout>
 export function showToast(msg: string, kind = 'info', ms = 3000) {

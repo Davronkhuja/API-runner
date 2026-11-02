@@ -14,7 +14,7 @@ const remove = (i: number) => { props.rows.splice(i, 1); emit('change') }
         <td><input v-model="v.key" placeholder="O'zgaruvchi" data-testid="var-key" @input="emit('change')"></td>
         <td><input v-model="v.value" :type="v.type === 'secret' ? 'password' : 'text'" placeholder="Qiymat" data-testid="var-val" @input="emit('change')"></td>
         <td style="width:90px"><select v-model="v.type" data-testid="var-type" @change="emit('change')"><option value="default">default</option><option value="secret">secret</option></select></td>
-        <td style="width:24px"><button class="ghost" @click="remove(i)">×</button></td>
+        <td style="width:24px"><button class="ghost" aria-label="O'zgaruvchini o'chirish" @click="remove(i)">×</button></td>
       </tr>
     </tbody></table>
     <button data-testid="var-add" @click="add">＋ O'zgaruvchi</button>

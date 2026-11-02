@@ -4,7 +4,7 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { sendTab, saveTab } from '../lib/actions'
-import { fmtBytes, fmtMs, showToast } from '../lib/ui'
+import { showToast } from '../lib/ui'
 import KvTable from './KvTable.vue'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
@@ -12,7 +12,9 @@ import SettingsForm from './SettingsForm.vue'
 import { useWorkspace as _ws } from '../stores/workspace'
 import BatchPanel from './BatchPanel.vue'
 import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
-import { effectiveAuth, scopedVars } from '../lib/scope'
+import { effectiveAuth, folderPath, scopedVars } from '../lib/scope'
+import { useTree } from '../stores/tree'
+import Icon from './Icon.vue'
 import AuthEditor from './AuthEditor.vue'
 import { applyCurlToDraft, parseCurl } from '../lib/curl'
 import { generate, LANGS, snipReqFromDraft, type Lang } from '../lib/snippets'
@@ -25,6 +27,42 @@ const d = computed(() => props.tab.draft!)
 const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
 const touch = () => tabs.touch(props.tab.id)
 const curlOpen = ref(false)
+const SECTIONS = ['params', 'headers', 'auth', 'body', 'settings', 'batch'] as const
+const onSectionKey = (e: KeyboardEvent) => {
+  const i = SECTIONS.indexOf(section.value as any), n = SECTIONS.length
+  const to = e.key === 'ArrowRight' ? SECTIONS[(i + 1) % n] : e.key === 'ArrowLeft' ? SECTIONS[(i - 1 + n) % n] : null
+  if (to) { e.preventDefault(); section.value = to; nextTick(() => document.querySelector<HTMLElement>(`[data-section=${to}]`)?.focus()) }
+}
+const tree = useTree()
+const crumbs = computed(() => {
+  const [cid, id] = (props.tab.ref ?? '').split(':')
+  const col = cid ? tree.cols[cid] : undefined
+  if (!col) return ['Saqlanmagan so\'rov', d.value.name || 'Yangi so\'rov']
+  return [col.info.name, ...folderPath(col, id).map(f => f.name), d.value.name]
+})
+const counts = computed(() => ({
+  params: d.value.params.filter(p => p.enabled && p.key.trim()).length, headers: d.value.headers.filter(h => h.enabled && h.key.trim()).length,
+  auth: 0, body: 0, settings: Object.keys(d.value.settings ?? {}).length, batch: 0,
+} as Record<string, number>))
+// URL ustidagi {{o'zgaruvchi}} chiplari: matn `<input>` da (shaffof), rangli nusxasi ustida; so'rov qismi (?…) xira
+const chipTip = ref<{ text: string; x: number; y: number } | null>(null)
+function showTip(e: MouseEvent, text: string) { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); chipTip.value = { text, x: Math.max(8, r.left), y: r.bottom + 6 } }
+const urlEl = ref<HTMLInputElement>(), urlScroll = ref(0)
+const syncScroll = () => requestAnimationFrame(() => { urlScroll.value = urlEl.value?.scrollLeft ?? 0 })
+const urlSegs = computed(() => {
+  const known = scopedVars(props.tab.ref), out: { t: string; q: boolean; v?: { ok: boolean; title: string } }[] = []
+  const url = d.value.url, qi = url.indexOf('?')
+  let last = 0
+  const push = (t: string, at: number, v?: { ok: boolean; title: string }) => t && out.push({ t, q: qi >= 0 && at >= qi, v })
+  for (const m of url.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)) {
+    push(url.slice(last, m.index), last)
+    const name = m[1], kv = known[name]
+    push(m[0], m.index!, kv ? { ok: true, title: `${name} → ${kv.scope}: ${kv.secret ? '••••' : kv.value}` } : name.startsWith('$') ? { ok: true, title: `${name} → dinamik (har so'rovda yangi)` } : { ok: false, title: `${name} — aniqlanmagan o'zgaruvchi` })
+    last = m.index! + m[0].length
+  }
+  push(url.slice(last), last)
+  return out
+})
 const lang = ref<Lang>('curl')
 const curlText = computed(() => {
   if (!curlOpen.value) return ''
@@ -33,6 +71,8 @@ const curlText = computed(() => {
 const curlHtml = computed(() => (lang.value === 'curl' ? highlightCurl(curlText.value) : esc(curlText.value)))
 const inheritNote = computed(() => { const t = effectiveAuth(d.value.auth, props.tab.ref).type; return t === 'none' ? 'Meros: ota papka/collection auth\'i yo\'q — Auth yuborilmaydi.' : `Meros: ${t} (ota papka/collection)` })
 // {{o'zgaruvchi}} chiplari: scope va qiymat hoverda, aniqlanmagani qizil
+const urlNames = computed(() => new Set([...d.value.url.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)].map(m => m[1])))
+const extraVars = computed(() => usedVars.value.filter(v => !urlNames.value.has(v.name)))
 const usedVars = computed(() => {
   const dd = d.value, text = [dd.url, dd.body.raw, ...dd.headers.flatMap(h => [h.key, h.value]), ...dd.params.flatMap(p => [p.key, p.value]), dd.auth.token, dd.auth.user, dd.auth.pass, dd.auth.custom].join('\n')
   const known = scopedVars(props.tab.ref)
@@ -56,6 +96,7 @@ function startResize(e: PointerEvent) {
   const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
   window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
 }
+function nudge(dy: number) { respH.value = Math.max(80, (respH.value ?? respEl.value?.offsetHeight ?? 200) + dy) }
 function copyCurl() { navigator.clipboard?.writeText(curlText.value); showToast('Nusxalandi', 'success') }
 function beautify() {
   try { d.value.body.raw = JSON.stringify(JSON.parse(d.value.body.raw), null, 2); touch() } catch { showToast('JSON noto\'g\'ri — formatlab bo\'lmadi', 'warn') }
@@ -86,7 +127,6 @@ function onPaste(e: ClipboardEvent) {
   d.value.pathVars = syncPathVars(d.value.url, [])
   touch()
 }
-const statusClass = computed(() => { const s = props.tab.response?.status; return typeof s === 'number' && s < 400 ? 'ok' : 'err' })
 const urlHist = computed(() => hist.urls.map(h => h.payload).filter((p: any) => p?.url && p.url.toLowerCase().includes(d.value.url.toLowerCase())).slice(0, 8))
 
 // Scroll holatini tabda saqlash/tiklash
@@ -95,27 +135,41 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
 
 <template>
   <div style="display:flex;flex-direction:column;flex:1;min-height:0" data-testid="request-editor">
+    <div class="crumbs" data-testid="crumbs">
+      <template v-for="(c, i) in crumbs" :key="i"><span v-if="i">/</span><span :class="{ cur: i === crumbs.length - 1 }">{{ c }}</span></template>
+      <div style="flex:1" />
+      <button class="sm" data-testid="save" :disabled="!tab.dirty && !!tab.ref" aria-keyshortcuts="Control+S Meta+S" @click="saveTab(tab)"><Icon name="save" :size="14" />Saqlash <span class="muted" style="font-size:11px">⌘S</span></button>
+      <button class="sm" data-testid="curl-btn" title="Kod namunasi (cURL, Python, JS, Go, ...)" @click="curlOpen = true">&lt;/&gt; Kod</button>
+    </div>
     <div class="urlbar" style="position:relative">
-      <select v-model="d.method" data-testid="method" :class="'m-' + d.method" @change="touch">
-        <option v-for="m in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']" :key="m" :class="'m-' + m">{{ m }}</option>
-      </select>
-      <input v-model="d.url" data-testid="url" placeholder="https://api.example.com/endpoint/{{id}}  yoki  curl '...' ni bu yerga joylashtiring"
-             @input="onUrlInput" @paste="onPaste" @focus="showHist = true; hist.load()" @blur="hideHist"
-             @keydown.enter="sendTab(tab)">
-      <div v-if="showHist && urlHist.length" class="menu" style="position:absolute;left:90px;top:44px;right:130px" data-testid="url-history">
-        <button v-for="(h, i) in urlHist" :key="i" @mousedown.prevent="d.method = h.method; d.url = h.url; d.pathVars = syncPathVars(d.url, d.pathVars); touch()"><b>{{ h.method }}</b> {{ h.url }}</button>
+      <div class="urlfield">
+        <select v-model="d.method" data-testid="method" aria-label="HTTP metod" :class="'m-' + d.method" @change="touch">
+          <option v-for="m in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']" :key="m" :class="'m-' + m">{{ m }}</option>
+        </select>
+        <div class="urlwrap">
+          <input ref="urlEl" v-model="d.url" class="hl" data-testid="url" aria-label="So'rov URL" spellcheck="false" autocomplete="off" placeholder="https://api.example.com/endpoint/{{id}}  yoki  curl '...' ni bu yerga joylashtiring"
+                 @input="onUrlInput(); syncScroll()" @paste="onPaste" @focus="showHist = true; hist.load(); syncScroll()" @blur="hideHist" @scroll="syncScroll" @keyup="syncScroll" @click="syncScroll"
+                 @keydown.enter="sendTab(tab)">
+          <div class="hlx" aria-hidden="true"><div class="in" :style="{ transform: `translateX(${-urlScroll}px)` }"><template v-for="(g, i) in urlSegs" :key="i"
+            ><span v-if="g.v" class="chip" :class="g.v.ok ? 'var-ok' : 'var-undef undef'" data-testid="var-chip" :data-tip="g.v.title" :aria-label="g.v.title" @mouseenter="showTip($event, g.v.title)" @mouseleave="chipTip = null" @mousedown.prevent="urlEl?.focus()">{{ g.t }}</span
+            ><span v-else :class="{ q: g.q }">{{ g.t }}</span></template></div></div>
+        </div>
       </div>
-      <button class="primary" data-testid="send" :disabled="tab.response?.loading" @click="sendTab(tab)">▶ Yuborish</button>
-      <button data-testid="curl-btn" title="Kod namunasi (cURL, Python, JS, Go, ...)" @click="curlOpen = true">&lt;/&gt; Kod</button>
-      <button data-testid="save" :disabled="!tab.dirty && !!tab.ref" @click="saveTab(tab)">Saqlash</button>
+      <div v-if="showHist && urlHist.length" class="menu" style="position:absolute;left:18px;top:42px;right:150px" data-testid="url-history" role="listbox">
+        <button v-for="(h, i) in urlHist" :key="i" role="option" @mousedown.prevent="d.method = h.method; d.url = h.url; d.pathVars = syncPathVars(d.url, d.pathVars); touch()"><b class="m" :class="'m-' + h.method" style="font:700 11px var(--font-mono);width:52px;text-align:left">{{ h.method }}</b> {{ h.url }}</button>
+      </div>
+      <button class="primary" data-testid="send" :disabled="tab.response?.loading" aria-keyshortcuts="Control+Enter Meta+Enter" @click="sendTab(tab)"><Icon name="send" :size="15" />{{ tab.response?.loading ? 'Yuborilmoqda…' : 'Yuborish' }}</button>
     </div>
-    <div v-if="usedVars.length" class="var-chips" data-testid="var-chips">
-      <span v-for="v in usedVars" :key="v.name" class="var-chip" :class="v.ok ? 'var-ok' : 'var-undef'" data-testid="var-chip" :title="v.title">{{ v.name }}</span>
+    <div v-if="chipTip" class="tip-pop" role="tooltip" data-testid="chip-tip" :style="{ left: chipTip.x + 'px', top: chipTip.y + 'px' }">{{ chipTip.text }}</div>
+    <div v-if="extraVars.length" class="var-chips" data-testid="var-chips"><span>Boshqa o'zgaruvchilar:</span>
+      <span v-for="v in extraVars" :key="v.name" class="var-chip" :class="v.ok ? 'var-ok' : 'var-undef'" data-testid="var-chip" :title="v.title">{{ v.name }}</span>
     </div>
-    <div class="sections" data-testid="sections">
-      <button v-for="s in ['params', 'headers', 'auth', 'body', 'settings', 'batch']" :key="s" :class="{ on: section === s }" :data-section="s" @click="section = s">
-        {{ { params: 'Params', headers: 'Headers', auth: 'Auth', body: 'Body', settings: 'Sozlamalar', batch: 'Batch / Runner' }[s] }}
+    <div class="sections" data-testid="sections" role="tablist" aria-label="So'rov bo'limlari" @keydown="onSectionKey">
+      <button v-for="s in SECTIONS" :key="s" role="tab" :aria-selected="section === s" :tabindex="section === s ? 0 : -1" :class="{ on: section === s }" :data-section="s" @click="section = s">
+        {{ { params: 'Params', headers: 'Headers', auth: 'Auth', body: 'Body', settings: 'Sozlamalar', batch: 'Batch / Runner' }[s] }}<span v-if="counts[s]" class="badge">{{ counts[s] }}</span>
       </button>
+      <div style="flex:1" />
+      <button data-testid="sections-cookies" class="ghost sm" style="height:26px;margin:0" @click="tabs.open('cookies', 'cookies', 'Cookie\'lar', { permanent: true })">Cookie'lar</button>
     </div>
     <div class="editor" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
       <template v-if="section === 'params'">
@@ -142,7 +196,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <CodeEditor v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :key="d.body.mode" v-model="d.body.raw" :lang="d.body.mode === 'json' ? 'json' : 'raw'" testid="body-raw" placeholder='{ "key": "{{value}}" }' class="body-editor" @update:model-value="touch" @beautify="beautify" />
         <div v-else-if="d.body.mode === 'binary'" data-testid="binary-panel" style="margin-top:8px">
           <button @click="binInput?.click()">Fayl tanlash…</button><input ref="binInput" type="file" hidden data-testid="binary-file" @change="pickBinary">
-          <span v-if="d.body.file.name" data-testid="binary-name"> 📎 {{ d.body.file.name }} <button class="ghost" data-testid="binary-clear" @click="d.body.file = { path: '', name: '' }; touch()">×</button></span>
+          <span v-if="d.body.file.name" data-testid="binary-name"> 📎 {{ d.body.file.name }} <button class="ghost" aria-label="Faylni olib tashlash" data-testid="binary-clear" @click="d.body.file = { path: '', name: '' }; touch()">×</button></span>
           <span v-else class="muted"> Fayl tanlanmagan</span>
         </div>
         <div v-else-if="d.body.mode === 'graphql'" data-testid="graphql-panel" style="margin-top:8px">
@@ -153,24 +207,12 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" files testid="formdata-table" @change="touch" />
       </div>
     </div>
-    <div class="v-resizer" data-testid="resp-resizer" @pointerdown.prevent="startResize" />
-    <div class="resp" ref="respEl" data-testid="response" :style="respH ? { flex: 'none', height: respH + 'px' } : {}" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
-      <div v-if="!tab.response" class="empty">Javob shu yerda ko'rinadi</div>
-      <div v-else-if="tab.response.loading" class="muted">Yuborilmoqda…</div>
-      <template v-else>
-        <div style="display:flex;gap:14px;align-items:center;margin-bottom:8px">
-          <span class="status-pill" :class="statusClass" data-testid="resp-status">{{ tab.response.status }}</span>
-          <span data-testid="resp-time">{{ fmtMs(tab.response.time) }}</span>
-          <span data-testid="resp-size">{{ fmtBytes(tab.response.size ?? 0) }}</span>
-          <span class="muted" data-testid="resp-timing" :title="'DNS / connect / TLS / TTFB'">
-            DNS — · connect {{ fmtMs(tab.response.timing?.connect) }} · TLS {{ fmtMs(tab.response.timing?.tls) }} · TTFB {{ fmtMs(tab.response.timing?.ttfb) }}
-          </span>
-        </div>
-        <ResponsePanel :tab="tab" />
-      </template>
-    </div>
+    <div class="v-resizer" data-testid="resp-resizer" role="separator" aria-orientation="horizontal" aria-label="Javob paneli balandligi" tabindex="0" @pointerdown.prevent="startResize" @keydown.up.prevent="nudge(24)" @keydown.down.prevent="nudge(-24)" />
+    <section class="resp" ref="respEl" data-testid="response" aria-label="Javob" :style="respH ? { flex: 'none', height: respH + 'px' } : {}" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
+      <ResponsePanel :tab="tab" />
+    </section>
   </div>
-  <div v-if="curlOpen" class="overlay" @click.self="curlOpen = false"><div class="dialog" style="width:640px" data-testid="curl-drawer">
-    <div style="display:flex;gap:8px;align-items:center"><b style="flex:1">Kod</b><select v-model="lang" data-testid="snippet-lang"><option v-for="l in LANGS" :key="l[0]" :value="l[0]">{{ l[1] }}</option></select><button data-testid="curl-copy" @click="copyCurl">Nusxa</button><button @click="curlOpen = false">×</button></div>
+  <div v-if="curlOpen" class="overlay" @click.self="curlOpen = false"><div class="dialog" role="dialog" aria-modal="true" aria-label="Kod namunasi" style="width:640px" data-testid="curl-drawer">
+    <div style="display:flex;gap:8px;align-items:center"><b style="flex:1">Kod</b><select v-model="lang" aria-label="Til" data-testid="snippet-lang"><option v-for="l in LANGS" :key="l[0]" :value="l[0]">{{ l[1] }}</option></select><button data-testid="curl-copy" @click="copyCurl">Nusxa</button><button @click="curlOpen = false">×</button></div>
     <pre style="margin-top:10px" data-testid="curl-output" v-html="curlHtml" /></div></div>
 </template>

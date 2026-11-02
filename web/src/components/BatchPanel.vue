@@ -87,16 +87,16 @@ void tabs
     <div v-if="b.status !== 'idle'" style="margin-top:14px" data-testid="results-pane">
       <div style="display:flex;align-items:center;gap:8px">
         <span :class="b.status === 'done' ? 'ok' : b.status === 'error' ? 'err' : 'muted'" data-testid="batch-status">{{ b.statusText }}</span>
-        <button class="ghost" @click="collapsed = !collapsed" title="Yig'ish">{{ collapsed ? '▸' : '▾' }}</button>
-        <button class="ghost" data-testid="fold-all" title="Kartalarni yig'ish / yoyish" @click="foldAll(!b.results.every(r => folded[r.index]))">⇅</button>
+        <button class="ghost" aria-label="Natijalarni yig'ish / yoyish" :aria-expanded="!collapsed" @click="collapsed = !collapsed" title="Yig'ish">{{ collapsed ? '▸' : '▾' }}</button>
+        <button class="ghost" data-testid="fold-all" aria-label="Kartalarni yig'ish / yoyish" title="Kartalarni yig'ish / yoyish" @click="foldAll(!b.results.every(r => folded[r.index]))">⇅</button>
         <span style="flex:1" />
         <button data-testid="export-json" :disabled="!b.results.length" @click="download('results.json', JSON.stringify(b.results, null, 2), 'application/json')">JSON</button>
         <button data-testid="export-csv" :disabled="!b.results.length" @click="download('results.csv', toCSV(b.results), 'text/csv')">CSV</button>
         <button data-testid="compare-open" @click="openCmp">Solishtirish</button>
-        <button class="ghost" title="Yopish" data-testid="results-close" @click="b.status = 'idle'; b.results = []; tab.state!.mode = undefined">×</button>
+        <button class="ghost" title="Yopish" aria-label="Natijalarni yopish" data-testid="results-close" @click="b.status = 'idle'; b.results = []; tab.state!.mode = undefined">×</button>
       </div>
       <template v-if="!collapsed">
-        <div style="height:6px;background:var(--bg3);border-radius:3px;margin:8px 0"><div :style="{ width: pct + '%', height: '100%', background: b.status === 'stopped' ? 'var(--warn)' : 'var(--ac)', borderRadius: '3px' }" data-testid="progress-fill" /></div>
+        <div style="height:6px;background:var(--hover);border-radius:3px;margin:8px 0"><div :style="{ width: pct + '%', height: '100%', background: b.status === 'stopped' ? 'var(--m-post)' : 'var(--accent)', borderRadius: '3px' }" data-testid="progress-fill" /></div>
         <div class="muted" data-testid="progress-count">{{ b.results.length }} / {{ b.total }}</div>
         <div style="display:flex;gap:16px;margin:8px 0" data-testid="stats">
           <span>Jami <b data-testid="s-total">{{ st.total }}</b></span><span class="ok">OK <b data-testid="s-ok">{{ st.ok }}</b></span><span class="err">Xato <b data-testid="s-err">{{ st.err }}</b></span>
@@ -109,15 +109,15 @@ void tabs
         <div style="display:flex;gap:4px;margin-bottom:8px" data-testid="filters">
           <button v-for="f in (['all', 'success', 'error'] as const)" :key="f" :class="{ primary: b.filter === f }" :data-filter="f" @click="b.filter = f">{{ { all: 'Hammasi', success: 'Muvaffaqiyatli', error: 'Xato' }[f] }}</button>
         </div>
-        <div v-for="r in visible" :key="r.index" class="result-card" data-testid="result-card" style="border:1px solid var(--bd);border-radius:6px;padding:8px;margin-bottom:6px">
+        <div v-for="r in visible" :key="r.index" class="result-card" data-testid="result-card" style="border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px">
           <div style="display:flex;gap:10px;align-items:center">
             <span class="status-pill" :class="badge(r.status)">{{ r.status }}</span><span>#{{ r.index }}</span><span>{{ fmtMs(r.time) }}</span><span>{{ fmtBytes(r.size) }}</span>
             <span v-if="r.retries" class="muted" data-testid="retry-badge">↻{{ r.retries }}</span>
             <span class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">{{ r.url }}</span>
-            <button class="ghost" data-testid="card-toggle" title="Yig'ish" @click="folded[r.index] = !folded[r.index]">{{ folded[r.index] ? '▸' : '▾' }}</button>
+            <button class="ghost" data-testid="card-toggle" :aria-expanded="!folded[r.index]" aria-label="Kartani yig'ish / yoyish" title="Yig'ish" @click="folded[r.index] = !folded[r.index]">{{ folded[r.index] ? '▸' : '▾' }}</button>
             <button class="ghost" @click="toggleHdr(r.index)">Headers</button>
             <button class="ghost" data-testid="copy-resp" @click="copy(body(r))">Nusxa</button>
-            <button class="ghost" data-testid="open-full" @click="full = r">⤢</button>
+            <button class="ghost" data-testid="open-full" aria-label="To'liq ekranda ochish" @click="full = r">⤢</button>
           </div>
           <pre v-if="hdrOpen[r.index] && !folded[r.index]" class="muted">{{ Object.entries(r.resp_headers ?? {}).map(([k, v]) => k + ': ' + v).join('\n') }}</pre>
           <pre v-if="!folded[r.index]" data-testid="card-body" style="max-height:140px;overflow:auto;margin-top:6px" v-html="highlightJson(body(r).slice(0, 100_000))" />
@@ -128,14 +128,14 @@ void tabs
     <div v-if="full" class="overlay" data-testid="result-full" @click.self="full = null" @keydown.esc="full = null" tabindex="0">
       <div class="dialog" style="width:80vw;max-height:85vh;overflow:auto">
         <div style="display:flex;gap:10px;align-items:center"><span class="status-pill" :class="badge(full.status)">{{ full.status }}</span><span>{{ fmtMs(full.time) }}</span><span class="muted" style="flex:1">{{ full.url }}</span>
-          <button @click="copy(body(full))">Nusxa</button><button data-testid="full-txt" @click="download('result.txt', body(full))">TXT</button><button data-testid="full-close" @click="full = null">×</button></div>
+          <button @click="copy(body(full))">Nusxa</button><button data-testid="full-txt" @click="download('result.txt', body(full))">TXT</button><button data-testid="full-close" aria-label="Yopish" @click="full = null">×</button></div>
         <pre style="margin-top:10px" data-testid="full-body" v-html="highlightJson(body(full).slice(0, 200_000))" />
       </div>
     </div>
 
     <div v-if="showCmp" class="overlay" data-testid="cmp-modal" @click.self="showCmp = false">
       <div class="dialog" style="min-width:560px">
-        <div style="display:flex;gap:10px"><b style="flex:1">Run'larni solishtirish</b><button @click="showCmp = false">×</button></div>
+        <div style="display:flex;gap:10px"><b style="flex:1">Run'larni solishtirish</b><button aria-label="Yopish" @click="showCmp = false">×</button></div>
         <p v-if="runs.length < 1" class="muted">Solishtirish uchun oldingi run kerak.</p>
         <template v-else>
           <select v-model="cmpId" data-testid="cmp-select"><option v-for="r in runs" :key="r.id" :value="r.id">{{ new Date(r.ts * 1000).toLocaleString() }} — {{ r.payload.label }} ({{ r.payload.count }})</option></select>

@@ -54,7 +54,7 @@ async function save() {
 </script>
 
 <template>
-  <div v-if="form" class="editor" :data-testid="isFolder ? 'tab-folder' : 'tab-collection'">
+  <div v-if="form" class="page" :data-testid="isFolder ? 'tab-folder' : 'tab-collection'">
     <div style="display:flex;gap:10px;align-items:center">
       <h3 style="flex:1">{{ node?.name ?? node?.info?.name }}</h3>
       <span class="muted" v-if="!isFolder">{{ meta?.requests ?? 0 }} ta so'rov</span>

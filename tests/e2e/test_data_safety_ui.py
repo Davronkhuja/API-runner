@@ -87,6 +87,7 @@ def test_import_button_twice_no_duplicates_and_keeps_localstorage(app, page):
     page.wait_for_selector("[data-testid=app]")
     h1 = len(app.api("GET", "/api/history"))
     envs1 = len(app.api("GET", "/api/workspace")["environments"])
+    T(page, "settings-btn").click()
     for _ in range(2):
         with page.expect_response(lambda r: "/api/import/localstorage" in r.url):
             T(page, "ls-import").click()

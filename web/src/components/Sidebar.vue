@@ -6,12 +6,14 @@ import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { openFromHistory } from '../lib/history'
 import { openRequest } from '../lib/actions'
-import { askConfirm, showToast } from '../lib/ui'
-import { isFolder, type DropPosition, type RequestItem } from '../types/model'
+import { askConfirm, showToast, sidePanel } from '../lib/ui'
+import Icon from './Icon.vue'
+import { isFolder, type DropPosition, type RequestItem, type TreeItem } from '../types/model'
 import { draftFromItem } from '../lib/draft'
 
 const tree = useTree(), tabs = useTabs(), ws = useWorkspace(), hist = useHistory()
-const panel = ref<'collections' | 'environments' | 'history'>('collections')
+defineEmits<{ 'open-history': [] }>()
+const panel = sidePanel
 const body = ref<HTMLElement>()
 const menu = ref<{ x: number; y: number; row: Row } | null>(null)
 const moveDlg = ref<{ keys: string[] } | null>(null)
@@ -122,6 +124,26 @@ async function confirmMove() {
   if (!moveTarget.value) return
   try { await tree.move(d.keys, moveTarget.value, 'inside') } catch (e: any) { showToast(e.message, 'error') }
 }
+const reqCount = (it: TreeItem | null): number => (it && isFolder(it) ? it.item.reduce((n, c) => n + (isFolder(c) ? reqCount(c) : 1), 0) : 0)
+const titles: Record<string, string> = { collections: 'Kolleksiyalar', environments: 'Muhitlar', history: 'Tarix', runner: 'Runner' }
+function openRunner() {
+  const sel = tree.selection[0]?.split(':')[0]
+  const m = tree.metas.find(x => x.id === sel) ?? tree.metas[0]
+  if (!m) return showToast('Avval collection yarating', 'warn')
+  tabs.open('runner', m.id, 'Runner: ' + m.name, { permanent: true })
+}
+/** Klaviatura: ↑↓ qatorlar orasida, ←/→ papkani yopish/ochish, Enter ochish, F2 — nomini o'zgartirish. */
+function onKey(e: KeyboardEvent, r: Row) {
+  const rows = [...(body.value?.querySelectorAll<HTMLElement>('[data-testid=tree-row]') ?? [])]
+  const i = rows.indexOf(e.currentTarget as HTMLElement)
+  if (e.key === 'ArrowDown') { e.preventDefault(); rows[i + 1]?.focus() }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); rows[i - 1]?.focus() }
+  else if (e.key === 'ArrowRight' && r.folder && !r.expanded) { e.preventDefault(); tree.toggle(keyOf(r), r.item) }
+  else if (e.key === 'ArrowLeft' && r.folder && r.expanded) { e.preventDefault(); tree.toggle(keyOf(r), r.item) }
+  else if (e.key === 'Enter' || e.key === ' ') { if ((e.target as HTMLElement).tagName === 'INPUT') return; e.preventDefault(); onClick(new MouseEvent('click'), r); if (e.key === 'Enter' && !r.folder) onDbl(r) }
+  else if (e.key === 'F2' && !r.isCollection) { e.preventDefault(); renaming.value = keyOf(r); renameVal.value = r.name }
+  else if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) { e.preventDefault(); const b = (e.currentTarget as HTMLElement).getBoundingClientRect(); ctx(new MouseEvent('contextmenu', { clientX: b.left + 40, clientY: b.bottom }), r) }
+}
 async function newCollection() { await tree.createCollection('Yangi collection') }
 
 // ── Environments / History ──
@@ -132,57 +154,73 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
 </script>
 
 <template>
-  <aside class="sidebar" data-testid="sidebar">
-    <div class="sb-head">
-      <button :class="{ on: panel === 'collections' }" data-testid="sb-collections" @click="panel = 'collections'">Collections</button>
-      <button :class="{ on: panel === 'environments' }" data-testid="sb-environments" @click="panel = 'environments'">Muhit</button>
-      <button :class="{ on: panel === 'history' }" data-testid="sb-history" @click="panel = 'history'; hist.load()">Tarix</button>
+  <aside class="sidebar" data-testid="sidebar" :aria-label="titles[panel]">
+    <div class="sb-title">
+      <b data-testid="sb-title">{{ titles[panel] }}</b>
+      <div style="display:flex;gap:2px">
+        <template v-if="panel === 'collections'">
+          <button class="ib" aria-label="Yangi so'rov" title="Yangi so'rov" data-testid="sb-new-request" @click="tabs.openNew()"><Icon name="plus" :size="16" /></button>
+          <button class="ib" aria-label="Yangi collection" title="Yangi collection" data-testid="new-collection" @click="newCollection"><Icon name="folder-plus" :size="16" /></button>
+        </template>
+        <template v-else-if="panel === 'environments'"><button class="ib" aria-label="Yangi muhit" title="Yangi muhit" data-testid="new-env" @click="newEnv"><Icon name="plus" :size="16" /></button></template>
+        <template v-else-if="panel === 'history'">
+          <button class="ib" aria-label="Kengaytirilgan tarix" title="Kengaytirilgan tarix" data-testid="history-btn" @click="$emit('open-history')"><Icon name="clock" :size="16" /></button>
+          <button class="ib" aria-label="Tarixni tozalash" title="Tozalash" data-testid="history-clear" @click="hist.clear('request')"><Icon name="trash" :size="16" /></button>
+        </template>
+      </div>
     </div>
 
     <template v-if="panel === 'collections'">
-      <div style="padding:6px;display:flex;gap:4px">
-        <input v-model="tree.filter" placeholder="Qidirish…" style="flex:1" data-testid="sb-search">
-        <button title="Yangi collection" data-testid="new-collection" @click="newCollection">＋</button>
-      </div>
-      <div class="sb-body" ref="body" data-testid="tree" @dragover="onContainerDragOver" @dragend="reset" @drop="stopScroll">
+      <div class="sb-search"><input v-model="tree.filter" placeholder="Filtr…" aria-label="Kolleksiyalarda qidirish" data-testid="sb-search"></div>
+      <div class="sb-body" ref="body" data-testid="tree" role="tree" @dragover="onContainerDragOver" @dragend="reset" @drop="stopScroll">
         <div v-if="!tree.rows.length" class="empty">{{ tree.filter ? 'Hech narsa topilmadi' : 'Collection yo\'q. ＋ bosing.' }}</div>
-        <div v-for="r in tree.rows" :key="rowKey(r.collectionId, r.id)" class="row" data-testid="tree-row"
-             :data-key="rowKey(r.collectionId, r.id)" :data-name="r.name" :data-kind="r.isCollection ? 'collection' : r.folder ? 'folder' : 'request'"
-             :class="{ sel: tree.selection.includes(rowKey(r.collectionId, r.id)), dragging: dragKeys.includes(rowKey(r.collectionId, r.id)),
+        <div v-for="r in tree.rows" :key="rowKey(r.collectionId, r.id)" class="row" :class="{ root: r.isCollection, sel: tree.selection.includes(rowKey(r.collectionId, r.id)), dragging: dragKeys.includes(rowKey(r.collectionId, r.id)),
                        'drop-inside': drop?.key === rowKey(r.collectionId, r.id) && drop.pos === 'inside',
                        'drop-before': drop?.key === rowKey(r.collectionId, r.id) && drop.pos === 'before',
                        'drop-after': drop?.key === rowKey(r.collectionId, r.id) && drop.pos === 'after' }"
-             :style="{ paddingLeft: 6 + r.depth * 14 + 'px' }" :draggable="!r.isCollection"
-             @click="onClick($event, r)" @dblclick="onDbl(r)" @contextmenu.prevent="ctx($event, r)"
+             data-testid="tree-row" role="treeitem" tabindex="0" :aria-level="r.depth + 1" :aria-expanded="r.folder ? r.expanded : undefined" :aria-selected="tree.selection.includes(rowKey(r.collectionId, r.id))"
+             :data-key="rowKey(r.collectionId, r.id)" :data-name="r.name" :data-kind="r.isCollection ? 'collection' : r.folder ? 'folder' : 'request'"
+             :style="{ paddingLeft: 8 + r.depth * 14 + 'px' }" :draggable="!r.isCollection"
+             @click="onClick($event, r)" @dblclick="onDbl(r)" @contextmenu.prevent="ctx($event, r)" @keydown="onKey($event, r)"
              @dragstart="onDragStart($event, r)" @dragover="onDragOver($event, r)" @drop="onDrop($event)">
-          <span v-if="r.folder" style="width:12px">{{ r.expanded ? '▾' : '▸' }}</span>
+          <span v-if="r.folder" class="ico" :style="{ transform: r.expanded ? 'rotate(90deg)' : 'none' }"><Icon name="chevron-right" :size="14" /></span>
+          <span v-if="r.isCollection" class="ico" style="width:18px;height:18px;border-radius:5px;background:var(--accent-weak);color:var(--accent-text);align-items:center;justify-content:center"><Icon name="layers" :size="12" /></span>
+          <span v-else-if="r.folder" class="ico"><Icon name="folder" :size="15" /></span>
           <span v-else class="m" :class="'m-' + (r.item as any).request.method">{{ (r.item as any).request.method }}</span>
-          <span v-if="r.isCollection">📚</span><span v-else-if="r.folder">📁</span>
-          <input v-if="renaming === rowKey(r.collectionId, r.id)" v-model="renameVal" style="flex:1;padding:1px 4px" data-testid="rename-input"
-                 @click.stop @keydown.enter="commitRename(r)" @keydown.esc="renaming = null" @blur="commitRename(r)" autofocus>
-          <span v-else class="name">{{ r.name }}</span>
+          <input v-if="renaming === rowKey(r.collectionId, r.id)" v-model="renameVal" aria-label="Yangi nom" style="flex:1;height:24px;padding:0 6px" data-testid="rename-input"
+                 @click.stop @keydown.stop @keydown.enter="commitRename(r)" @keydown.esc="renaming = null" @blur="commitRename(r)" autofocus>
+          <span v-else class="name" :style="{ fontWeight: r.folder ? 500 : 400 }">{{ r.name }}</span>
+          <span v-if="r.folder && !r.isCollection" class="cnt">{{ reqCount(r.item) }}</span>
         </div>
       </div>
     </template>
 
     <div v-else-if="panel === 'environments'" class="sb-body" data-testid="env-list">
-      <div style="padding:6px"><button style="width:100%" data-testid="new-env" @click="newEnv">＋ Yangi muhit</button></div>
-      <div class="row" style="padding-left:10px" data-testid="globals-row" @click="tabs.open('environment', 'globals', 'Globals', { permanent: true })"><span class="name">🌐 Globals</span></div>
-      <div v-for="e in ws.environments" :key="e.id" class="row" :class="{ sel: ws.activeEnvId === e.id }" style="padding-left:10px" data-testid="env-row" @click="openEnv(e.id, e.name)">
-        <span :class="ws.activeEnvId === e.id ? 'ok' : 'muted'">●</span><span class="name">{{ e.name }}</span>
-        <button class="ghost" title="Faollashtirish" @click.stop="ws.setActive(ws.activeEnvId === e.id ? null : e.id)">{{ ws.activeEnvId === e.id ? '✓' : '○' }}</button>
-        <button class="ghost" title="O'chirish" @click.stop="delEnv(e.id, e.name)">×</button>
+      <button class="row" style="height:44px" data-testid="globals-row" @click="tabs.open('environment', 'globals', 'Globals', { permanent: true })">
+        <span class="ico"><Icon name="globe" :size="15" /></span><span class="name"><b style="font-weight:500;display:block">Globals</b><span class="muted" style="font-size:11.5px">{{ ws.globals.length }} ta o'zgaruvchi</span></span>
+      </button>
+      <div v-for="e in ws.environments" :key="e.id" class="row" :class="{ sel: ws.activeEnvId === e.id }" style="height:44px" data-testid="env-row" role="button" tabindex="0" @click="openEnv(e.id, e.name)" @keydown.enter="openEnv(e.id, e.name)">
+        <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0" :style="{ background: ws.activeEnvId === e.id ? 'var(--ok)' : 'var(--border-strong)' }" aria-hidden="true" />
+        <span class="name"><b style="font-weight:500;display:block">{{ e.name }}</b><span class="muted" style="font-size:11.5px">{{ e.values.length }} ta o'zgaruvchi{{ ws.activeEnvId === e.id ? ' · faol' : '' }}</span></span>
+        <button class="ib x" :aria-label="ws.activeEnvId === e.id ? 'Faolsizlantirish' : 'Faollashtirish'" :title="ws.activeEnvId === e.id ? 'Faol ✓' : 'Faollashtirish'" @click.stop="ws.setActive(ws.activeEnvId === e.id ? null : e.id)"><Icon :name="ws.activeEnvId === e.id ? 'check' : 'play'" :size="14" /></button>
+        <button class="ib x" aria-label="Muhitni o'chirish" title="O'chirish" @click.stop="delEnv(e.id, e.name)"><Icon name="x" :size="14" /></button>
       </div>
       <div v-if="!ws.environments.length" class="empty">Muhit yo'q</div>
+      <div class="sb-note">Globals barcha muhitlarda amal qiladi. Eski “Default” o'zgaruvchilar shu yerga ko'chirilgan.</div>
     </div>
 
-    <div v-else class="sb-body" data-testid="history-list">
-      <div style="padding:6px"><button style="width:100%" @click="hist.clear('request')">Tozalash</button></div>
-      <div v-for="h in hist.items" :key="h.id" class="row" style="padding-left:10px" data-testid="history-row" @click="loadHistory(h)">
+    <div v-else-if="panel === 'history'" class="sb-body" data-testid="history-list">
+      <div class="sb-group">So'nggi so'rovlar</div>
+      <div v-for="h in hist.items" :key="h.id" class="row" data-testid="history-row" role="button" tabindex="0" @click="loadHistory(h)" @keydown.enter="loadHistory(h)">
         <span class="m" :class="'m-' + h.payload.method">{{ h.payload.method }}</span><span class="name">{{ h.payload.url }}</span>
-        <button class="ghost" @click.stop="hist.remove(h.id)">×</button>
+        <button class="ib x" aria-label="Tarixdan o'chirish" @click.stop="hist.remove(h.id)"><Icon name="x" :size="14" /></button>
       </div>
       <div v-if="!hist.items.length" class="empty">Tarix bo'sh</div>
+    </div>
+
+    <div v-else class="sb-body" style="padding:8px 16px;color:var(--muted);font-size:12.5px;line-height:1.6" data-testid="runner-panel">
+      <p style="margin:0 0 12px">Collection yoki papkani tanlab, uni ketma-ket yoki CSV/JSON ma'lumotlari bilan bir necha marta ishga tushiring.</p>
+      <button class="primary" data-testid="open-runner" @click="openRunner"><Icon name="play" :size="14" />Runner'ni ochish</button>
     </div>
 
     <div v-if="menu" class="overlay" style="background:none" @click="menu = null" @contextmenu.prevent="menu = null">

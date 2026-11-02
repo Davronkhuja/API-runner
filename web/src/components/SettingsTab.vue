@@ -4,6 +4,8 @@ import { get, post } from '../api/client'
 import { askConfirm, showToast } from '../lib/ui'
 import { useWorkspace } from '../stores/workspace'
 import SettingsForm from './SettingsForm.vue'
+import Icon from './Icon.vue'
+import { exportLegacy, importLocalStorage } from '../lib/migrate'
 import type { ReqSettings } from '../lib/settings'
 
 interface Backup { name: string; version: string | null; created: number | null; suffix: string; has_saved_requests: boolean }
@@ -38,13 +40,16 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="editor" data-testid="settings-tab">
+  <div class="page" data-testid="settings-tab">
     <h3 style="margin-top:0">Sozlamalar</h3>
     <div class="muted" data-testid="settings-status" v-if="status">Versiya {{ status.version }} · sxema {{ status.schemaVersion }}</div>
     <h4>So'rov sozlamalari (global)</h4>
     <p class="muted">Barcha so'rovlar uchun sukut; har bir so'rov o'z Sozlamalar tabida qayta belgilashi mumkin.</p>
     <SettingsForm :model="gs" prefix="gset" @change="gsDirty = true" />
     <p><button class="primary" data-testid="gset-save" :disabled="!gsDirty" @click="saveGlobal">Saqlash</button></p>
+    <h4>Ma'lumotlar</h4>
+    <p class="muted">Eski brauzer (localStorage) ma'lumotlarini serverga ko'chirish yoki <code>saved_requests.json</code> formatiga eksport (orqaga qaytish uchun).</p>
+    <p style="display:flex;gap:8px"><button data-testid="ls-import" @click="importLocalStorage"><Icon name="upload" :size="14" />Brauzerdan ko'chirish</button><button data-testid="export-legacy" @click="exportLegacy"><Icon name="download" :size="14" />saved_requests.json eksport</button></p>
     <h4>Zaxiralar</h4>
     <p class="muted">Har bir migratsiyadan oldin avtomatik zaxira olinadi. Oxirgi 20 tasi saqlanadi. <code>saved_requests.json</code> tiklashda tegilmaydi.</p>
     <p><button class="primary" data-testid="backup-create" :disabled="busy" @click="create">Zaxira yaratish</button></p>

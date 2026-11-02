@@ -60,7 +60,7 @@ void post
       <tr v-for="(r, i) in rows" :key="i" :class="{ dragover: over === i }" draggable="true"
           @dragstart="dragFrom = i" @dragover.prevent="over = i" @dragleave="over = null" @drop.prevent="drop(i)" @dragend="dragFrom = over = null">
         <td style="width:18px" class="grip" title="Sudrab tartiblash">⋮⋮</td>
-        <td style="width:22px"><input type="checkbox" v-model="r.enabled" @change="emit('change')"></td>
+        <td style="width:22px"><input type="checkbox" aria-label="Yoqish" v-model="r.enabled" @change="emit('change')"></td>
         <td><input type="text" placeholder="Nom" v-model="r.key" @input="touch" draggable="false"></td>
         <td>
           <input v-if="r.kind !== 'file'" type="text" placeholder="Qiymat" v-model="r.value" @input="touch" draggable="false">
@@ -68,9 +68,9 @@ void post
         </td>
         <td style="width:30%"><input type="text" placeholder="Tavsif" v-model="r.description" data-testid="kv-desc" @input="emit('change')" draggable="false"></td>
         <td v-if="files" style="width:30px">
-          <label title="Fayl biriktirish" style="cursor:pointer">📎<input type="file" hidden @change="upload(i, $event)"></label>
+          <label title="Fayl biriktirish" aria-label="Fayl biriktirish" style="cursor:pointer">📎<input type="file" hidden @change="upload(i, $event)"></label>
         </td>
-        <td style="width:24px"><button class="ghost" @click="remove(i)" title="O'chirish">×</button></td>
+        <td style="width:24px"><button class="ghost" aria-label="Qatorni o'chirish" @click="remove(i)" title="O'chirish">×</button></td>
       </tr>
     </tbody>
   </table>

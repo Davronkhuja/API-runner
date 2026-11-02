@@ -4,6 +4,7 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { askClose } from '../lib/ui'
 import { saveTab } from '../lib/actions'
+import Icon from './Icon.vue'
 
 const tabs = useTabs()
 const tree = useTree()
@@ -39,6 +40,13 @@ async function act(a: string) {
   else if (a === 'all') await tabs.closeAll(confirm, save)
   else if (a === 'reveal' && t.ref?.includes(':')) { const [c, i] = t.ref.split(':'); tree.reveal(c, i) }
 }
+/** ←/→/Home/End tablar orasida (avtomatik faollashadi); Delete — yopish. */
+function onKey(e: KeyboardEvent) {
+  const ids = tabs.tabs.map(t => t.id), i = ids.indexOf(tabs.activeId ?? '')
+  const to = e.key === 'ArrowRight' ? ids[(i + 1) % ids.length] : e.key === 'ArrowLeft' ? ids[(i - 1 + ids.length) % ids.length] : e.key === 'Home' ? ids[0] : e.key === 'End' ? ids[ids.length - 1] : null
+  if (to) { e.preventDefault(); tabs.activate(to); nextTick(() => scroller.value?.querySelector<HTMLElement>(`[data-tab="${to}"]`)?.focus()) }
+  else if (e.key === 'Delete' && tabs.activeId) { e.preventDefault(); closeTab(tabs.activeId) }
+}
 async function pick(id: string) {
   tabs.activate(id); list.value = false
   await nextTick()
@@ -48,21 +56,22 @@ async function pick(id: string) {
 
 <template>
   <div class="tabbar" data-testid="tabbar" @click="menu = null">
-    <div class="tabs-scroll" ref="scroller">
-      <div v-for="t in tabs.tabs" :key="t.id" class="tab" :data-tab="t.id" data-testid="tab"
+    <div class="tabs-scroll" ref="scroller" role="tablist" aria-label="Ochiq tablar" @keydown="onKey">
+      <div v-for="t in tabs.tabs" :key="t.id" class="tab" :data-tab="t.id" data-testid="tab" role="tab" :aria-selected="t.id === tabs.activeId" :tabindex="t.id === tabs.activeId ? 0 : -1"
            :class="{ active: t.id === tabs.activeId, preview: t.preview, 'drop-l': overId?.id === t.id && overId.side === 'l', 'drop-r': overId?.id === t.id && overId.side === 'r' }"
            draggable="true" @dragstart="dragId = t.id" @dragover.prevent="overTab($event, t.id)" @dragleave="overId = null" @drop.prevent="onDrop(t.id)" @dragend="dragId = overId = null"
            @click.stop="tabs.activate(t.id)" @dblclick="t.preview = false" @contextmenu.prevent="ctx($event, t.id)" @auxclick.middle="closeTab(t.id)">
+        <span v-if="t.kind === 'request' && t.draft" class="m" :class="'m-' + t.draft.method">{{ t.draft.method }}</span>
         <span class="title">{{ t.title }}</span>
-        <span v-if="t.dirty" class="dot" data-testid="dirty-dot">●</span>
-        <button class="x" data-testid="tab-close" title="Yopish" @click.stop="closeTab(t.id)">×</button>
+        <span v-if="t.dirty" class="dot" data-testid="dirty-dot" role="img" aria-label="Saqlanmagan o'zgarishlar" title="Saqlanmagan o'zgarishlar" />
+        <button class="x" data-testid="tab-close" :aria-label="`${t.title} tabini yopish`" title="Yopish" tabindex="-1" @click.stop="closeTab(t.id)"><Icon name="x" :size="13" /></button>
       </div>
     </div>
-    <button class="ghost" title="Yangi tab" data-testid="new-tab" @click="tabs.openNew()">＋</button>
-    <div style="position:relative">
-      <button class="ghost" title="Barcha tablar" data-testid="all-tabs" @click.stop="list = !list">▾</button>
-      <div v-if="list" class="menu" style="position:absolute;right:0;top:34px;max-height:60vh;overflow:auto" data-testid="all-tabs-list">
-        <button v-for="t in tabs.tabs" :key="t.id" @click="pick(t.id)">{{ t.dirty ? '● ' : '' }}{{ t.title }}</button>
+    <button class="ib" aria-label="Yangi tab" title="Yangi tab (⌘T)" data-testid="new-tab" style="margin:3px 4px;flex-shrink:0" @click="tabs.openNew()"><Icon name="plus" :size="16" /></button>
+    <div style="position:relative;margin:3px 0">
+      <button class="ib" aria-label="Barcha tablar" title="Barcha tablar" data-testid="all-tabs" aria-haspopup="menu" :aria-expanded="list" @click.stop="list = !list"><Icon name="chevron-down" :size="16" /></button>
+      <div v-if="list" class="menu" style="position:absolute;right:0;top:34px;max-height:60vh;overflow:auto" data-testid="all-tabs-list" role="menu">
+        <button v-for="t in tabs.tabs" :key="t.id" role="menuitem" @click="pick(t.id)">{{ t.dirty ? '● ' : '' }}{{ t.title }}</button>
         <div v-if="!tabs.tabs.length" class="muted" style="padding:6px">Tab yo'q</div>
       </div>
     </div>

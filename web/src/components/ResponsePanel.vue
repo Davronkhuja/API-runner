@@ -5,7 +5,8 @@ import { useTree } from '../stores/tree'
 import { requestFromDraft } from '../lib/draft'
 import { esc, highlightJson } from '../lib/highlight'
 import { jsonPath } from '../lib/jsonpath'
-import { showToast } from '../lib/ui'
+import { fmtBytes, fmtMs, showToast } from '../lib/ui'
+import Icon from './Icon.vue'
 import { parseSetCookie } from '../lib/cookies'
 
 const props = defineProps<{ tab: Tab }>()
@@ -106,31 +107,48 @@ function loadExample(e: Event) {
   try { body = JSON.parse(ex.body) } catch { /* matn */ }
   props.tab.response = { status: ex.code || ex.status, response: body, time: 0, size: (ex.body ?? '').length, url: '', resp_headers: Object.fromEntries((ex.header ?? []).map((h: any) => [h.key, h.value])), example: ex.name }
 }
+const STATUS: Record<number, string> = { 200: 'OK', 201: 'Created', 202: 'Accepted', 204: 'No Content', 301: 'Moved Permanently', 302: 'Found', 304: 'Not Modified', 400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden', 404: 'Not Found', 405: 'Method Not Allowed', 409: 'Conflict', 422: 'Unprocessable Entity', 429: 'Too Many Requests', 500: 'Internal Server Error', 502: 'Bad Gateway', 503: 'Service Unavailable', 504: 'Gateway Timeout' }
+const statusText = computed(() => (typeof r.value?.status === 'number' ? STATUS[r.value.status] ?? '' : ''))
+const pillClass = computed(() => (typeof r.value?.status === 'number' && r.value.status < 400 ? 'ok' : 'err'))
+const timing = computed(() => { const t = r.value?.timing; return `DNS — · Ulanish (connect) ${fmtMs(t?.connect)} · TLS ${fmtMs(t?.tls)} · TTFB ${fmtMs(t?.ttfb)}` })
 const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusxalandi', 'success') }
 </script>
 
 <template>
-  <div data-testid="resp-panel">
+  <div v-if="!r" class="empty-state" data-testid="resp-empty">
+    <Icon name="inbox" :size="34" />
+    <strong>Javob shu yerda chiqadi</strong>
+    <span style="font-size:12.5px">«Yuborish» tugmasini yoki <span class="kbd">⌘</span> + <span class="kbd">↵</span> ni bosing</span>
+  </div>
+  <div v-else-if="r.loading" class="empty-state" role="status" data-testid="resp-loading"><strong>Yuborilmoqda…</strong></div>
+  <div v-else data-testid="resp-panel" style="display:flex;flex-direction:column">
     <div class="rp-bar" data-testid="resp-bar">
       <button :class="{ on: view === 'body' }" data-testid="rp-body-tab" @click="view = 'body'">Body</button>
       <button :class="{ on: view === 'headers' }" data-testid="rp-headers-tab" @click="view = 'headers'">Headers ({{ headers.length }})</button>
       <button :class="{ on: view === 'cookies' }" data-testid="rp-cookies-tab" @click="view = 'cookies'">Cookies ({{ setCookies.length }})</button>
       <template v-if="view === 'body'">
         <span class="rp-sep" />
-        <button v-for="m in (['pretty', 'raw', 'preview'] as const)" :key="m" :class="{ on: mode === m }" :data-mode="m" :disabled="m === 'preview' && !isHtml" @click="mode = m">{{ { pretty: 'Pretty', raw: 'Raw', preview: 'Preview' }[m] }}</button>
+        <div class="seg-group" role="group" aria-label="Ko'rinish">
+          <button v-for="m in (['pretty', 'raw', 'preview'] as const)" :key="m" class="seg" :class="{ on: mode === m }" :aria-pressed="mode === m" :data-mode="m" :disabled="m === 'preview' && !isHtml" @click="mode = m">{{ { pretty: 'Pretty', raw: 'Raw', preview: 'Preview' }[m] }}</button>
+        </div>
       </template>
       <span style="flex:1" />
+      <div class="resp-meta">
+        <span class="status-pill" :class="pillClass"><span data-testid="resp-status">{{ r.status }}</span><span v-if="statusText">{{ statusText }}</span></span>
+        <span class="tipwrap muted" tabindex="0" data-testid="resp-timing" :aria-label="timing"><b data-testid="resp-time">{{ fmtMs(r.time) }}</b><span class="tip" role="tooltip">{{ timing }}</span></span>
+        <span class="muted"><b data-testid="resp-size">{{ fmtBytes(r.size ?? 0) }}</b></span>
+      </div>
       <span v-if="r?.example" class="muted" data-testid="rp-example-label">Namuna: {{ r.example }}</span>
-      <select v-if="examples.length" data-testid="examples-select" @change="loadExample"><option value="">Namunalar ({{ examples.length }})</option><option v-for="(e, i) in examples" :key="i" :value="i">{{ e.name }}</option></select>
-      <button data-testid="save-example" title="Javobni so'rovga namuna sifatida saqlash" @click="saveExample">Save as Example</button>
-      <button class="ghost" data-testid="rp-copy" @click="copy">Nusxa</button>
+      <select v-if="examples.length" class="sm" aria-label="Namunalar" data-testid="examples-select" @change="loadExample"><option value="">Namunalar ({{ examples.length }})</option><option v-for="(e, i) in examples" :key="i" :value="i">{{ e.name }}</option></select>
+      <button class="sm" data-testid="save-example" title="Javobni so'rovga namuna sifatida saqlash" @click="saveExample">Save as Example</button>
+      <button class="ib" data-testid="rp-copy" aria-label="Javobni nusxalash" title="Nusxa" @click="copy"><Icon name="copy" :size="16" /></button>
     </div>
 
     <template v-if="view === 'body'">
       <div v-if="mode !== 'preview'" class="rp-tools">
         <input v-model="search" placeholder="Qidirish…" data-testid="rp-search" style="width:170px" @keydown.enter.exact.prevent="step(1)" @keydown.shift.enter.prevent="step(-1)">
-        <template v-if="search"><span class="muted" data-testid="rp-count">{{ hits.length ? cur + 1 : 0 }} / {{ hits.length }}</span>
-          <button class="ghost" data-testid="rp-prev" @click="step(-1)">↑</button><button class="ghost" data-testid="rp-next" @click="step(1)">↓</button></template>
+        <template v-if="search"><span class="muted" data-testid="rp-count" aria-live="polite">{{ hits.length ? cur + 1 : 0 }} / {{ hits.length }}</span>
+          <button class="ib" data-testid="rp-prev" aria-label="Oldingi moslik" @click="step(-1)"><Icon name="chevron-up" :size="15" /></button><button class="ib" data-testid="rp-next" aria-label="Keyingi moslik" @click="step(1)"><Icon name="chevron-down" :size="15" /></button></template>
         <input v-model="jpath" :disabled="parsed === undefined" :placeholder="parsed === undefined ? 'JSONPath (faqat JSON javobda)' : 'JSONPath: $.items[?(@.price<10)].name'" data-testid="rp-jsonpath" style="flex:1;min-width:200px;font-family:ui-monospace,monospace">
         <span v-if="jpResult.error" class="err" data-testid="rp-jp-error">{{ jpResult.error }}</span>
         <span v-else-if="jpResult.value" class="muted" data-testid="rp-jp-count">{{ jpResult.value.length }} natija</span>
