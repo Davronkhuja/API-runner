@@ -1,0 +1,176 @@
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useTabs, type Tab } from '../stores/tabs'
+import { useWorkspace } from '../stores/workspace'
+import { useHistory } from '../stores/history'
+import { sendTab, saveTab } from '../lib/actions'
+import { fmtBytes, fmtMs, showToast } from '../lib/ui'
+import KvTable from './KvTable.vue'
+import CodeEditor from './CodeEditor.vue'
+import ResponsePanel from './ResponsePanel.vue'
+import SettingsForm from './SettingsForm.vue'
+import { useWorkspace as _ws } from '../stores/workspace'
+import BatchPanel from './BatchPanel.vue'
+import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
+import { effectiveAuth, scopedVars } from '../lib/scope'
+import AuthEditor from './AuthEditor.vue'
+import { applyCurlToDraft, parseCurl } from '../lib/curl'
+import { generate, LANGS, snipReqFromDraft, type Lang } from '../lib/snippets'
+import { esc, highlightCurl } from '../lib/highlight'
+
+const props = defineProps<{ tab: Tab }>()
+const wsStore = _ws()
+const tabs = useTabs(), ws = useWorkspace(), hist = useHistory()
+const d = computed(() => props.tab.draft!)
+const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
+const touch = () => tabs.touch(props.tab.id)
+const curlOpen = ref(false)
+const lang = ref<Lang>('curl')
+const curlText = computed(() => {
+  if (!curlOpen.value) return ''
+  try { return generate(lang.value, snipReqFromDraft(d.value, props.tab.ref)) } catch (e: any) { return `// Kod hosil qilib bo'lmadi: ${e.message}` }
+})
+const curlHtml = computed(() => (lang.value === 'curl' ? highlightCurl(curlText.value) : esc(curlText.value)))
+const inheritNote = computed(() => { const t = effectiveAuth(d.value.auth, props.tab.ref).type; return t === 'none' ? 'Meros: ota papka/collection auth\'i yo\'q — Auth yuborilmaydi.' : `Meros: ${t} (ota papka/collection)` })
+// {{o'zgaruvchi}} chiplari: scope va qiymat hoverda, aniqlanmagani qizil
+const usedVars = computed(() => {
+  const dd = d.value, text = [dd.url, dd.body.raw, ...dd.headers.flatMap(h => [h.key, h.value]), ...dd.params.flatMap(p => [p.key, p.value]), dd.auth.token, dd.auth.user, dd.auth.pass, dd.auth.custom].join('\n')
+  const known = scopedVars(props.tab.ref)
+  return [...new Set([...text.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)].map(m => m[1]))].map(name => {
+    const v = known[name]
+    if (v) return { name, ok: true, title: `${v.scope}: ${v.secret ? '••••' : v.value}` }
+    if (name.startsWith('$')) return { name, ok: true, title: 'Dinamik o\'zgaruvchi (har so\'rovda yangi)' }
+    return { name, ok: false, title: 'Aniqlanmagan o\'zgaruvchi' }
+  })
+})
+const autoCT = computed(() => ({ json: 'application/json', graphql: 'application/json', binary: 'application/octet-stream', form: 'application/x-www-form-urlencoded', multipart: 'multipart/form-data' } as Record<string, string>)[d.value.body.mode] ?? '')
+const effectiveCT = computed(() => (d.value.body.mode === 'json' || d.value.body.mode === 'raw') && d.value.body.contentType ? d.value.body.contentType : autoCT.value)
+function onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && curlOpen.value) curlOpen.value = false }
+onMounted(() => window.addEventListener('keydown', onEsc))
+onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
+// Editor / javob ajratgichi (vertikal)
+const respH = ref<number | null>(null)
+function startResize(e: PointerEvent) {
+  const startY = e.clientY, startH = respEl.value?.offsetHeight ?? 200
+  const move = (ev: PointerEvent) => { respH.value = Math.max(80, startH + (startY - ev.clientY)) }
+  const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+  window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
+}
+function copyCurl() { navigator.clipboard?.writeText(curlText.value); showToast('Nusxalandi', 'success') }
+function beautify() {
+  try { d.value.body.raw = JSON.stringify(JSON.parse(d.value.body.raw), null, 2); touch() } catch { showToast('JSON noto\'g\'ri — formatlab bo\'lmadi', 'warn') }
+}
+const showHist = ref(false)
+const hideHist = () => { setTimeout(() => (showHist.value = false), 150) }
+const reqEl = ref<HTMLElement>(), respEl = ref<HTMLElement>()
+const binInput = ref<HTMLInputElement>()
+async function pickBinary(e: Event) {
+  const f = (e.target as HTMLInputElement).files?.[0]
+  if (!f) return
+  const fd = new FormData(); fd.append('file', f)
+  try {
+    const r = await fetch('/upload_temp', { method: 'POST', body: fd, headers: { 'X-Session-Token': window.__API_TOKEN__ ?? '' } }).then(x => x.json())
+    d.value.body.file = { path: r.path, name: r.name }; touch()
+  } catch { showToast('Fayl yuklanmadi', 'error') }
+}
+
+// URL ↔ Params ikki tomonlama sinxron
+function onUrlInput() { d.value.params = paramsFromUrl(d.value.url, d.value.params); d.value.pathVars = syncPathVars(d.value.url, d.value.pathVars); touch() }
+function onParamsChange() { d.value.url = composeUrl(d.value.url, d.value.params); touch() }
+// cURL paste (to'liq parser — paritet bandi; hozir minimal)
+function onPaste(e: ClipboardEvent) {
+  const parsed = parseCurl(e.clipboardData?.getData('text') ?? '')
+  if (!parsed) return
+  e.preventDefault()
+  applyCurlToDraft(d.value, parsed)
+  d.value.pathVars = syncPathVars(d.value.url, [])
+  touch()
+}
+const statusClass = computed(() => { const s = props.tab.response?.status; return typeof s === 'number' && s < 400 ? 'ok' : 'err' })
+const urlHist = computed(() => hist.urls.map(h => h.payload).filter((p: any) => p?.url && p.url.toLowerCase().includes(d.value.url.toLowerCase())).slice(0, 8))
+
+// Scroll holatini tabda saqlash/tiklash
+watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl.value.scrollTop = props.tab.scroll.req; if (respEl.value) respEl.value.scrollTop = props.tab.scroll.resp }, { immediate: true })
+</script>
+
+<template>
+  <div style="display:flex;flex-direction:column;flex:1;min-height:0" data-testid="request-editor">
+    <div class="urlbar" style="position:relative">
+      <select v-model="d.method" data-testid="method" :class="'m-' + d.method" @change="touch">
+        <option v-for="m in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']" :key="m" :class="'m-' + m">{{ m }}</option>
+      </select>
+      <input v-model="d.url" data-testid="url" placeholder="https://api.example.com/endpoint/{{id}}  yoki  curl '...' ni bu yerga joylashtiring"
+             @input="onUrlInput" @paste="onPaste" @focus="showHist = true; hist.load()" @blur="hideHist"
+             @keydown.enter="sendTab(tab)">
+      <div v-if="showHist && urlHist.length" class="menu" style="position:absolute;left:90px;top:44px;right:130px" data-testid="url-history">
+        <button v-for="(h, i) in urlHist" :key="i" @mousedown.prevent="d.method = h.method; d.url = h.url; d.pathVars = syncPathVars(d.url, d.pathVars); touch()"><b>{{ h.method }}</b> {{ h.url }}</button>
+      </div>
+      <button class="primary" data-testid="send" :disabled="tab.response?.loading" @click="sendTab(tab)">▶ Yuborish</button>
+      <button data-testid="curl-btn" title="Kod namunasi (cURL, Python, JS, Go, ...)" @click="curlOpen = true">&lt;/&gt; Kod</button>
+      <button data-testid="save" :disabled="!tab.dirty && !!tab.ref" @click="saveTab(tab)">Saqlash</button>
+    </div>
+    <div v-if="usedVars.length" class="var-chips" data-testid="var-chips">
+      <span v-for="v in usedVars" :key="v.name" class="var-chip" :class="v.ok ? 'var-ok' : 'var-undef'" data-testid="var-chip" :title="v.title">{{ v.name }}</span>
+    </div>
+    <div class="sections" data-testid="sections">
+      <button v-for="s in ['params', 'headers', 'auth', 'body', 'settings', 'batch']" :key="s" :class="{ on: section === s }" :data-section="s" @click="section = s">
+        {{ { params: 'Params', headers: 'Headers', auth: 'Auth', body: 'Body', settings: 'Sozlamalar', batch: 'Batch / Runner' }[s] }}
+      </button>
+    </div>
+    <div class="editor" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
+      <template v-if="section === 'params'">
+        <KvTable :rows="d.params" files testid="params-table" @change="onParamsChange" />
+        <div v-if="d.pathVars.length" data-testid="path-vars" style="margin-top:12px">
+          <b>Path variables</b>
+          <table class="kv"><tbody><tr v-for="pv in d.pathVars" :key="pv.key"><td style="width:160px"><code>:{{ pv.key }}</code></td><td><input v-model="pv.value" placeholder="Qiymat" data-testid="path-var-val" @input="touch"></td></tr></tbody></table>
+        </div>
+      </template>
+      <KvTable v-else-if="section === 'headers'" :rows="d.headers" testid="headers-table" @change="touch" />
+      <AuthEditor v-else-if="section === 'auth'" :auth="d.auth" allow-inherit :inherit-note="inheritNote" :scope-ref="tab.ref" @change="touch" />
+      <div v-else-if="section === 'settings'" data-testid="req-settings">
+        <p class="muted">Faqat shu so'rov uchun qayta belgilash; "Sukut" — global sozlama (⚙ Sozlamalar).</p>
+        <SettingsForm :model="d.settings" :fallback="wsStore.settings" @change="touch" />
+      </div>
+      <BatchPanel v-else-if="section === 'batch'" :tab="tab" />
+      <div v-else data-testid="body-panel">
+        <select v-model="d.body.mode" data-testid="body-mode" @change="touch">
+          <option value="none">none</option><option value="json">JSON</option><option value="raw">Raw</option><option value="form">x-www-form-urlencoded</option><option value="multipart">form-data</option><option value="binary">binary</option><option value="graphql">GraphQL</option>
+        </select>
+        <button v-if="d.body.mode === 'json'" data-testid="beautify" style="margin-left:8px" @click="beautify" title="Cmd/Ctrl+B">Beautify</button>
+        <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart' && d.body.mode !== 'graphql'" v-model="d.body.contentType" :placeholder="autoCT || 'Content-Type'" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
+        <span v-if="effectiveCT" class="muted" style="margin-left:8px" data-testid="content-type-auto">Content-Type: {{ effectiveCT }}</span>
+        <CodeEditor v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :key="d.body.mode" v-model="d.body.raw" :lang="d.body.mode === 'json' ? 'json' : 'raw'" testid="body-raw" placeholder='{ "key": "{{value}}" }' class="body-editor" @update:model-value="touch" @beautify="beautify" />
+        <div v-else-if="d.body.mode === 'binary'" data-testid="binary-panel" style="margin-top:8px">
+          <button @click="binInput?.click()">Fayl tanlash…</button><input ref="binInput" type="file" hidden data-testid="binary-file" @change="pickBinary">
+          <span v-if="d.body.file.name" data-testid="binary-name"> 📎 {{ d.body.file.name }} <button class="ghost" data-testid="binary-clear" @click="d.body.file = { path: '', name: '' }; touch()">×</button></span>
+          <span v-else class="muted"> Fayl tanlanmagan</span>
+        </div>
+        <div v-else-if="d.body.mode === 'graphql'" data-testid="graphql-panel" style="margin-top:8px">
+          <b>Query</b><CodeEditor v-model="d.body.gql.query" lang="raw" testid="gql-query" placeholder="query { users { id name } }" class="body-editor" style="height:160px" @update:model-value="touch" />
+          <b>Variables (JSON)</b><CodeEditor v-model="d.body.gql.variables" lang="json" testid="gql-vars" placeholder='{ "id": 1 }' class="body-editor" style="height:90px" @update:model-value="touch" />
+        </div>
+        <KvTable v-else-if="d.body.mode === 'form'" :rows="d.body.fields" testid="form-table" @change="touch" />
+        <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" files testid="formdata-table" @change="touch" />
+      </div>
+    </div>
+    <div class="v-resizer" data-testid="resp-resizer" @pointerdown.prevent="startResize" />
+    <div class="resp" ref="respEl" data-testid="response" :style="respH ? { flex: 'none', height: respH + 'px' } : {}" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
+      <div v-if="!tab.response" class="empty">Javob shu yerda ko'rinadi</div>
+      <div v-else-if="tab.response.loading" class="muted">Yuborilmoqda…</div>
+      <template v-else>
+        <div style="display:flex;gap:14px;align-items:center;margin-bottom:8px">
+          <span class="status-pill" :class="statusClass" data-testid="resp-status">{{ tab.response.status }}</span>
+          <span data-testid="resp-time">{{ fmtMs(tab.response.time) }}</span>
+          <span data-testid="resp-size">{{ fmtBytes(tab.response.size ?? 0) }}</span>
+          <span class="muted" data-testid="resp-timing" :title="'DNS / connect / TLS / TTFB'">
+            DNS — · connect {{ fmtMs(tab.response.timing?.connect) }} · TLS {{ fmtMs(tab.response.timing?.tls) }} · TTFB {{ fmtMs(tab.response.timing?.ttfb) }}
+          </span>
+        </div>
+        <ResponsePanel :tab="tab" />
+      </template>
+    </div>
+  </div>
+  <div v-if="curlOpen" class="overlay" @click.self="curlOpen = false"><div class="dialog" style="width:640px" data-testid="curl-drawer">
+    <div style="display:flex;gap:8px;align-items:center"><b style="flex:1">Kod</b><select v-model="lang" data-testid="snippet-lang"><option v-for="l in LANGS" :key="l[0]" :value="l[0]">{{ l[1] }}</option></select><button data-testid="curl-copy" @click="copyCurl">Nusxa</button><button @click="curlOpen = false">×</button></div>
+    <pre style="margin-top:10px" data-testid="curl-output" v-html="curlHtml" /></div></div>
+</template>

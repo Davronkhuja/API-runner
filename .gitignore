@@ -32,3 +32,13 @@ env/
 # Environment
 .env
 .env.*
+
+# Workspace (foydalanuvchi ma'lumoti) va zaxira nusxalar
+workspace/
+saved_requests.json.*bak
+
+# Frontend
+web/node_modules/
+web/.vite/
+_manual_backups/
+backups/
