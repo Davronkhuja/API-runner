@@ -193,8 +193,19 @@ export const useTabs = defineStore('tabs', () => {
   }
 
   /** Daraxtdagi o'zgarishlar tabga ta'sir qiladi (o'chirish / nom o'zgarishi). */
+  /** Nom o'zgargach: shu ref'dagi barcha tablar sarlavhasi va (so'rov tabida) qoralama nomi. Qoralamadagi boshqa o'zgarishlarga tegilmaydi. */
+  function renameRef(ref: string, name: string) {
+    for (const t of tabs.value) {
+      if (t.ref !== ref) continue
+      t.title = t.kind === 'runner' ? 'Runner: ' + name : name
+      if (t.kind === 'request' && t.draft) t.draft.name = name
+    }
+    persistNow()
+  }
+  /** Tab sarlavhasi/breadcrumb'dan nom o'zgartirish rejimini so'rash (kontekst menyu). */
+  const renameRequest = ref<string | null>(null)
   function retitle(ref: string, title: string) { tabs.value.filter(t => t.ref === ref).forEach(t => (t.title = title)); persistNow() }
   function dropRef(ref: string) { tabs.value = tabs.value.filter(t => t.ref !== ref); if (!tabs.value.some(t => t.id === activeId.value)) activeId.value = tabs.value[0]?.id ?? null; persistNow() }
 
-  return { tabs, activeId, active, closed, restore, persistNow, flush, flushOnUnload, setPersistence, add, open, openNew, activate, next, touch, markSaved, close, closeMany, closeOthers, closeRight, closeAll, reopenClosed, duplicate, reorder, retitle, dropRef }
+  return { tabs, activeId, active, closed, restore, persistNow, flush, flushOnUnload, setPersistence, add, open, openNew, activate, next, touch, markSaved, close, closeMany, closeOthers, closeRight, closeAll, reopenClosed, duplicate, reorder, retitle, renameRef, renameRequest, dropRef }
 })

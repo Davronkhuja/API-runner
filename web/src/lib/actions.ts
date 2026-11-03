@@ -21,8 +21,9 @@ export async function saveTab(tab: Tab): Promise<boolean> {
   const [cid, id] = tab.ref.split(':')
   const request = requestFromDraft(tab.draft)
   const existing = (tree.findItem(cid, id) as any)?.event
-  await tree.updateItem(cid, id, { name: tab.draft.name, request, event: eventsFromDraft(tab.draft, existing), 'x-apirunner': extFromDraft(tab.draft) })
-  tabs.markSaved(tab.id, { title: tab.draft.name })
+  // Nom bu yerda YOZILMAYDI: u yagona manbadan (daraxt/server, lib/rename.ts) keladi — Save qayta nomlashni bosib ketmasin
+  await tree.updateItem(cid, id, { request, event: eventsFromDraft(tab.draft, existing), 'x-apirunner': extFromDraft(tab.draft) })
+  tabs.markSaved(tab.id, { title: (tree.findItem(cid, id) as any)?.name ?? tab.draft.name })
   return true
 }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { useTree, rowKey, dropPositionFor, type Row } from '../stores/tree'
 import { useTabs } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
@@ -9,6 +9,7 @@ import { openRequest } from '../lib/actions'
 import { askConfirm, showToast, sidePanel } from '../lib/ui'
 import Icon from './Icon.vue'
 import { authName, hasRealAuth, openNodeTab } from '../lib/nodes'
+import { renameNode, validateName } from '../lib/rename'
 import { isFolder, type DropPosition, type RequestItem, type TreeItem } from '../types/model'
 import { draftFromItem } from '../lib/draft'
 
@@ -98,7 +99,7 @@ void clickTimer
 function ctx(e: MouseEvent, r: Row) { menu.value = { x: e.clientX, y: e.clientY, row: r }; if (!tree.selection.includes(keyOf(r))) tree.select(keyOf(r)) }
 async function menuAct(a: string) {
   const r = menu.value!.row; menu.value = null
-  if (a === 'rename') { renaming.value = keyOf(r); renameVal.value = r.name }
+  if (a === 'rename') startRename(r)
   else if (a === 'runner') tabs.open('runner', r.isCollection ? r.collectionId : `${r.collectionId}:${r.id}`, 'Runner: ' + r.name, { permanent: true })
   else if (a === 'open') openNodeTab(r.collectionId, null, 'overview')
   else if (a === 'settings') openNodeTab(r.collectionId, r.id, 'overview')
@@ -114,15 +115,27 @@ async function menuAct(a: string) {
   }
 }
 async function duplicate(r: Row) {
-  await tree.duplicate(r.collectionId, r.id)
+  const newId = await tree.duplicate(r.collectionId, r.id)
+  await nextTick()
+  const nr = tree.rows.find(x => x.collectionId === r.collectionId && x.id === newId)
+  if (nr) { tree.select(keyOf(nr)); startRename(nr) }       // yangi element darhol rename rejimida ("... Copy" belgilangan)
 }
-async function commitRename(r: Row) {
-  const name = renameVal.value.trim()
-  renaming.value = null
-  if (!name || name === r.name) return
-  await tree.renameItem(r.collectionId, r.id, name)
-  tabs.retitle(keyOf(r), name)
+let renameDone = false                    // Enter/Esc dan keyin kelgan blur ikkinchi marta ishlamasin
+const vFocusSelect = { mounted(el: HTMLInputElement) { nextTick(() => { el.focus(); el.select() }) } }   // dinamik elementda autofocus ishonchsiz
+function startRename(r: Row) { renameDone = false; renaming.value = keyOf(r); renameVal.value = r.name }
+async function commitRename(r: Row, mode: 'enter' | 'blur' = 'enter') {
+  if (renameDone) return
+  const id = r.isCollection ? null : r.id
+  const err = validateName(r.collectionId, id, renameVal.value)
+  if (err) {
+    showToast(err, 'warn')
+    if (mode === 'enter') return                        // tahrirda qoladi
+    renameDone = true; renaming.value = null; return    // blur: bekor
+  }
+  renameDone = true; renaming.value = null
+  if (renameVal.value.trim() !== r.name) await renameNode(r.collectionId, id, renameVal.value)
 }
+function cancelRename() { renameDone = true; renaming.value = null }
 // "Ko'chirish..." — klaviatura/accessibility uchun DnD ning muqobili
 const moveOptions = computed(() => tree.rows.filter(r => r.isCollection || r.folder).map(r => ({ key: keyOf(r), label: '　'.repeat(r.depth) + r.name })))
 async function confirmMove() {
@@ -149,7 +162,7 @@ function onKey(e: KeyboardEvent, r: Row) {
   else if (e.key === 'ArrowRight' && r.folder && !r.expanded) { e.preventDefault(); tree.toggle(keyOf(r), r.item) }
   else if (e.key === 'ArrowLeft' && r.folder && r.expanded) { e.preventDefault(); tree.toggle(keyOf(r), r.item) }
   else if (e.key === 'Enter' || e.key === ' ') { if ((e.target as HTMLElement).tagName === 'INPUT') return; e.preventDefault(); onClick(new MouseEvent('click'), r); if (e.key === 'Enter' && !r.folder) onDbl(r) }
-  else if (e.key === 'F2' && !r.isCollection) { e.preventDefault(); renaming.value = keyOf(r); renameVal.value = r.name }
+  else if (e.key === 'F2') { e.preventDefault(); startRename(r) }
   else if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) { e.preventDefault(); const b = (e.currentTarget as HTMLElement).getBoundingClientRect(); ctx(new MouseEvent('contextmenu', { clientX: b.left + 40, clientY: b.bottom }), r) }
 }
 async function newCollection() { await tree.createCollection('Yangi collection') }
@@ -195,8 +208,8 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
           <span v-if="r.isCollection" class="ico" style="width:18px;height:18px;border-radius:5px;background:var(--accent-weak);color:var(--accent-text);align-items:center;justify-content:center"><Icon name="layers" :size="12" /></span>
           <span v-else-if="r.folder" class="ico"><Icon name="folder" :size="15" /></span>
           <span v-else class="m" :class="'m-' + (r.item as any).request.method">{{ (r.item as any).request.method }}</span>
-          <input v-if="renaming === rowKey(r.collectionId, r.id)" v-model="renameVal" aria-label="Yangi nom" style="flex:1;height:24px;padding:0 6px" data-testid="rename-input"
-                 @click.stop @keydown.stop @keydown.enter="commitRename(r)" @keydown.esc="renaming = null" @blur="commitRename(r)" autofocus>
+          <input v-if="renaming === rowKey(r.collectionId, r.id)" v-model="renameVal" v-focus-select aria-label="Yangi nom" style="flex:1;height:24px;padding:0 6px" data-testid="rename-input"
+                 @click.stop @keydown.stop @keydown.enter.prevent="commitRename(r, 'enter')" @keydown.esc.prevent="cancelRename" @blur="commitRename(r, 'blur')">
           <span v-else class="name" :style="{ fontWeight: r.folder ? 500 : 400 }">{{ r.name }}</span>
           <span v-if="ownAuth(r)" class="lock" data-testid="auth-lock" role="img" :aria-label="`O'z auth'i bor: ${authName(ownAuth(r))}`" :title="`Auth: ${authName(ownAuth(r))} (o'z auth'i)`"><Icon name="lock" :size="12" /></span>
           <span v-if="r.folder && !r.isCollection" class="cnt">{{ reqCount(r.item) }}</span>
@@ -238,7 +251,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
         <button v-if="menu.row.folder" data-act="runner" @click="menuAct('runner')">Runner</button>
         <button v-if="menu.row.folder && !menu.row.isCollection" data-act="settings" @click="menuAct('settings')">Sozlamalar (Auth, Variables, Scripts)</button>
         <button v-if="menu.row.folder" data-act="newfolder" @click="menuAct('newfolder')">Yangi papka</button>
-        <button v-if="!menu.row.isCollection" data-act="rename" @click="menuAct('rename')">Nomini o'zgartirish</button>
+        <button data-act="rename" @click="menuAct('rename')">Nomini o'zgartirish</button>
         <button v-if="!menu.row.isCollection" data-act="dup" @click="menuAct('dup')">Dublikat</button>
         <button v-if="!menu.row.isCollection" data-act="move" @click="menuAct('move')">Ko'chirish…</button>
         <button v-if="!menu.row.isCollection" data-act="delete" @click="menuAct('delete')">O'chirish</button>

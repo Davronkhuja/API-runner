@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { get, post, patch, del } from '../api/client'
+import { get, post, patch, del, put } from '../api/client'
 import { isFolder, type Collection, type CollectionMeta, type DropPosition, type TreeItem } from '../types/model'
 
 export interface Row { id: string; collectionId: string; item: TreeItem | null; depth: number; folder: boolean; expanded: boolean; parentId: string | null; isCollection: boolean; name: string }
@@ -129,7 +129,12 @@ export const useTree = defineStore('tree', () => {
     const newId = r.mapping[id] as string
     const orig = findItem(cid, id)
     await reloadCollection(cid)
-    if (orig) await renameItem(cid, newId, orig.name + ' Copy')
+    if (orig) {
+      const names = new Set(siblings(cid, newId).map(s => s.name))           // "X Copy", "X Copy 2" … takrorlanmasin
+      let n = orig.name + ' Copy', i = 1
+      while (names.has(n)) n = `${orig.name} Copy ${++i}`
+      await renameItem(cid, newId, n)
+    }
     return newId
   }
 
@@ -137,6 +142,19 @@ export const useTree = defineStore('tree', () => {
     const r = await post(`/api/collections/${cid}/items`, { parent_id: parentId, item, index })
     await reloadCollection(cid)
     return r.id as string
+  }
+  /** Berilgan elementning aka-ukalari (bir ota ichidagi barcha elementlar, o'zi ham shu jumladan). */
+  function siblings(cid: string, id: string): TreeItem[] {
+    const col = cols.value[cid]
+    if (!col) return []
+    const walk = (xs: TreeItem[]): TreeItem[] | null => { for (const x of xs) { if (x.id === id) return xs; if (isFolder(x)) { const r = walk(x.item); if (r) return r } } return null }
+    return walk(col.item) ?? []
+  }
+  async function renameCollection(cid: string, name: string) {
+    const col = JSON.parse(JSON.stringify(cols.value[cid]))
+    col.info.name = name
+    await put(`/api/collections/${cid}`, col)
+    await load()
   }
   async function renameItem(cid: string, id: string, name: string) { await patch(`/api/collections/${cid}/items/${id}`, { name }); await reloadCollection(cid) }
   async function updateItem(cid: string, id: string, p: object) { await patch(`/api/collections/${cid}/items/${id}`, p); await reloadCollection(cid) }
@@ -158,5 +176,5 @@ export const useTree = defineStore('tree', () => {
     return true
   }
 
-  return { metas, cols, expandedOverride, filter, selection, rows, load, reloadCollection, isExpanded, toggle, setExpanded, select, clearSelection, dragSet, canDrop, move, duplicate, addItem, renameItem, updateItem, removeItem, createCollection, findItem, reveal }
+  return { metas, cols, expandedOverride, filter, selection, rows, load, reloadCollection, isExpanded, toggle, setExpanded, select, clearSelection, dragSet, canDrop, move, duplicate, siblings, renameCollection, addItem, renameItem, updateItem, removeItem, createCollection, findItem, reveal }
 })

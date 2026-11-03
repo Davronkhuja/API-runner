@@ -2,6 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.2] — 2026-11-04 — Fix: nomni o'zgartirish
+### Fixed
+- **Rename → Save nomni eskisiga qaytarardi** (paritet regressiyasi): sidebar'dagi rename faqat serverni va tab sarlavhasini yangilardi, ochiq tab qoralamasidagi `draft.name` eski qolardi va ⌘S qoralamani butunligicha yozib nomni bosib ketardi. Endi nom **bitta manbadan** (`lib/rename.ts → renameNode`) o'zgaradi: server, daraxt, barcha ochiq tablar (sarlavha va qoralama nomi) birdaniga; qoralamadagi boshqa saqlanmagan o'zgarishlar (method, URL, body) va dirty holati tegilmaydi. `saveTab` saqlangan so'rovda nom maydonini umuman yozmaydi.
+### Added
+- **Breadcrumb'dagi so'rov nomi** bosilganda (yoki Enter) inline input: Enter/blur — saqlash, Esc — bekor; saqlanmagan yangi so'rovda bosilsa "Saqlash" dialogi ochiladi. Papka va collection tabi sarlavhasida ham xuddi shunday.
+- **Collection'ni qayta nomlash** (F2, kontekst menyu, tab sarlavhasi); Runner tabi sarlavhasi ham yangilanadi.
+- Tab kontekst menyusida **"Nomini o'zgartirish"** (so'rov va collection/papka tablari).
+- **Dublikat** qilingach yangi element darhol rename rejimida ("… Copy" belgilangan); nusxa nomlari takrorlanmaydi ("X Copy", "X Copy 2").
+- Rename input'ga fokus va belgilash ishonchli (`nextTick` + `focus/select`, `autofocus` o'rniga); Enter/Esc dan keyingi blur ikkinchi marta ishlamaydi.
+- Bo'sh nom va bir papkadagi takror nom uchun aniq xabar (Enter — tahrirda qoladi, blur — bekor qiladi); collection nomlari ham takrorlanmaydi.
+- 11 yangi e2e (`test_rename.py`).
+
 ## [2.3.1] — 2026-11-04 — Papka/collection auth'ini topish va boshqarish
 ### Added
 - **Papka/collection tabi Postman kabi**: daraxtda qator bosilsa preview tab ochiladi (ikki marta — doimiy); chevron faqat ochadi/yopadi; kontekst menyu saqlangan (Sozlamalar, Runner, …). Bo'limlar: **Overview** (so'rovlar/papkalar soni, auth xulosasi, o'zgaruvchilar, o'z auth'i bor so'rovlar soni, tavsif) | **Auth** | **Variables** | **Scripts** | **Run** (Runner'ni shu papka/collection doirasida ochadi — Runner endi `cid:papka` ref'ini qo'llab-quvvatlaydi).

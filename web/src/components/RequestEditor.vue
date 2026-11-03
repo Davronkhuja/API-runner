@@ -10,6 +10,9 @@ import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
 import SettingsForm from './SettingsForm.vue'
 import ScriptsPanel from './ScriptsPanel.vue'
+import InlineName from './InlineName.vue'
+import { renameNode, validateName } from '../lib/rename'
+import { saveAsHandler } from '../lib/actions'
 import { useWorkspace as _ws } from '../stores/workspace'
 import BatchPanel from './BatchPanel.vue'
 import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
@@ -40,11 +43,15 @@ const onSectionKey = (e: KeyboardEvent) => {
   if (to) { e.preventDefault(); section.value = to; nextTick(() => document.querySelector<HTMLElement>(`[data-section=${to}]`)?.focus()) }
 }
 const tree = useTree()
+const [refCid, refId] = (props.tab.ref ?? '').split(':') as [string, string | undefined]
+const renamingCrumb = ref(false)
+watch(() => tabs.renameRequest, id => { if (id === props.tab.id) { tabs.renameRequest = null; if (props.tab.ref) renamingCrumb.value = true; else askSave() } })
+const askSave = () => { saveAsHandler.fn?.(props.tab) }
 const crumbs = computed(() => {
   const [cid, id] = (props.tab.ref ?? '').split(':')
   const col = cid ? tree.cols[cid] : undefined
   if (!col) return ['Saqlanmagan so\'rov', d.value.name || 'Yangi so\'rov']
-  return [col.info.name, ...folderPath(col, id).map(f => f.name), d.value.name]
+  return [col.info.name, ...folderPath(col, id).map(f => f.name), (tree.findItem(cid, id) as any)?.name ?? d.value.name]
 })
 const counts = computed(() => ({
   params: d.value.params.filter(p => p.enabled && p.key.trim()).length, headers: d.value.headers.filter(h => h.enabled && h.key.trim()).length,
@@ -142,7 +149,9 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
 <template>
   <div style="display:flex;flex-direction:column;flex:1;min-height:0" data-testid="request-editor">
     <div class="crumbs" data-testid="crumbs">
-      <template v-for="(c, i) in crumbs" :key="i"><span v-if="i">/</span><span :class="{ cur: i === crumbs.length - 1 }">{{ c }}</span></template>
+      <template v-for="(c, i) in crumbs" :key="i"><span v-if="i">/</span>
+        <InlineName v-if="i === crumbs.length - 1" v-model:editing="renamingCrumb" class="cur" testid="crumb-rename" :value="c" :unsaved="!tab.ref" :validate="v => validateName(refCid, refId ?? null, v)" :commit="v => renameNode(refCid, refId ?? null, v)" label="So'rov nomi" @unsaved="askSave" />
+        <span v-else>{{ c }}</span></template>
       <div style="flex:1" />
       <button class="sm" data-testid="save" :disabled="!tab.dirty && !!tab.ref" aria-keyshortcuts="Control+S Meta+S" @click="saveTab(tab)"><Icon name="save" :size="14" />Saqlash <span class="muted" style="font-size:11px">⌘S</span></button>
       <button class="sm" data-testid="curl-btn" title="Kod namunasi (cURL, Python, JS, Go, ...)" @click="curlOpen = true">&lt;/&gt; Kod</button>

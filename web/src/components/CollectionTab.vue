@@ -11,6 +11,8 @@ import { authSource, folderPath } from '../lib/scope'
 import { authName, hasRealAuth, openNodeTab, overridableRequests, requestsIn, sameAuth, type Section } from '../lib/nodes'
 import { isFolder as isFolderNode } from '../types/model'
 import ScriptsPanel from './ScriptsPanel.vue'
+import InlineName from './InlineName.vue'
+import { renameNode, validateName } from '../lib/rename'
 import AuthEditor from './AuthEditor.vue'
 import VarsTable from './VarsTable.vue'
 import BulkAuthDialog, { type Candidate } from './BulkAuthDialog.vue'
@@ -37,6 +39,8 @@ function load() {
 }
 watch(() => props.tab.ref, load, { immediate: true })
 const touch = () => tabs.touch(props.tab.id)
+const renamingTitle = ref(false)
+watch(() => tabs.renameRequest, id => { if (id === props.tab.id) { tabs.renameRequest = null; renamingTitle.value = true } })
 
 // ── Overview ma'lumotlari ──
 const crumbs = computed(() => [col.value?.info.name, ...(isFolder ? folderPath(col.value, fid).map(f => f.name) : []), ...(isFolder ? [name.value] : [])].filter(Boolean) as string[])
@@ -84,7 +88,7 @@ async function save() {
       <span style="flex:1" />
       <span class="badge" data-testid="node-kind">{{ isFolder ? 'Papka' : 'Collection' }}</span></div>
     <div style="display:flex;gap:10px;align-items:center">
-      <h3 style="flex:1;margin:0" data-testid="node-title">{{ name }}</h3>
+      <h3 style="flex:1;margin:0" data-testid="node-title"><InlineName v-model:editing="renamingTitle" testid="node-rename" :value="name" :validate="v => validateName(cid, isFolder ? fid : null, v)" :commit="v => renameNode(cid, isFolder ? fid : null, v)" :label="isFolder ? 'Papka nomi' : 'Collection nomi'" /></h3>
       <button class="primary" data-testid="scope-save" :disabled="!tab.dirty" @click="save">Saqlash</button>
     </div>
     <div class="sections" data-testid="scope-sections" role="tablist" aria-label="Bo'limlar" style="margin:8px 0 0">

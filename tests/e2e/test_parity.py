@@ -334,6 +334,8 @@ def test_collection_rename_duplicate_delete_context_menu(ui, app):
     expect(ui.locator("[data-testid=tree-row][data-name=Alfa2]")).to_be_visible()
     ui.locator("[data-testid=tree-row][data-name=Alfa2]").click(button="right")
     ui.click("[data-testid=tree-menu] [data-act=dup]")
+    expect(T(ui, "rename-input")).to_be_focused()                              # dublikat darhol rename rejimida
+    ui.keyboard.press("Enter")                                                 # "Alfa2 Copy" ni qabul qilish
     expect(ui.locator("[data-testid=tree-row]", has_text="Alfa2")).to_have_count(2)
     ui.locator("[data-testid=tree-row][data-name=Alfa2]").first.click(button="right")
     ui.click("[data-testid=tree-menu] [data-act=delete]")
