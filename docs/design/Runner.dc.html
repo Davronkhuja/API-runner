@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>API Runner — Collection Runner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA}a:hover{color:#312E81}
+.th-light{--bg:#F6F7F9;--panel:#FFFFFF;--rail:#EEF0F4;--border:#E2E5EA;--border-strong:#D3D7DE;--text:#151821;--muted:#596170;--subtle:#F1F3F6;--hover:#EBEEF3;--accent-text:#4338CA;--accent-weak:#EEF0FF;--m-get:#15803D;--m-post:#B45309;--m-put:#1D4ED8;--m-delete:#B91C1C;--ok-bg:#E8F6EE;--ok:#15803D;--err-bg:#FDECEC;--err:#B91C1C}
+.th-dark{--bg:#0E1015;--panel:#151820;--rail:#111319;--border:#252933;--border-strong:#323743;--text:#E7E9EE;--muted:#9AA2B1;--subtle:#1B1F28;--hover:#1F2430;--accent-text:#A5B4FC;--accent-weak:#1E2142;--m-get:#4ADE80;--m-post:#FBBF24;--m-put:#60A5FA;--m-delete:#F87171;--ok-bg:#12291C;--ok:#4ADE80;--err-bg:#2E1517;--err:#F87171}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.ib:hover{background:var(--hover);color:var(--text)}
+.rail-btn{display:flex;flex-direction:column;align-items:center;gap:3px;width:52px;padding:8px 0;border-radius:10px;color:var(--muted);font:500 10px Inter,sans-serif;text-decoration:none}
+.rail-btn:hover{background:var(--hover);color:var(--text)}
+.rail-btn.on{background:var(--panel);color:var(--accent-text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.inp{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:400 13px Inter,sans-serif;outline:none;box-sizing:border-box;width:100%}
+.inp:focus{border-color:var(--accent)}
+.lbl{font:600 12px Inter,sans-serif;color:var(--muted)}
+.btn{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:500 12.5px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--hover)}
+.go{height:40px;border:0;border-radius:9px;background:var(--accent);color:#fff;font:600 14px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.go:hover{filter:brightness(1.08)}
+.stop{height:40px;border:1px solid var(--err);border-radius:9px;background:var(--err-bg);color:var(--err);font:600 14px Inter,sans-serif;cursor:pointer;width:100%}
+.seg{height:28px;padding:0 12px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:500 12.5px Inter,sans-serif;cursor:pointer}
+.seg.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.chk{width:15px;height:15px;accent-color:var(--accent);margin:0}
+.req{display:flex;align-items:center;gap:10px;height:34px;padding:0 8px;border-radius:7px}
+.req:hover{background:var(--hover)}
+.res{display:grid;grid-template-columns:56px 64px minmax(0,1fr) 84px 76px 92px;align-items:center;gap:8px;height:40px;padding:0 14px;border-bottom:1px solid var(--border);font-size:13px}
+.res:hover{background:var(--hover)}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="--accent: {{accent}}; width: 100%; height: 900px; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; font-size: 13px; overflow: hidden">
+
+  <header style="height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 14px; border-bottom: 1px solid var(--border); background: var(--panel)">
+    <div style="width: 26px; height: 26px; border-radius: 7px; background: var(--accent); display: flex; align-items: center; justify-content: center">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+    </div>
+    <span style="font-weight: 700; font-size: 14px">API Runner</span>
+    <span style="color: var(--border-strong)">/</span>
+    <span style="font-weight: 500">Collection Runner</span>
+    <div style="flex: 1"></div>
+    <button class="ib" aria-label="Tema almashtirish" onClick="{{toggleTheme}}">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    </button>
+  </header>
+
+  <div style="flex: 1; min-height: 0; display: flex">
+    <nav aria-label="Asosiy bo'limlar" style="width: 64px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; background: var(--rail); border-right: 1px solid var(--border)">
+      <a class="rail-btn" href="Main.dc.html"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 16 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>Kolleksiya</a>
+      <a class="rail-btn" href="Main.dc.html"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>Muhitlar</a>
+      <a class="rail-btn" href="Main.dc.html"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Tarix</a>
+      <a class="rail-btn on" href="Runner.dc.html"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M7 5v14l11-7z"/></svg>Runner</a>
+    </nav>
+
+    <aside class="scroll" style="width: 360px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; padding: 18px; background: var(--panel); border-right: 1px solid var(--border)">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label class="lbl" for="rcoll">Collection yoki papka</label>
+        <select id="rcoll" class="inp"><option>Saqlangan so'rovlar / Ijara</option><option>Saqlangan so'rovlar / Online Mahalla</option><option>Saqlangan so'rovlar (hammasi)</option></select>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <span class="lbl">So'rovlar tartibi</span>
+          <span style="font-size: 12px; color: var(--muted)">{{selCount}} / 6 tanlangan</span>
+        </div>
+        <div style="border: 1px solid var(--border); border-radius: 10px; padding: 4px">
+          <sc-for list="{{reqs}}" as="r" hint-placeholder-count="6">
+            <div class="req">
+              <span aria-hidden="true" style="color: var(--border-strong); cursor: grab; display: flex"><svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="9" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="9" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="9" cy="13" r="1.4"/></svg></span>
+              <input type="checkbox" class="chk" aria-label="Runner'ga qo'shish" checked="{{r.on}}" onChange="{{r.toggle}}">
+              <span style="width: 46px; font: 700 10.5px 'JetBrains Mono', monospace; {{r.mstyle}}">{{r.method}}</span>
+              <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.name}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <label style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Iteratsiyalar</span><input class="inp" value="3" aria-label="Iteratsiyalar"></label>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Kechikish, ms</span><input class="inp" value="200" aria-label="Kechikish"></label>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Parallel</span><input class="inp" value="1" aria-label="Parallel so'rovlar"></label>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Muhit</span><select class="inp"><option>Ijara — dev</option><option>Ijara — prod</option></select></label>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span class="lbl">Ma'lumot fayli</span>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--subtle)">
+          <span style="width: 30px; height: 30px; border-radius: 7px; background: var(--ok-bg); color: var(--ok); display: flex; align-items: center; justify-content: center; font: 700 9.5px Inter">CSV</span>
+          <span style="flex: 1"><span style="display: block; font-weight: 500">shartnomalar.csv</span><span style="display: block; font-size: 12px; color: var(--muted)">3 qator · contract_id, pinfl</span></span>
+          <button class="ib" aria-label="Faylni olib tashlash"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <label style="display: flex; align-items: center; gap: 10px"><input type="checkbox" class="chk" checked="{{ true }}">O'zgaruvchi qiymatlarini saqlash</label>
+        <label style="display: flex; align-items: center; gap: 10px"><input type="checkbox" class="chk">Birinchi xatoda to'xtash</label>
+        <label style="display: flex; align-items: center; gap: 10px"><input type="checkbox" class="chk" checked="{{ true }}">Javoblarni saqlash</label>
+      </div>
+
+      <div style="margin-top: auto">
+        <sc-if value="{{running}}" hint-placeholder-val="{{ false }}"><button class="stop" onClick="{{stop}}">To'xtatish</button></sc-if>
+        <sc-if value="{{idle}}" hint-placeholder-val="{{ true }}">
+          <button class="go" onClick="{{run}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5v14l11-7z"/></svg>Ishga tushirish · {{totalPlanned}} so'rov</button>
+        </sc-if>
+      </div>
+    </aside>
+
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; padding: 20px 24px; gap: 16px">
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+        <div>
+          <h1 style="margin: 0; font-size: 18px; font-weight: 700">Ijara — run #14</h1>
+          <p style="margin: 2px 0 0; font-size: 12.5px; color: var(--muted)">Bugun, 12:46 · Ijara — dev · 3 iteratsiya</p>
+        </div>
+        <div style="flex: 1"></div>
+        <button class="btn">Avvalgi run bilan solishtirish</button>
+        <button class="btn">Eksport ▾</button>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px"><span>{{progressLabel}}</span><span>{{pct}}%</span></div>
+        <div style="height: 6px; border-radius: 6px; background: var(--subtle); overflow: hidden"><div style="height: 100%; width: {{pct}}%; background: var(--accent); border-radius: 6px"></div></div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+        <div style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel)"><div class="lbl">Bajarildi</div><div style="font-size: 24px; font-weight: 700; margin-top: 4px">{{doneCount}}<span style="font-size: 14px; color: var(--muted); font-weight: 500"> / {{totalPlanned}}</span></div></div>
+        <div style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel)"><div class="lbl">Testlar o'tdi</div><div style="font-size: 24px; font-weight: 700; margin-top: 4px; color: var(--ok)">{{passCount}}</div></div>
+        <div style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel)"><div class="lbl">Xato</div><div style="font-size: 24px; font-weight: 700; margin-top: 4px; color: var(--err)">{{failCount}}</div></div>
+        <div style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel)"><div class="lbl">O'rtacha vaqt</div><div style="font-size: 24px; font-weight: 700; margin-top: 4px">{{avg}}<span style="font-size: 14px; color: var(--muted); font-weight: 500"> ms</span></div></div>
+      </div>
+
+      <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border)">
+          <div style="display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--subtle)">
+            <sc-for list="{{filters}}" as="f" hint-placeholder-count="3"><button class="{{f.cls}}" onClick="{{f.pick}}">{{f.label}}</button></sc-for>
+          </div>
+          <div style="flex: 1"></div>
+          <input class="inp" aria-label="Natijalarni qidirish" placeholder="Qidirish…" style="width: 220px; height: 30px">
+        </div>
+        <div class="res" style="height: 32px; font: 600 11.5px Inter; color: var(--muted); background: var(--subtle)">
+          <span>Iter.</span><span>Metod</span><span>So'rov</span><span>Status</span><span>Vaqt</span><span>Testlar</span>
+        </div>
+        <div class="scroll" style="flex: 1; overflow-y: auto">
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+            <div class="res">
+              <span style="color: var(--muted); font-family: 'JetBrains Mono'">#{{r.iter}}</span>
+              <span style="font: 700 10.5px 'JetBrains Mono', monospace; {{r.mstyle}}">{{r.method}}</span>
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.name}}</span>
+              <span><span style="font: 700 11.5px 'JetBrains Mono'; padding: 2px 8px; border-radius: 5px; {{r.sstyle}}">{{r.status}}</span></span>
+              <span style="font-family: 'JetBrains Mono'; font-size: 12.5px">{{r.time}} ms</span>
+              <span style="font-size: 12px; {{r.tstyle}}">{{r.tests}}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 40px; text-align: center; color: var(--muted)">Bu filtr bo'yicha natija yo'q</div>
+          </sc-if>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"color","default":"#4F46E5","options":["#4F46E5","#0E7490","#C2410C","#15803D"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { dark: null, filter: 'all', done: 14, running: false,
+      sel: { 0: true, 1: true, 2: true, 3: false, 4: true, 5: true } };
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const s = this.state;
+    const dark = s.dark === null ? !!this.props.dark : s.dark;
+    const mc = (m) => 'color: var(--m-' + m.toLowerCase() + ')';
+    const base = [
+      ['POST', 'mobile / transport'], ['GET', 'v2/mobile/contracts/main'], ['GET', 'v2/mobile/payments/main'],
+      ['DELETE', 'v1/uzasbo_send_split_payment'], ['POST', 'v4/uzasbo'], ['GET', 'v2/mobile/lists']
+    ];
+    const reqs = base.map(([method, name], i) => ({ method, name, mstyle: mc(method), on: !!s.sel[i], toggle: () => this.setState({ sel: { ...s.sel, [i]: !s.sel[i] } }) }));
+    const chosen = base.filter((_, i) => s.sel[i]);
+    const total = chosen.length * 3;
+    const times = [212, 184, 246, 131, 402, 168, 199, 177, 233, 140, 388, 160, 205, 191, 251];
+    const all = [];
+    for (let it = 1; it <= 3; it++) chosen.forEach(([method, name], j) => {
+      const k = all.length;
+      const fail = name === 'v4/uzasbo' && it === 2;
+      const slow = name === 'v4/uzasbo' && it === 3;
+      all.push({ iter: it, method, name, mstyle: mc(method), fail: fail || slow,
+        status: fail ? '500' : (method === 'POST' ? '201' : '200'),
+        sstyle: fail ? 'background: var(--err-bg); color: var(--err)' : 'background: var(--ok-bg); color: var(--ok)',
+        time: times[k % times.length], tests: fail ? '0 / 2' : (slow ? '1 / 2' : '2 / 2'),
+        tstyle: (fail || slow) ? 'color: var(--err)' : 'color: var(--muted)' });
+    });
+    const done = Math.min(s.done, total);
+    const doneRows = all.slice(0, done);
+    const rows = doneRows.filter(r => s.filter === 'all' || (s.filter === 'fail' ? r.fail : !r.fail)).reverse();
+    const failCount = doneRows.filter(r => r.fail).length;
+    const avg = doneRows.length ? Math.round(doneRows.reduce((a, r) => a + r.time, 0) / doneRows.length) : 0;
+    const filters = [['all', 'Hammasi'], ['pass', 'O\'tdi'], ['fail', 'Xato']].map(([id, label]) => ({ label, cls: s.filter === id ? 'seg on' : 'seg', pick: () => this.setState({ filter: id }) }));
+    const pct = total ? Math.round(done / total * 100) : 0;
+    return {
+      themeClass: dark ? 'th-dark' : 'th-light', accent: this.props.accent ?? '#4F46E5',
+      toggleTheme: () => this.setState({ dark: !dark }),
+      reqs, selCount: chosen.length, totalPlanned: total,
+      running: s.running, idle: !s.running,
+      run: () => { clearInterval(this.timer); this.setState({ done: 0, running: true }); this.timer = setInterval(() => { const n = this.state.done + 1; if (n >= total) { clearInterval(this.timer); this.setState({ done: total, running: false }); } else this.setState({ done: n }); }, 260); },
+      stop: () => { clearInterval(this.timer); this.setState({ running: false }); },
+      pct, progressLabel: s.running ? 'Bajarilmoqda… ' + done + ' / ' + total : (done >= total ? 'Tugadi' : 'To\'xtatildi · ' + done + ' / ' + total),
+      doneCount: done, passCount: done - failCount, failCount, avg,
+      filters, rows, empty: rows.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

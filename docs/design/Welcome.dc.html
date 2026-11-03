@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>API Runner — bosh sahifa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA}a:hover{color:#312E81}
+.th-light{--bg:#F6F7F9;--panel:#FFFFFF;--rail:#EEF0F4;--border:#E2E5EA;--border-strong:#D3D7DE;--text:#151821;--muted:#596170;--subtle:#F1F3F6;--hover:#EBEEF3;--accent-text:#4338CA;--accent-weak:#EEF0FF;--m-get:#15803D;--m-post:#B45309;--m-put:#1D4ED8;--m-delete:#B91C1C;--ok:#15803D}
+.th-dark{--bg:#0E1015;--panel:#151820;--rail:#111319;--border:#252933;--border-strong:#323743;--text:#E7E9EE;--muted:#9AA2B1;--subtle:#1B1F28;--hover:#1F2430;--accent-text:#A5B4FC;--accent-weak:#1E2142;--m-get:#4ADE80;--m-post:#FBBF24;--m-put:#60A5FA;--m-delete:#F87171;--ok:#4ADE80}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.ib:hover{background:var(--hover);color:var(--text)}
+.rail-btn{display:flex;flex-direction:column;align-items:center;gap:3px;width:52px;padding:8px 0;border-radius:10px;color:var(--muted);font:500 10px Inter,sans-serif;text-decoration:none}
+.rail-btn:hover{background:var(--hover);color:var(--text)}
+.rail-btn.on{background:var(--panel);color:var(--accent-text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.card{display:flex;flex-direction:column;gap:10px;padding:18px;border:1px solid var(--border);border-radius:14px;background:var(--panel);color:var(--text);text-decoration:none;transition:border-color .15s,box-shadow .15s}
+.card:hover{border-color:var(--accent);box-shadow:0 6px 20px rgba(17,24,39,.08);color:var(--text)}
+.row{display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:8px;color:var(--text);text-decoration:none;font-size:13px}
+.row:hover{background:var(--hover);color:var(--text)}
+.btn{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:500 12.5px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--hover)}
+.kbd{font:500 11px Inter,sans-serif;color:var(--muted);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:1px 6px;background:var(--panel)}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="--accent: {{accent}}; width: 100%; height: 900px; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; font-size: 13px; overflow: hidden">
+
+  <header style="height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 14px; border-bottom: 1px solid var(--border); background: var(--panel)">
+    <div style="width: 26px; height: 26px; border-radius: 7px; background: var(--accent); display: flex; align-items: center; justify-content: center">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+    </div>
+    <span style="font-weight: 700; font-size: 14px">API Runner</span>
+    <div style="flex: 1"></div>
+    <button class="btn">Muhit: Ijara — dev</button>
+    <button class="ib" aria-label="Tema almashtirish" onClick="{{toggleTheme}}">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    </button>
+  </header>
+
+  <div style="flex: 1; min-height: 0; display: flex">
+    <nav aria-label="Asosiy bo'limlar" style="width: 64px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; background: var(--rail); border-right: 1px solid var(--border)">
+      <a class="rail-btn on" href="Main.dc.html"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 16 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>Kolleksiya</a>
+      <a class="rail-btn" href="Main.dc.html"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>Muhitlar</a>
+      <a class="rail-btn" href="Main.dc.html"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Tarix</a>
+      <a class="rail-btn" href="Runner.dc.html"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M7 5v14l11-7z"/></svg>Runner</a>
+    </nav>
+
+    <aside style="width: 284px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; padding: 12px 8px; background: var(--panel); border-right: 1px solid var(--border)">
+      <div style="padding: 0 8px 8px; font-weight: 600; font-size: 13.5px">Kolleksiyalar</div>
+      <sc-for list="{{folders}}" as="f" hint-placeholder-count="5">
+        <a class="row" href="Main.dc.html" style="height: 32px">
+          <span style="color: var(--muted); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
+          <span style="color: var(--muted); display: flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></span>
+          <span style="flex: 1; font-weight: 500">{{f.name}}</span>
+          <span style="font-size: 11px; color: var(--muted)">{{f.count}}</span>
+        </a>
+      </sc-for>
+    </aside>
+
+    <main class="scroll" style="flex: 999 1 560px; min-width: 0; overflow-y: auto; background: var(--bg)">
+      <div style="max-width: 960px; margin: 0 auto; padding: 56px 32px 40px; display: flex; flex-direction: column; gap: 36px">
+
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">Nimadan boshlaymiz?</h1>
+          <p style="margin: 0; color: var(--muted); font-size: 14px">Yangi so'rov yarating, cURL joylashtiring yoki mavjud collection'ni import qiling.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+          <a class="card" href="Main.dc.html">
+            <span style="width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+            <span style="font-weight: 600; font-size: 14px">Yangi so'rov</span>
+            <span style="color: var(--muted); font-size: 12.5px; line-height: 1.5">Bo'sh tab ochiladi</span>
+            <span style="display: flex; gap: 4px; margin-top: auto"><span class="kbd">⌘</span><span class="kbd">T</span></span>
+          </a>
+          <a class="card" href="Main.dc.html">
+            <span style="width: 36px; height: 36px; border-radius: 10px; background: var(--accent-weak); color: var(--accent-text); display: flex; align-items: center; justify-content: center; font: 700 12px 'JetBrains Mono'">$_</span>
+            <span style="font-weight: 600; font-size: 14px">cURL'dan</span>
+            <span style="color: var(--muted); font-size: 12.5px; line-height: 1.5">Buyruqni joylashtiring — maydonlar o'zi to'ladi</span>
+            <span style="display: flex; gap: 4px; margin-top: auto"><span class="kbd">⌘</span><span class="kbd">V</span></span>
+          </a>
+          <a class="card" href="Main.dc.html">
+            <span style="width: 36px; height: 36px; border-radius: 10px; background: var(--accent-weak); color: var(--accent-text); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></span>
+            <span style="font-weight: 600; font-size: 14px">Import</span>
+            <span style="color: var(--muted); font-size: 12.5px; line-height: 1.5">Postman, OpenAPI, Insomnia, HAR</span>
+            <span style="display: flex; gap: 4px; margin-top: auto"><span class="kbd">⌘</span><span class="kbd">O</span></span>
+          </a>
+          <a class="card" href="Runner.dc.html">
+            <span style="width: 36px; height: 36px; border-radius: 10px; background: var(--accent-weak); color: var(--accent-text); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 5v14l11-7z"/></svg></span>
+            <span style="font-weight: 600; font-size: 14px">Runner</span>
+            <span style="color: var(--muted); font-size: 12.5px; line-height: 1.5">Collection yoki CSV bilan ko'p marta</span>
+            <span style="display: flex; gap: 4px; margin-top: auto"><span class="kbd">⌘</span><span class="kbd">R</span></span>
+          </a>
+        </div>
+
+        <label style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; height: 120px; border: 1.5px dashed var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--muted); text-align: center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>
+          <span><b style="color: var(--text); font-weight: 600">Faylni shu yerga tashlang</b> yoki <span style="color: var(--accent-text); text-decoration: underline">tanlang</span></span>
+          <span style="font-size: 12px">.json · .yaml · .har · .csv</span>
+          <input type="file" aria-label="Import uchun fayl" style="display: none">
+        </label>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px">
+          <section>
+            <h2 style="margin: 0 0 10px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em">Oxirgi so'rovlar</h2>
+            <div style="border: 1px solid var(--border); border-radius: 12px; background: var(--panel); padding: 6px">
+              <sc-for list="{{recent}}" as="r" hint-placeholder-count="5">
+                <a class="row" href="Main.dc.html">
+                  <span style="width: 48px; font: 700 10.5px 'JetBrains Mono', monospace; {{r.mstyle}}">{{r.method}}</span>
+                  <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.name}}</span>
+                  <span style="font-size: 11.5px; color: var(--muted)">{{r.folder}}</span>
+                </a>
+              </sc-for>
+            </div>
+          </section>
+          <section>
+            <h2 style="margin: 0 0 10px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em">Klaviatura yorliqlari</h2>
+            <div style="border: 1px solid var(--border); border-radius: 12px; background: var(--panel); padding: 6px 14px">
+              <sc-for list="{{shortcuts}}" as="k" hint-placeholder-count="6">
+                <div style="display: flex; align-items: center; justify-content: space-between; height: 38px; border-bottom: 1px solid var(--border)">
+                  <span>{{k.t}}</span><span class="kbd">{{k.k}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer style="height: 28px; flex-shrink: 0; display: flex; align-items: center; gap: 16px; padding: 0 14px; border-top: 1px solid var(--border); background: var(--panel); font-size: 11.5px; color: var(--muted)">
+    <span style="display: flex; align-items: center; gap: 6px"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--ok)"></span>Server ulangan</span>
+    <div style="flex: 1"></div>
+    <span>v2.2.0</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"color","default":"#4F46E5","options":["#4F46E5","#0E7490","#C2410C","#15803D"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { dark: null }; }
+  renderVals() {
+    const dark = this.state.dark === null ? !!this.props.dark : this.state.dark;
+    const mc = (m) => 'color: var(--m-' + m.toLowerCase() + ')';
+    return {
+      themeClass: dark ? 'th-dark' : 'th-light',
+      accent: this.props.accent ?? '#4F46E5',
+      toggleTheme: () => this.setState({ dark: !dark }),
+      folders: [{ name: 'Hujjat uz', count: 1 }, { name: 'Ijara', count: 9 }, { name: 'Online Mahalla', count: 5 }, { name: 'eco-service', count: 1 }, { name: '100-loyiha', count: 1 }],
+      recent: [
+        { method: 'GET', name: 'v2/mobile/contracts/main', folder: 'Ijara' },
+        { method: 'POST', name: 'v4/uzasbo', folder: 'Ijara' },
+        { method: 'GET', name: 'v1/gcp/pinfl', folder: 'Online Mahalla' },
+        { method: 'PUT', name: 'v1/auth_users_tokens/disactivate', folder: 'Online Mahalla' },
+        { method: 'GET', name: 'v1/ai/application-details', folder: 'eco-service' }
+      ].map(r => ({ ...r, mstyle: mc(r.method) })),
+      shortcuts: [
+        { t: 'So\'rovni yuborish', k: '⌘ ↵' }, { t: 'Saqlash', k: '⌘ S' }, { t: 'Yangi tab', k: '⌘ T' },
+        { t: 'Tabni yopish', k: '⌘ W' }, { t: 'Hamma joydan qidirish', k: '⌘ K' }, { t: 'Yopilgan tabni qaytarish', k: '⌘ ⇧ T' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
