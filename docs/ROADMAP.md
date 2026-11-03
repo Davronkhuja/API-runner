@@ -58,7 +58,7 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] Server tomonda tarix (SQLite; v2.1.x)
 
 ## Bosqich 3 — Skriptlar va testlar
-- [ ] Pre-request / Tests skriptlari (meros tartibida), `pm.*` API, kutubxonalar
+- [x] Pre-request / Tests skriptlari (meros tartibida), `pm.*` API, kutubxonalar — backend v2.2.4 (ADR 0007: quickjs-ng); UI — keyingi versiyalar
 - [ ] Avtoto'ldirish, snippet'lar, Postman skriptlari o'zgarishsiz
 - [ ] **Console paneli** (status bardagi "Console" — dizayn maketida bor, hozir faol emas; `console.log` va so'rov jurnali, v2.2.1 dan keyin ochiq)
 

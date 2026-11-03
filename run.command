@@ -43,6 +43,23 @@ if [ ! -f "$STAMP" ] || [ "$(cat "$STAMP" 2>/dev/null)" != "$CURRENT_SHA" ]; the
   echo "$CURRENT_SHA" > "$STAMP"
 fi
 
+# 3b) Skript kutubxonasi (ixtiyoriy): o'rnatilmasa ham ilova ishlaydi, faqat pre-request/test skriptlari o'chiq bo'ladi
+if [ -f requirements-scripts.txt ]; then
+  STAMP2=".venv/.requirements-scripts.sha"
+  SHA2="$(shasum requirements-scripts.txt 2>/dev/null | cut -d' ' -f1)"
+  if [ ! -f "$STAMP2" ] || [ "$(cat "$STAMP2" 2>/dev/null)" != "$SHA2" ]; then
+    echo "Skript kutubxonasi (quickjs-ng) o'rnatilmoqda..."
+    if .venv/bin/python -m pip install -r requirements-scripts.txt; then
+      echo "$SHA2" > "$STAMP2"
+    else
+      echo
+      echo "OGOHLANTIRISH: quickjs-ng o'rnatilmadi — skriptlar (pre-request/tests) o'chiq bo'ladi, qolgan hamma narsa ishlaydi."
+      echo "Keyinroq o'rnatish: .venv/bin/python -m pip install -r requirements-scripts.txt   (kompilyator kerak bo'lishi mumkin: xcode-select --install)"
+      echo
+    fi
+  fi
+fi
+
 # 4) Port: bizning eski jarayon bo'lsa to'xtatamiz, boshqa dastur bo'lsa tegmaymiz
 PIDS="$(lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t 2>/dev/null)"
 # PM2 (api-runner) boshqarayotgan jarayonga tegmaymiz: to'xtatish o'rniga "pm2 restart api-runner" taklif qilinadi

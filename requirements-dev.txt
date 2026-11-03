@@ -5,3 +5,4 @@ pytest-playwright>=0.5
 requests>=2.31.0
 pytest-xdist>=3.5
 pytest-timeout>=2.3
+-r requirements-scripts.txt

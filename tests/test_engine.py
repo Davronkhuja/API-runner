@@ -88,3 +88,10 @@ def test_binary_body_sends_raw_bytes_and_respects_file_policy(echo, tmp_path):
     assert r["response"]["headers"]["Content-Type"] == "image/png"
     r = execute(spec, ExecContext())                                             # ruxsat berilmagan yo'l
     assert r["status"] == "ERROR" and r["error_code"] == "file_policy"
+
+
+def test_form_body_resolves_variables_even_when_braces_are_percent_encoded(echo):
+    from apirunner.core.engine import ExecContext, execute
+    r = execute({"method": "POST", "url": echo + "/echo", "body": "a=%7B%7Bv%7D%7D&%7B%7Bk%7D%7D=2", "body_type": "form", "content_type": "application/x-www-form-urlencoded"},
+                ExecContext(variables={"v": "x y&z=1", "k": "kk"}))
+    assert r["response"]["form"] == {"a": ["x y&z=1"], "kk": ["2"]}              # qiymatdagi & va = buzmaydi

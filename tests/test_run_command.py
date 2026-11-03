@@ -239,3 +239,20 @@ def test_pm2_restart_offer_yes_runs_restart_no_does_not(pm2_managed):
     assert code == 0 and "pm2 restart api-runner" in out and not logf.exists() and managed.poll() is None
     code, out = run_in_pty(proj, env, "y")
     assert code == 0 and logf.read_text().strip() == "restart api-runner" and managed.poll() is None
+
+
+def test_optional_scripts_requirement_failure_is_a_warning_not_a_stop(proj_with_venv):
+    port = free_port()
+    env = clean_env(APIRUNNER_PORT=str(port), PIP_INDEX_URL="http://127.0.0.1:9/simple", PIP_RETRIES="0", PIP_DEFAULT_TIMEOUT="2")
+    sha = subprocess.run(["shasum", "requirements.txt"], cwd=str(proj_with_venv), capture_output=True, text=True).stdout.split()[0]
+    (proj_with_venv / ".venv" / ".requirements.sha").write_text(sha + "\n")
+    (proj_with_venv / "requirements-scripts.txt").write_text("definitely-not-a-real-package-xyz==1.0\n")
+    p = subprocess.Popen(["bash", str(proj_with_venv / "run.command")], cwd=str(proj_with_venv), env=env, stdin=subprocess.DEVNULL,
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, start_new_session=True)
+    try:
+        assert wait_until(lambda: port_open(port), 60)                           # ilova baribir ishga tushdi
+    finally:
+        os.killpg(p.pid, signal.SIGTERM)
+        out = p.communicate(timeout=30)[0]
+    assert "Skript kutubxonasi (quickjs-ng) o'rnatilmoqda" in out and "OGOHLANTIRISH: quickjs-ng o'rnatilmadi" in out and "API RUNNER v" in out
+    assert not (proj_with_venv / ".venv" / ".requirements-scripts.sha").exists()   # muvaffaqiyatsiz — belgi qo'yilmadi, keyingi safar qayta uriniladi

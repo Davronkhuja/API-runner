@@ -36,7 +36,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.extensions["backup_dir"] = backup_dir
     app.extensions["saved_file"] = saved_file
     app.extensions["cookies"] = CookieStore(os.path.join(ws.root, "state.db"))
-    app.extensions["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root), cookies=app.extensions["cookies"])
+    app.extensions["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root), cookies=app.extensions["cookies"], workspace=ws)
     app.config.update(UPLOAD_DIR=upload_dir, SESSION_TOKEN=session_token or security.new_token(),
                       MIGRATION=result["legacy"], MIGRATION_RESULT=result)
 

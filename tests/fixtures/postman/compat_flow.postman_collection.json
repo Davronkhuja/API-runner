@@ -1,0 +1,188 @@
+{
+  "info": {
+    "name": "Compat Flow (token + setNextRequest + legacy tests)",
+    "_postman_id": "9f3c6a52-0000-4000-8000-compat0000001",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman namunalaridagi naqshlar: collection pre-request'da token olish (pm.sendRequest), Bearer auth merosi, setNextRequest tsikli, legacy tests[] / postman.* / environment obyekti, console, papka skriptlari."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Token yo'q bo'lsa — olamiz (har so'rovdan oldin; muhitga saqlanadi)",
+          "const base = pm.environment.get('base_url');",
+          "if (!pm.environment.get('token')) {",
+          "    pm.sendRequest({",
+          "        url: base + '/auth/token', method: 'POST',",
+          "        header: { 'Content-Type': 'application/json' },",
+          "        body: { mode: 'raw', raw: JSON.stringify({ client_id: 'compat', client_secret: pm.environment.get('secret') }) }",
+          "    }, function (err, res) {",
+          "        if (err) { console.error('token olinmadi', err); return; }",
+          "        pm.environment.set('token', res.json().access_token);",
+          "        console.log('token olindi');",
+          "    });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('collection-level: javob 2xx yoki kutilgan 4xx', function () { pm.expect(pm.response.code).to.be.within(200, 404); });"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "List items",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "tests[\"Status code is 200\"] = responseCode.code === 200;",
+              "var data = JSON.parse(responseBody);",
+              "tests[\"Has items\"] = data.items.length === 3;",
+              "var ids = data.items.map(function (i) { return i.id; });",
+              "postman.setEnvironmentVariable(\"item_ids\", JSON.stringify(ids));",
+              "postman.setEnvironmentVariable(\"idx\", 0);",
+              "console.log(\"ids=\" + ids);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/items"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Loop",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.request.headers.add({ key: 'X-Trace', value: 'loop-' + (pm.environment.get('idx') || 0) });"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "Get item",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ids = JSON.parse(environment.item_ids);",
+                  "var idx = parseInt(environment.idx, 10);",
+                  "postman.setEnvironmentVariable(\"current_id\", ids[idx]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var item = JSON.parse(responseBody);",
+                  "tests[\"Item \" + item.id + \" ok\"] = responseCode.code === 200 && item.name === \"item-\" + item.id;",
+                  "tests[\"Trace header echoed\"] = item.trace === \"loop-\" + environment.idx;",
+                  "var idx = parseInt(environment.idx, 10) + 1;",
+                  "var ids = JSON.parse(environment.item_ids);",
+                  "if (idx < ids.length) {",
+                  "    postman.setEnvironmentVariable(\"idx\", idx);",
+                  "    postman.setNextRequest(\"Get item\");",
+                  "} else {",
+                  "    postman.setNextRequest(\"Summary\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/items/{{current_id}}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Summary",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Loop visited every item\", function () {",
+              "    pm.expect(JSON.parse(pm.environment.get(\"item_ids\"))).to.have.lengthOf(3);",
+              "    pm.expect(parseInt(pm.environment.get(\"idx\"), 10)).to.equal(2);",
+              "});",
+              "pm.test(\"Token was fetched once\", function () { pm.expect(pm.environment.get(\"token\")).to.be.a(\"string\").and.not.empty; });",
+              "postman.setNextRequest(null);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/items"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Never reached",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "tests['should never run'] = false;"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/items"
+        }
+      },
+      "response": []
+    }
+  ]
+}
