@@ -154,7 +154,12 @@ tests/             # pytest + Playwright
 - Env: `APIRUNNER_WORKSPACE` (workspace joyi), `APIRUNNER_PORT` (sukut 5050), `APIRUNNER_NO_BROWSER=1`.
 
 ### Testlar
-```
+```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/playwright install chromium
-.venv/bin/python -m pytest
+.venv/bin/python -m pytest              # hammasi, 4 jarayonda parallel (~1 daqiqa); har bir test 90 s bilan cheklangan
+.venv/bin/python -m pytest -n 0 -k nom  # bitta testni ketma-ket (debug)
+.venv/bin/python -m pytest tests/e2e/test_redesign.py   # bitta fayl
+(cd web && npm ci && npx vitest run)    # frontend unit testlar (Node.js faqat frontend ishlab chiqish uchun)
 ```
+Skrinshotlar (light + dark, 1440×900) odatda vaqtinchalik papkaga yoziladi; `docs/screenshots/` ni yangilash: `SHOT_UPDATE=1 .venv/bin/python -m pytest tests/e2e/test_screenshots.py && .venv/bin/python tools/shots_readme.py`.
+Frontend o'zgargan bo'lsa build qiling (natija repoga kiritiladi): `cd web && npm run build`.

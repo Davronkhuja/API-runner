@@ -59,10 +59,12 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 
 ## Bosqich 3 — Skriptlar va testlar
 - [ ] Pre-request / Tests skriptlari (meros tartibida), `pm.*` API, kutubxonalar
-- [ ] Avtoto'ldirish, snippet'lar, Console paneli, Postman skriptlari o'zgarishsiz
+- [ ] Avtoto'ldirish, snippet'lar, Postman skriptlari o'zgarishsiz
+- [ ] **Console paneli** (status bardagi "Console" — dizayn maketida bor, hozir faol emas; `console.log` va so'rov jurnali, v2.2.1 dan keyin ochiq)
 
 ## Bosqich 4 — Collection Runner v2
 - [ ] Runner sozlamalari, batch integratsiyasi, real-time SSE, SQLite, eksport (JSON/HTML/JUnit), solishtirish
+- [ ] **Runner (dizayn maketidan qolganlari)**: parallel so'rovlar, "o'zgaruvchi qiymatlarini saqlash", "javoblarni saqlash", natijalar jadvalida **Testlar** ustuni (Bosqich 3 test natijalariga bog'liq), run raqami/tarixi sarlavhasi (`run #14`), "avvalgi run bilan solishtirish" va "Eksport" tugmalari Runner sahifasida
 
 ## Bosqich 5 — Import/Export
 - [ ] Postman v2.0/2.1, env/globals, OpenAPI/Swagger, Insomnia, HAR, cURL; export; round-trip testlar
@@ -71,7 +73,13 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [ ] GraphQL, WebSocket, SSE, Socket.IO (ixtiyoriy), gRPC (ixtiyoriy)
 
 ## Bosqich 7 — Kengaytirilgan imkoniyatlar
-- [ ] CLI, mock server, hujjatlar generatsiyasi, Cmd+K, paketlash
+- [ ] CLI, mock server, hujjatlar generatsiyasi, paketlash
+- [x] Cmd+K qidiruv palitrasi (v2.2.1)
+- [ ] **Workspace almashtirgich** (header'dagi "Shaxsiy workspace" hozir oddiy matn; bir nechta workspace yaratish/almashtirish)
+
+## Dizayn va yorliqlar (v2.2.1–2.2.2)
+- [x] Yangi dizayn tizimi (`docs/design/*.dc.html` maketlari, tokenlar, lokal shriftlar, ⌘K, bosh sahifa, Runner maketi)
+- [x] Brauzerga to'qnashmaydigan yorliqlar: Import — **⌘⇧O**, Runner — **⌘⇧R** (maketdagi ⌘O/⌘R brauzerning "fayl ochish"/"qayta yuklash" yorliqlari bilan to'qnashadi)
 
 ## Bosqich 8 — Sayqal va sifat
 - [ ] Ishlash tezligi, UX, hujjatlar

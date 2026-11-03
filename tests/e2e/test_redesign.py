@@ -427,3 +427,19 @@ def test_runner_data_file_clear_and_preview(ui, tmp_path):
     expect(T(ui, "data-preview")).to_contain_text("3050")
     T(ui, "runner-data-clear").click()
     expect(T(ui, "runner-dropzone")).to_be_visible()
+
+
+# ── brauzerga to'qnashmaydigan yorliqlar ──
+def test_shift_shortcuts_import_and_runner(ui):
+    with ui.expect_file_chooser():
+        ui.keyboard.press("Control+Shift+O")
+    ui.keyboard.press("Control+Shift+R")
+    expect(T(ui, "runner-tab")).to_be_visible()
+    expect(T(ui, "sb-title")).to_have_text("Runner")
+
+
+def test_welcome_shows_shift_shortcuts(ui):
+    expect(T(ui, "wl-import")).to_contain_text("⇧")
+    expect(T(ui, "wl-runner")).to_contain_text("⇧")
+    expect(T(ui, "no-tabs")).to_contain_text("⌘ ⇧ O")
+    expect(T(ui, "no-tabs")).to_contain_text("⌘ ⇧ R")

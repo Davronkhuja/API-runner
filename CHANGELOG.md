@@ -2,6 +2,14 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.2.2] — 2026-11-03
+### Added
+- Yorliqlar: **⌘⇧O** — Import, **⌘⇧R** — Runner (brauzerning ⌘O/⌘R yorliqlari bilan to'qnashmaydi); Bosh sahifadagi kartalar va yorliqlar ro'yxatida ko'rsatilgan. 2 yangi e2e.
+- `docs/design/` — dizayn maketlari (Main, Welcome, Runner) loyiha hujjati sifatida repoda.
+### Changed
+- `requirements-dev.txt`: `pytest-xdist`, `pytest-timeout`. `pytest.ini`: sukut bo'yicha `-n 4 --timeout=90` (parallel; ketma-ket: `-n 0`). README "Testlar" bo'limi yangilandi (buyruqlar, skrinshotlarni yangilash, frontend build).
+- ROADMAP: dizayn maketidan qolganlar tegishli bosqichlarga yozildi — Console paneli → Bosqich 3; Runner'dagi parallel / o'zgaruvchilarni va javoblarni saqlash / Testlar ustuni → Bosqich 4; workspace almashtirgich → Bosqich 7.
+
 ## [2.2.1] — 2026-11-02 — Yangi dizayn (docs/design maketlari)
 ### Changed
 - **Dizayn tizimi**: `web/src/styles/tokens.css` — `.th-light`/`.th-dark` tokenlari (ranglar, metod ranglari GET/POST/PUT/PATCH/DELETE, JSON ranglari, ok/err, o'zgaruvchi chiplari). Barcha komponentlar faqat shu o'zgaruvchilardan foydalanadi (tekshiruv testi: aniqlanmagan token yoki qattiq yozilgan rang yo'q). Eski `--fg/--bd/--ac…` o'zgaruvchilari olib tashlandi.

@@ -17,7 +17,7 @@ import SettingsTab from './components/SettingsTab.vue'
 import CookiesTab from './components/CookiesTab.vue'
 import { post as apiPost } from './api/client'
 import { readLocalStorage, defaultNotice } from './lib/migrate'
-import { cmdkOpen, showToast } from './lib/ui'
+import { cmdkOpen, showToast, sidePanel } from './lib/ui'
 import AppHeader from './components/AppHeader.vue'
 import IconRail from './components/IconRail.vue'
 import StatusBar from './components/StatusBar.vue'
@@ -83,6 +83,8 @@ function onKey(e: KeyboardEvent) {
   const mod = e.metaKey || e.ctrlKey
   const k = e.key.toLowerCase()
   if (e.ctrlKey && e.key === 'Tab') { e.preventDefault(); tabs.next(e.shiftKey ? -1 : 1) }
+  else if (mod && e.shiftKey && k === 'o') { e.preventDefault(); clickImport() }
+  else if (mod && e.shiftKey && k === 'r') { e.preventDefault(); openRunnerFromKey() }
   else if (mod && k === 'k') { e.preventDefault(); cmdkOpen.value = !cmdkOpen.value }
   else if (mod && k === 't' && e.shiftKey) { e.preventDefault(); tabs.reopenClosed() }
   else if (mod && k === 't') { e.preventDefault(); tabs.openNew() }
@@ -124,6 +126,11 @@ async function handleFile(file: File) {
     await tree.load()
     showToast(`Import qilindi: ${r.name}`, 'success')
   } catch (err: any) { showToast(err.message, 'error') }
+}
+function openRunnerFromKey() {
+  sidePanel.value = 'runner'
+  const m = tree.metas[0]
+  if (m) tabs.open('runner', m.id, 'Runner: ' + m.name, { permanent: true })
 }
 const clickImport = () => document.querySelector<HTMLInputElement>('[data-testid=import-file]')?.click()
 async function onWindowDrop(e: DragEvent) {
