@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.3] — 2026-11-04 — Fix: jadvalga yangi qator qo'shish (ghost qator)
+### Fixed
+- **Jadvallarda doim bitta bo'sh "ghost" qator** (Params, Headers, form-data, urlencoded, Variables, Environment/Globals): yangi qo'shish uchun alohida tugma kerak emas — ghost qatorga yozilishi bilan u oddiy qatorga aylanadi va pastda yangi ghost paydo bo'ladi. Ghost saqlanmaydi, URL'ga `&` qo'shmaydi, o'zi dirty holat yaratmaydi; faqat Kalit/Qiymat/Tavsif bo'sh bo'lsa ghost hisoblanadi (tavsifi bor qator oddiy). URL↔Params sinxronida (`?id=`), Bulk Edit'dan qaytganda va qator o'chirilganda ham aniq bitta ghost qoladi. Ghost'da checkbox, ushlagich va × ko'rinmaydi; fayl biriktirish (form-data) ghost'dan ham ishlaydi.
+- Variables va Environment jadvalidagi alohida "+ qo'shish" tugmalari olib tashlandi.
+### Added
+- Ustun sarlavhalari (**Kalit | Qiymat | Tavsif**), **Bulk Edit** sarlavha qatorining o'ng chetida.
+- Klaviatura: Enter — keyingi katak/qator, Tab oxirgi katakdan keyingi qator kaliti, Shift+Tab orqaga, Alt+Backspace — qatorni o'chirish.
+- 11 yangi e2e (`test_ghost_rows.py`).
+
 ## [2.3.2] — 2026-11-04 — Fix: nomni o'zgartirish
 ### Fixed
 - **Rename → Save nomni eskisiga qaytarardi** (paritet regressiyasi): sidebar'dagi rename faqat serverni va tab sarlavhasini yangilardi, ochiq tab qoralamasidagi `draft.name` eski qolardi va ⌘S qoralamani butunligicha yozib nomni bosib ketardi. Endi nom **bitta manbadan** (`lib/rename.ts → renameNode`) o'zgaradi: server, daraxt, barcha ochiq tablar (sarlavha va qoralama nomi) birdaniga; qoralamadagi boshqa saqlanmagan o'zgarishlar (method, URL, body) va dirty holati tegilmaydi. `saveTab` saqlangan so'rovda nom maydonini umuman yozmaydi.

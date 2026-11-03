@@ -373,7 +373,6 @@ def test_search_filter(ui, app):
 def test_environment_create_edit_activate_and_used_in_request(ui, echo_server):
     ui.click("[data-testid=sb-environments]")
     T(ui, "new-env").click()
-    T(ui, "env-add").click()
     T(ui, "env-key").first.fill("host")
     T(ui, "env-val").first.fill(echo_server)
     T(ui, "env-save").click()

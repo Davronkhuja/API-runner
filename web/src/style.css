@@ -287,3 +287,8 @@ mark{background:var(--mark);color:var(--mark-text);border-radius:2px}mark.cur{ba
 .sec-card .v{font-size:18px;font-weight:700;margin-top:2px}
 .inline-name{cursor:text;border-radius:5px;padding:1px 4px;margin:-1px -4px}.inline-name:hover,.inline-name:focus-visible{background:var(--hover)}
 .inline-name-input{height:26px;padding:0 6px;font:inherit;font-weight:600;min-width:200px}
+.kv-wrap{border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.kv-wrap table.kv{border:0;border-radius:0;table-layout:fixed}
+.kv-wrap table.kv-head thead th{height:30px;padding:0 10px;background:var(--subtle);font:600 11.5px var(--font-ui);color:var(--muted);text-align:left;border-top:0}
+.kv-wrap table.kv:not(.kv-head) tr:first-child td{border-top:1px solid var(--border)}
+.kv tr.ghost td{background:transparent}.kv tr.ghost:hover td{background:var(--subtle)}

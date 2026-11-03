@@ -203,7 +203,7 @@ def test_script_variables_are_saved_to_active_environment_and_visible_in_ui(ui, 
     eventually(lambda: any(v["key"] == "from_script" and v["value"] == "200" for v in app.api("GET", f"/api/environments/{eid}")["values"]))
     T(ui, "env-vars-btn").click()
     expect(T(ui, "env-tab")).to_be_visible()
-    expect(ui.locator("[data-testid=env-key]").last).to_have_value("from_script")
+    expect(ui.locator("[data-testid=env-key]").nth(-2)).to_have_value("from_script")      # oxirgi qator — ghost
 
 
 def test_variables_set_in_pre_request_are_used_by_the_request(ui):
