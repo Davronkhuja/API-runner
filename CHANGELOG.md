@@ -2,6 +2,21 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.0] — 2026-11-04 — Bosqich 3 tugadi (skriptlar va testlar)
+### Added (UI)
+- **Skript muharriri** (CodeMirror 6, JavaScript): so'rov tabida **Scripts** bo'limi (Pre-request / Tests), shuningdek collection va papka sozlamalarida (meros: collection → papka → so'rov). `pm.*` / legacy avtoto'ldirish (≈130 nom, izoh bilan), tayyor **snippetlar paneli** (Status 200, javob vaqti, JSON qiymati, javobdan muhitga yozish, token olish, header, `setNextRequest`, HMAC … — pre/test bo'yicha ajratilgan), qator raqamlari, xato qatorlarini belgilash. Skriptlar Postman `event[]` formatida saqlanadi (import/eksport bilan mos); saqlanmagan skript tahriri sahifa yangilanganda tiklanadi.
+- Javob panelida **Testlar** tabi: o'tdi/muvaffaqiyatsiz/o'tkazildi soni, har bir test (PASS/FAIL/SKIP, xabar, manba: Collection/Papka/So'rov), **skript xatolari** (nom, xabar, manba, stack trace) — har birida «qator N» havolasi: muharrirda (yoki collection/papka tabida) shu qatorga o'tadi va qator belgilanadi; muvaffaqiyatsiz test qatorlari ham belgilanadi. `skipRequest` / `setNextRequest` holati ko'rsatiladi.
+- **Console paneli** (status bardagi Console): so'rov/javob loglari, `console.log/info/warn/error/debug`, skript xatolari (stack bilan), qo'llab-quvvatlanmaydigan API ogohlantirishlari; filtrlar, qidiruv, tozalash, o'zgarishi mumkin balandlik; yopiqda o'qilmagan xatolar badge'i; xato qatoriga o'tish.
+- **Sozlamalar → Skriptlar**: holat (quickjs-ng versiyasi) va sozlanadigan chegaralar — skript vaqti, xotira, `pm.sendRequest` soni (sukutga qaytarish bilan).
+- **quickjs-ng yo'q holat**: skript tablari ko'rinadi (matn saqlanadi), «Skriptlar o'chiq» tushuntirishi va o'rnatish buyrug'i (`pip install quickjs-ng`, nusxalash tugmasi) — Scripts bo'limida, Sozlamalarda, Testlar tabida va Console'da; so'rovlar odatdagidek yuboriladi.
+- **Runner**: skriptlar har so'rovda ishlaydi; **`setNextRequest(nom|null)`** (Postman semantikasi), **`skipRequest`** (`SKIPPED`, xato hisoblanmaydi), iteratsiya data qatori `pm.iterationData`ga uzatiladi, o'zgaruvchilar so'rovlar orasida saqlanadi; cheksiz tsikldan himoya (1000 qadam). **Batch**: skriptlar har qatorda (concurrency bilan), natija kartalarida `tests p/t` va skript xatolari badge'i.
+- ⌘K/Skript natijalari: muhit/global/collection o'zgaruvchilari skriptdan keyin UI'da avtomatik yangilanadi.
+### Changed
+- `ui-state` dan tiklangan eski qoralamalar `normalizeDraft` bilan yangi maydonlar (`scripts`, `settings`, `pathVars`, …) to'ldiriladi.
+- Status bardagi Console tugmasi faol; `docs/ROADMAP.md` yangilandi (Console, Data/Local scope bajarildi).
+### Bosqich 3 yakuni
+Bajarildi: skript engine (v2.2.4) + UI (shu versiya). ADR 0007 ga ko'ra `quickjs-ng`; xavfsizlik chegarasi, thread-safety (concurrency=10 stress testlari), async semantika, `pm.sendRequest` engine orqali, `require`/legacy, aniq ogohlantirishlar, sozlanadigan limitlar va Postman'ning real ommaviy namunalari bilan muvofiqlik testlari. Ochiq qolganlari: `pm.visualizer`, `pm.vault`, `pm.cookies.jar` ning ba'zi metodlari, `tv4`/`ajv`/`cheerio`, Intl; Runner natijalarida **Testlar ustuni** va run tarixi — Bosqich 4.
+
 ## [2.2.4] — 2026-11-04 — Bosqich 3 (1/3: skript engine, backend)
 ### Added
 - **Skript sandbox** (`apirunner/core/scripting/`, ADR 0007 — `quickjs-ng`): pre-request va test skriptlari collection → papka → so'rov tartibida. Kontekstda host ob'ekti, fayl, tarmoq, modul yuklovchi, hatto Python callable ham yo'q; host bilan aloqa JS tomonidagi navbat orqali (quickjs vaqt limiti bilan Python callable'ga ruxsat bermaydi). Har bajarish o'z kontekstini yaratadi — thread'lar orasida bo'lishilmaydi (concurrency=10 stress testi).

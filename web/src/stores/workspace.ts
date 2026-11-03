@@ -4,12 +4,15 @@ import { del, get, post, put } from '../api/client'
 import type { Environment, EnvValue } from '../types/model'
 import { cleanSettings, type ReqSettings } from '../lib/settings'
 
+export interface ScriptLimits { timeout_ms: number; memory_mb: number; max_requests: number }
+
 export const useWorkspace = defineStore('workspace', () => {
   const environments = ref<Environment[]>([])
   const globals = ref<EnvValue[]>([])
   const activeEnvId = ref<string | null>(null)
   const version = ref('')
   const settings = ref<ReqSettings>({})
+  const scripts = ref<{ available: boolean; version: string | null; install: string; limits: ScriptLimits; defaults: ScriptLimits }>({ available: true, version: null, install: '', limits: { timeout_ms: 10000, memory_mb: 64, max_requests: 10 }, defaults: { timeout_ms: 10000, memory_mb: 64, max_requests: 10 } })
 
   async function load() {
     const w = await get('/api/workspace')
@@ -17,6 +20,7 @@ export const useWorkspace = defineStore('workspace', () => {
     globals.value = w.globals.values
     activeEnvId.value = w.meta.active_environment_id ?? null
     settings.value = w.meta.settings ?? {}
+    try { scripts.value = await get('/api/scripts/status') } catch { /* eski server */ }
     version.value = (await get('/api/version')).version
   }
   const activeEnv = computed(() => environments.value.find(e => e.id === activeEnvId.value) ?? null)
@@ -32,6 +36,7 @@ export const useWorkspace = defineStore('workspace', () => {
   async function saveEnv(env: Environment) { await put(`/api/environments/${env.id}`, env); await load() }
   async function saveGlobals(values: EnvValue[]) { await put('/api/globals', { values }); await load() }
   async function saveSettings(s: ReqSettings) { await put('/api/workspace/meta', { settings: cleanSettings(s) }); await load() }
+  async function saveScriptLimits(l: ScriptLimits) { await put('/api/workspace/meta', { script_limits: l }); await load() }
   async function deleteEnv(id: string) { await del(`/api/environments/${id}`); if (activeEnvId.value === id) await setActive(null); await load() }
-  return { environments, globals, activeEnvId, activeEnv, activeVars, version, load, setActive, createEnv, saveEnv, saveGlobals, settings, saveSettings, deleteEnv }
+  return { environments, globals, activeEnvId, activeEnv, activeVars, version, load, setActive, createEnv, saveEnv, saveGlobals, settings, saveSettings, scripts, saveScriptLimits, deleteEnv }
 })

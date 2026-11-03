@@ -9,6 +9,7 @@ import KvTable from './KvTable.vue'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
 import SettingsForm from './SettingsForm.vue'
+import ScriptsPanel from './ScriptsPanel.vue'
 import { useWorkspace as _ws } from '../stores/workspace'
 import BatchPanel from './BatchPanel.vue'
 import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
@@ -27,7 +28,12 @@ const d = computed(() => props.tab.draft!)
 const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
 const touch = () => tabs.touch(props.tab.id)
 const curlOpen = ref(false)
-const SECTIONS = ['params', 'headers', 'auth', 'body', 'settings', 'batch'] as const
+/** Skript xatolari + muvaffaqiyatsiz testlar (qator belgilash uchun). */
+const scriptIssues = computed(() => {
+  const sc = props.tab.response?.scripts
+  return sc ? [...(sc.errors ?? []), ...(sc.tests ?? []).filter((t: any) => !t.passed && t.error).map((t: any) => ({ ...t.error, origin: t.origin }))] : []
+})
+const SECTIONS = ['params', 'headers', 'auth', 'body', 'scripts', 'settings', 'batch'] as const
 const onSectionKey = (e: KeyboardEvent) => {
   const i = SECTIONS.indexOf(section.value as any), n = SECTIONS.length
   const to = e.key === 'ArrowRight' ? SECTIONS[(i + 1) % n] : e.key === 'ArrowLeft' ? SECTIONS[(i - 1 + n) % n] : null
@@ -166,12 +172,12 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
     </div>
     <div class="sections" data-testid="sections" role="tablist" aria-label="So'rov bo'limlari" @keydown="onSectionKey">
       <button v-for="s in SECTIONS" :key="s" role="tab" :aria-selected="section === s" :tabindex="section === s ? 0 : -1" :class="{ on: section === s }" :data-section="s" @click="section = s">
-        {{ { params: 'Params', headers: 'Headers', auth: 'Auth', body: 'Body', settings: 'Sozlamalar', batch: 'Batch / Runner' }[s] }}<span v-if="counts[s]" class="badge">{{ counts[s] }}</span>
+        {{ { params: 'Params', headers: 'Headers', auth: 'Auth', body: 'Body', scripts: 'Scripts', settings: 'Sozlamalar', batch: 'Batch / Runner' }[s] }}<span v-if="counts[s]" class="badge">{{ counts[s] }}</span><span v-if="s === 'scripts' && (d.scripts.pre.trim() || d.scripts.test.trim())" class="dot-mark" aria-label="skript bor" data-testid="scripts-dot" />
       </button>
       <div style="flex:1" />
       <button data-testid="sections-cookies" class="ghost sm" style="height:26px;margin:0" @click="tabs.open('cookies', 'cookies', 'Cookie\'lar', { permanent: true })">Cookie'lar</button>
     </div>
-    <div class="editor" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
+    <div class="editor" :class="{ tall: section === 'scripts' }" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
       <template v-if="section === 'params'">
         <KvTable :rows="d.params" files testid="params-table" @change="onParamsChange" />
         <div v-if="d.pathVars.length" data-testid="path-vars" style="margin-top:12px">
@@ -181,6 +187,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       </template>
       <KvTable v-else-if="section === 'headers'" :rows="d.headers" testid="headers-table" @change="touch" />
       <AuthEditor v-else-if="section === 'auth'" :auth="d.auth" allow-inherit :inherit-note="inheritNote" :scope-ref="tab.ref" @change="touch" />
+      <ScriptsPanel v-else-if="section === 'scripts'" :scripts="d.scripts" scope="request" :errors="scriptIssues" :goto="tab.state?.scriptGoto" @change="touch" />
       <div v-else-if="section === 'settings'" data-testid="req-settings">
         <p class="muted">Faqat shu so'rov uchun qayta belgilash; "Sukut" — global sozlama (⚙ Sozlamalar).</p>
         <SettingsForm :model="d.settings" :fallback="wsStore.settings" @change="touch" />

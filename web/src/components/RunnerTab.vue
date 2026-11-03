@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import Icon from './Icon.vue'
+import { applyScriptResult, scriptsFor } from '../lib/scripts'
+import { logRequest, logResponse, push as pushLog } from '../lib/console'
 import { activity, fmtMs } from '../lib/ui'
 import { useTree } from '../stores/tree'
 import { useTabs, type Tab } from '../stores/tabs'
@@ -71,31 +73,55 @@ const planned = computed(() => iterations.value * enabled.value.length)
 const log = computed<any[]>(() => st.log)
 const done = computed(() => log.value.length)
 const okCount = computed(() => log.value.filter(r => typeof r.status === 'number' && r.status < 400).length)
-const failCount = computed(() => done.value - okCount.value)
+const skippedCount = computed(() => log.value.filter(r => r.status === 'SKIPPED').length)
+const failCount = computed(() => done.value - okCount.value - skippedCount.value)
 const avg = computed(() => (done.value ? Math.round(log.value.reduce((n, r) => n + (r.time ?? 0), 0) / done.value * 1000) : 0))
 const pct = computed(() => (planned.value ? Math.min(100, Math.round(done.value / planned.value * 100)) : 0))
-const filtered = computed(() => log.value.filter(r => st.filter === 'all' || (st.filter === 'ok') === (typeof r.status === 'number' && r.status < 400)))
-const stat = (s: any) => (typeof s === 'number' && s < 400 ? 'ok' : 'err')
+const filtered = computed(() => log.value.filter(r => st.filter === 'all' || (st.filter === 'ok') === (typeof r.status === 'number' && r.status < 400) && r.status !== 'SKIPPED'))
+const stat = (s: any) => (typeof s === 'number' && s < 400 ? 'ok' : s === 'SKIPPED' ? '' : 'err')
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 const strRow = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row ?? {}).map(([k, v]) => [k, v == null ? '' : String(v)]))
 
 async function run() {
   running.value = true; stopFlag = false; st.log = []
+  const list = enabled.value
+  const names = new Map<string, number>()
+  list.forEach((x, i) => { if (!names.has(x.name)) names.set(x.name, i) })        // setNextRequest: shu nomli birinchi so'rov
   const total = iterations.value
+  let steps = 0
+  const maxSteps = Number((window as any).__MAX_RUN_STEPS) || 1000      // testlar uchun o'zgartirish mumkin
   outer: for (let it = 1; it <= total; it++) {
-    const row = rowsCount.value ? strRow(st.data.rows[(it - 1) % rowsCount.value]) : {}
-    for (const x of enabled.value) {
+    const dataRow = rowsCount.value ? st.data.rows[(it - 1) % rowsCount.value] : {}
+    const row = strRow(dataRow)
+    let i = 0
+    while (i < list.length) {
       if (stopFlag) break outer
+      if (++steps > maxSteps) { pushLog({ level: 'error', text: `setNextRequest tsikli ${maxSteps} qadamdan oshdi — run to'xtatildi (cheksiz tsikl himoyasi)` }); break outer }
+      const x = list[i]
       const ref_ = `${cid}:${x.id}`, draft = draftFromItem(x.item)
       let res: any
       try {
         await prepareAuth(draft, ref_, row)
         const spec = specFor(draft, ref_, row); spec.timeout = 30
+        const scripts = scriptsFor(ref_, draft.scripts, x.name)
+        if (scripts) Object.assign(spec, { scripts, ref: ref_, row: dataRow, scripts_info: { iteration: it - 1, iterationCount: total, requestName: x.name, requestId: x.id } })
+        logRequest(spec.method, draft.url)
         res = await post('/run_one', spec)
-      } catch (e: any) { res = { status: 'ERR', time: 0, response: e.message } }
+        logResponse(res)
+        await applyScriptResult(res.scripts, { ref: ref_ })
+      } catch (e: any) { res = { status: 'ERR', time: 0, response: e.message }; pushLog({ level: 'error', text: `${x.name}: ${e.message}` }) }
       st.log.push({ iter: it, id: x.id, method: x.method, name: x.name, status: res.status, time: res.time ?? 0 })
-      if (st.stopOnError && !(typeof res.status === 'number' && res.status < 400)) break outer
+      if (st.stopOnError && !(typeof res.status === 'number' && res.status < 400) && res.status !== 'SKIPPED') break outer
       if (st.delay > 0) await sleep(Number(st.delay))
+      const sc = res.scripts
+      if (sc?.next_set) {                                  // Postman: setNextRequest(nom) — o'sha so'rovga o'tadi, null — run to'xtaydi
+        if (sc.next_request === null) break outer
+        const j = names.get(sc.next_request)
+        if (j === undefined) { pushLog({ level: 'error', text: `setNextRequest: «${sc.next_request}» nomli (tanlangan) so'rov topilmadi — run to'xtatildi` }); break outer }
+        i = j
+        continue
+      }
+      i++
     }
   }
   running.value = false

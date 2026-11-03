@@ -167,7 +167,7 @@ def test_folder_settings_via_context_menu_save_and_inherit_option(ui, app):
     expect(T(ui, "tab-folder")).to_be_visible()
     ui.select_option("[data-testid=auth-type]", "inherit")          # papka ham meros qila oladi
     ui.click("[data-scope-section=scripts]")
-    T(ui, "scope-pre").fill("console.log(1)")
+    T(ui, "script-pre").fill("console.log(1)")
     T(ui, "scope-save").click()
     cid = app.api("GET", "/api/workspace")["collections"][0]["id"]
     f = app.api("GET", f"/api/collections/{cid}")["item"][0]

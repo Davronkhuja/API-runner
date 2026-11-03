@@ -115,6 +115,8 @@ void tabs
           <div style="display:flex;gap:10px;align-items:center">
             <span class="status-pill" :class="badge(r.status)">{{ r.status }}</span><span>#{{ r.index }}</span><span>{{ fmtMs(r.time) }}</span><span>{{ fmtBytes(r.size) }}</span>
             <span v-if="r.retries" class="muted" data-testid="retry-badge">↻{{ r.retries }}</span>
+            <span v-if="r.scripts?.tests?.length" class="badge" :class="{ 'badge-err': r.scripts.tests.some((t: any) => !t.passed) }" data-testid="result-tests" :title="r.scripts.tests.map((t: any) => (t.passed ? '✓ ' : '✗ ') + t.name).join('\n')">tests {{ r.scripts.tests.filter((t: any) => t.passed).length }}/{{ r.scripts.tests.length }}</span>
+            <span v-if="r.scripts?.errors?.length" class="badge badge-err" data-testid="result-script-errors">skript xatosi {{ r.scripts.errors.length }}</span>
             <span class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">{{ r.url }}</span>
             <button class="ghost" data-testid="card-toggle" :aria-expanded="!folded[r.index]" aria-label="Kartani yig'ish / yoyish" title="Yig'ish" @click="folded[r.index] = !folded[r.index]">{{ folded[r.index] ? '▸' : '▾' }}</button>
             <button class="ghost" @click="toggleHdr(r.index)">Headers</button>

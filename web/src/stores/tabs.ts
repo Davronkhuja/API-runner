@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { get, keepalivePut, put } from '../api/client'
-import { newDraft, type RequestDraft } from '../lib/draft'
+import { newDraft, normalizeDraft, type RequestDraft } from '../lib/draft'
 
 export type TabKind = 'request' | 'environment' | 'collection' | 'runner' | 'settings' | 'cookies'
 
@@ -80,7 +80,7 @@ export const useTabs = defineStore('tabs', () => {
       const st = await persistence.load()
       const s = st?.tabs
       if (s?.tabs?.length) {
-        tabs.value = s.tabs
+        tabs.value = s.tabs.map((t: Tab) => (t.draft ? { ...t, draft: normalizeDraft(t.draft) } : t))
         activeId.value = tabs.value.some(t => t.id === s.activeId) ? s.activeId : tabs.value[0].id
       }
     } catch { /* birinchi ishga tushish */ }

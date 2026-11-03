@@ -66,7 +66,7 @@ def test_header_controls(ui):
 
 def test_statusbar_server_console_cookies_version(ui, app):
     expect(T(ui, "server-status")).to_contain_text("Server ulangan")
-    expect(T(ui, "console-btn")).to_be_disabled()
+    expect(T(ui, "console-btn")).to_be_enabled()
     expect(T(ui, "version")).to_contain_text("v2.")
     T(ui, "cookies-btn").click()
     expect(T(ui, "cookies-tab")).to_be_visible()

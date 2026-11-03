@@ -49,6 +49,15 @@ Sabablar:
 - `engine.execute` ga pre/post hook nuqtalari; meros tartibi: collection → papka → so'rov (pre-request), javobdan keyin xuddi shu tartibda (Postman kabi).
 - Xavfsizlik testlari: `require/process/fetch/import` yo'q, `constructor` qochishi natija bermaydi, cheksiz tsikl/xotira bombasi/rekursiya to'xtatiladi, `pm.environment.set` dan tashqari yo'l bilan workspace o'zgarmaydi, `pm.sendRequest` dan boshqa tarmoq yo'q (echo server bilan), fayl siyosati `pm.sendRequest` ga ham qo'llanadi.
 
+## Implementatsiya natijalari (v2.2.4–2.3.0)
+- **Host aloqasi — callable emas, navbat.** `quickjs` vaqt limiti o'rnatilgan kontekstda JS'dan Python callable chaqirishga ruxsat bermaydi (`Can not call into Python with a time limit set`). Shuning uchun `__libsrc`/`__send` kabi callable'lar yo'q: kutubxona matnlari va tasodifiy bayt havzasi oldindan JS'ga beriladi (lazy `eval`), `pm.sendRequest`/cookie jar so'rovlari JS tomonidagi navbatga tushadi va Python event loop (`ScriptSession._drain`) ularni bajarib `__hostResolve` bilan Promise'ni hal qiladi. Bu xavfsizlikni ham kuchaytirdi: kontekstda hech qanday Python ob'ekti yo'q (`typeof __send === 'undefined'` testi).
+- **Vaqt chegarasi** umumiy devor vaqti (async, taymer va `pm.sendRequest` kutishi bilan); `set_time_limit` har bir `eval`/job oldidan qolgan vaqtga yangilanadi. Cheksiz tsikl `try/catch` bilan yutilmaydi. Chegaradan keyin ham natijalar (`collect`) alohida 5 s grace bilan olinadi va qolgan skriptlar `Skipped` deb belgilanadi.
+- **Xotira**: `set_memory_limit` — JS ichida ushlanadigan `InternalError: out of memory` aniq `MemoryError` xabariga aylantiriladi.
+- **Qator raqamlari**: skript `(async()=>{` + matn + `\n})()` ko'rinishida baholanadi (prefiks bir qatorda) — stack'dagi `<input>:N` skript matnining N-qatoriga teng; UI shu qatorga o'tadi.
+- **Saqlash**: skript holatni JS ob'ektlarida ushlaydi; tugagach Python faqat o'zgargan kalitlarni workspace qulfi ostida yozadi (`persist()`); skript fayl yo'lini ko'rmaydi.
+- **Real Postman skriptlari** bilan muvofiqlik uchun qo'shilgan moslashuvlar: `events` (eski kalit), `res.stream.toString()`, `request.data` (urlencoded → obyekt, test bosqichida o'zgaruvchilari yechilgan so'rov), `responseHeaders` (katta-kichik harfga sezgir emas), `pm.expect(res).to.have.property('code', 200)`, sloppy-mode global o'zgaruvchilar (`for (i=0; …)`).
+- **Topilgan va tuzatilgan xato** (ADR'dan tashqari): `x-www-form-urlencoded` tanasida `{{var}}` yechilmasdi (`%7B%7B…`); engine endi har maydonni dekodlab yechadi.
+
 ## Rad etilganlar
 - Node sidecar (`vm`/`--permission`): xavfsizlik kafolati zaif, OOM jarayonni o'ldiradi, Node bog'liqligi.
 - `isolated-vm`: native build, Node bog'liqligi saqlanadi.

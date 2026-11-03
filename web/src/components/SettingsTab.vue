@@ -33,6 +33,11 @@ async function restore(b: Backup) {
 }
 const fmt = (t: number | null) => (t ? new Date(t * 1000).toLocaleString() : '—')
 const ws = useWorkspace()
+const lim = ref({ ...ws.scripts.limits })
+const limDirty = ref(false)
+async function saveLimits() { try { await ws.saveScriptLimits(lim.value); lim.value = { ...ws.scripts.limits }; limDirty.value = false; showToast('Skript chegaralari saqlandi', 'success') } catch (e: any) { showToast(e.message, 'error') } }
+function resetLimits() { lim.value = { ...ws.scripts.defaults }; limDirty.value = true }
+const copyCmd = () => { navigator.clipboard?.writeText(ws.scripts.install); showToast('Nusxalandi', 'success') }
 const gs = ref<ReqSettings>({ ...ws.settings })
 const gsDirty = ref(false)
 async function saveGlobal() { try { await ws.saveSettings(gs.value); gsDirty.value = false; showToast('Sozlamalar saqlandi', 'success') } catch (e: any) { showToast(e.message, 'error') } }
@@ -47,6 +52,17 @@ onMounted(load)
     <p class="muted">Barcha so'rovlar uchun sukut; har bir so'rov o'z Sozlamalar tabida qayta belgilashi mumkin.</p>
     <SettingsForm :model="gs" prefix="gset" @change="gsDirty = true" />
     <p><button class="primary" data-testid="gset-save" :disabled="!gsDirty" @click="saveGlobal">Saqlash</button></p>
+    <h4>Skriptlar</h4>
+    <p v-if="ws.scripts.available" class="muted" data-testid="script-status">Pre-request va Tests skriptlari yoqilgan (<code>quickjs-ng {{ ws.scripts.version }}</code>). Skriptlar fayl tizimi va tarmoqqa (<code>pm.sendRequest</code> dan tashqari) kira olmaydi; workspace'ni faqat <code>pm.environment/globals/collectionVariables</code> orqali o'zgartiradi.</p>
+    <div v-else class="script-off" role="alert" data-testid="script-status"><b>Skriptlar o'chiq:</b> <code>quickjs-ng</code> o'rnatilmagan. Skript tablari ko'rinadi va matn saqlanadi, lekin bajarilmaydi. O'rnatish:
+      <div style="margin-top:6px;display:flex;gap:8px;align-items:center"><code data-testid="script-install-cmd">{{ ws.scripts.install }}</code><button class="sm" @click="copyCmd">Nusxa</button></div></div>
+    <table class="kv" style="max-width:720px" data-testid="script-limits"><tbody>
+      <tr><td style="width:260px" class="muted">Skript vaqt chegarasi (ms)</td><td><input type="number" min="100" max="300000" step="100" v-model.number="lim.timeout_ms" data-testid="script-limit-timeout" aria-label="Skript vaqt chegarasi, ms" @input="limDirty = true"></td></tr>
+      <tr><td class="muted">Xotira chegarasi (MB)</td><td><input type="number" min="8" max="1024" v-model.number="lim.memory_mb" data-testid="script-limit-memory" aria-label="Skript xotira chegarasi, MB" @input="limDirty = true"></td></tr>
+      <tr><td class="muted">pm.sendRequest soni (bir bajarishda)</td><td><input type="number" min="0" max="200" v-model.number="lim.max_requests" data-testid="script-limit-requests" aria-label="pm.sendRequest soni" @input="limDirty = true"></td></tr>
+    </tbody></table>
+    <p class="muted" style="font-size:12px">Chegaradan oshgan skript to'xtatiladi, xato Testlar tabida va Console'da ko'rinadi; so'rov baribir yuboriladi. Sukut: {{ ws.scripts.defaults.timeout_ms }} ms · {{ ws.scripts.defaults.memory_mb }} MB · {{ ws.scripts.defaults.max_requests }} so'rov.</p>
+    <p style="display:flex;gap:8px"><button class="primary" data-testid="script-limits-save" :disabled="!limDirty" @click="saveLimits">Saqlash</button><button data-testid="script-limits-reset" @click="resetLimits">Sukutga qaytarish</button></p>
     <h4>Ma'lumotlar</h4>
     <p class="muted">Eski brauzer (localStorage) ma'lumotlarini serverga ko'chirish yoki <code>saved_requests.json</code> formatiga eksport (orqaga qaytish uchun).</p>
     <p style="display:flex;gap:8px"><button data-testid="ls-import" @click="importLocalStorage"><Icon name="upload" :size="14" />Brauzerdan ko'chirish</button><button data-testid="export-legacy" @click="exportLegacy"><Icon name="download" :size="14" />saved_requests.json eksport</button></p>

@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { get } from '../api/client'
 import { useTabs } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
+import { consoleOpen, toggle as toggleConsole, unreadErrors } from '../lib/console'
 
 const tabs = useTabs(), ws = useWorkspace()
 const online = ref(true)
@@ -25,7 +26,7 @@ onBeforeUnmount(() => clearInterval(timer))
 <template>
   <footer class="statusbar" data-testid="statusbar">
     <span role="status" style="display:flex;align-items:center;gap:6px" data-testid="server-status"><span class="dot" :class="{ off: !online }" />{{ online ? 'Server ulangan' : 'Server bilan aloqa yo\'q' }}</span>
-    <button disabled title="Console — skriptlar bilan birga (Bosqich 3)" data-testid="console-btn">Console</button>
+    <button :aria-pressed="consoleOpen" title="Console: so'rov/javob loglari, console.log va skript xatolari" data-testid="console-btn" @click="toggleConsole">Console<span v-if="unreadErrors" class="badge badge-err" data-testid="console-unread" style="margin-left:4px">{{ unreadErrors }}</span></button>
     <button data-testid="cookies-btn" title="Cookie Manager" @click="tabs.open('cookies', 'cookies', 'Cookie\'lar', { permanent: true })">Cookie'lar</button>
     <span style="flex:1" />
     <span v-if="backup" data-testid="backup-time">Avtomatik zaxira: {{ backup }}</span>

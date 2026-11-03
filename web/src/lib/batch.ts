@@ -1,6 +1,9 @@
 import { eventSource, post } from '../api/client'
 import { prepareAuth, specFor } from './scope'
 import type { Tab } from '../stores/tabs'
+import { applyScriptResult, scriptsFor } from './scripts'
+import { logScripts } from './console'
+
 
 export interface BatchSettings { rowsMode: 'all' | 'custom'; count: number; delay: number; timeout: number; concurrency: number; retry: number; ssl: boolean }
 export const defaultBatch = (): BatchSettings => ({ rowsMode: 'all', count: 10, delay: 0, timeout: 120, concurrency: 1, retry: 0, ssl: true })
@@ -30,6 +33,8 @@ export async function startBatch(tab: Tab, vars: Record<string, string>, onDone?
   try { await prepareAuth(d, tab.ref, vars) } catch (e: any) { b.status = 'error'; b.statusText = e.message; return }
   let spec: Record<string, any>
   try { spec = specFor(d, tab.ref, vars) } catch (e: any) { b.status = 'error'; b.statusText = e.message; return }
+  const scripts = scriptsFor(tab.ref, d.scripts, d.name)
+  if (scripts) Object.assign(spec, { scripts, ref: tab.ref, request_name: d.name })
   Object.assign(spec, { delay: s.delay, timeout: s.timeout, concurrency: s.concurrency, retry_count: s.retry, ssl_verify: s.ssl, rows })
   b.results = []; b.summary = null; b.total = rows.length; b.status = 'running'; b.statusText = `${rows.length} ta so'rov yuborilmoqda...`
   tab.state!.mode = 'batch'
@@ -42,6 +47,7 @@ export async function startBatch(tab: Tab, vars: Record<string, string>, onDone?
   src.addEventListener('result', (ev: MessageEvent) => {
     const item = JSON.parse(ev.data)
     b.results.push(item)
+    if (item.scripts) logScripts(item.scripts, { tabId: tab.id, ref: tab.ref })
     b.statusText = `${item.index} / ${item.total}`
   })
   src.addEventListener('done', (ev: MessageEvent) => {
@@ -49,6 +55,7 @@ export async function startBatch(tab: Tab, vars: Record<string, string>, onDone?
     src.close(); b.summary = sm; b.jobId = null
     b.status = sm.stopped ? 'stopped' : 'done'
     b.statusText = sm.stopped ? `To'xtatildi — ${sm.completed} ta yuborildi` : `Bajarildi — ${sm.successful} muvaffaqiyatli, ${sm.failed} xatolik`
+    if (b.results.some(r => r.scripts?.changed?.length)) applyScriptResult({ available: true, tests: [], console: [], errors: [], changed: ['environment', 'globals', 'collection'] }, { tabId: tab.id, ref: tab.ref })
     onDone?.(b)
   })
   src.onerror = () => { if (b.status === 'running') { src.close() } }

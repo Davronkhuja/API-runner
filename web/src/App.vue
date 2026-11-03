@@ -21,6 +21,7 @@ import { activity, cmdkOpen, showToast } from './lib/ui'
 import AppHeader from './components/AppHeader.vue'
 import IconRail from './components/IconRail.vue'
 import StatusBar from './components/StatusBar.vue'
+import ConsolePanel from './components/ConsolePanel.vue'
 import Welcome from './components/Welcome.vue'
 import Icon from './components/Icon.vue'
 import CmdK from './components/CmdK.vue'
@@ -179,6 +180,7 @@ function openRunnerWithData(name: string, text: string) {
         <Welcome v-else @import="clickImport" @import-file="handleFile" />
       </div>
     </div>
+    <ConsolePanel />
     <StatusBar />
 
     <div v-if="closeDialog" class="overlay"><div class="dialog" role="dialog" aria-modal="true" data-testid="close-dialog">

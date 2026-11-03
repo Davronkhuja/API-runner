@@ -227,3 +227,31 @@ def test_batch_with_scripts_at_concurrency_10_is_thread_safe_and_persists_all_ke
     keys = {k for k in env_vals(client, eid) if k.startswith("row_")}
     assert keys == {"row_%d" % i for i in range(40)}                                  # har bir iteratsiya o'z kalitini yozdi, hech biri yo'qolmadi (qulf)
     assert {"tok", "sec"} <= set(env_vals(client, eid))                                # mavjud o'zgaruvchilar buzilmadi
+
+
+def test_send_request_goes_through_the_configured_proxy_and_cookie_jar(client, echo):
+    import http.server
+    import threading
+
+    import httpx
+
+    class Proxy(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            r = httpx.get(self.path, trust_env=False)
+            self.send_response(r.status_code)
+            self.send_header("X-Proxied", "yes")
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(r.content)))
+            self.end_headers()
+            self.wfile.write(r.content)
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Proxy)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        client.put("/api/workspace/meta", json={"settings": {"proxy": f"http://127.0.0.1:{srv.server_port}"}})
+        d = run_one(client, echo, test=[S("const r = await pm.sendRequest('%s/echo'); pm.test('via proxy', () => pm.expect(r.headers.get('X-Proxied')).to.equal('yes'));" % echo)])
+        assert d["scripts"]["tests"][0]["passed"], d["scripts"]
+    finally:
+        srv.shutdown()

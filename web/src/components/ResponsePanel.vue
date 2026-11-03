@@ -8,11 +8,19 @@ import { jsonPath } from '../lib/jsonpath'
 import { fmtBytes, fmtMs, showToast } from '../lib/ui'
 import Icon from './Icon.vue'
 import { parseSetCookie } from '../lib/cookies'
+import { openScriptAt, type ScriptResult } from '../lib/scripts'
 
 const props = defineProps<{ tab: Tab }>()
 const tree = useTree()
 const r = computed(() => props.tab.response)
-const view = ref<'body' | 'headers' | 'cookies'>('body')
+const view = ref<'body' | 'headers' | 'cookies' | 'tests'>('body')
+const sc = computed(() => (r.value?.scripts ?? null) as ScriptResult | null)
+const tests = computed(() => sc.value?.tests ?? [])
+const passed = computed(() => tests.value.filter(t => t.passed && !t.skipped).length)
+const failed = computed(() => tests.value.filter(t => !t.passed).length)
+const skipped = computed(() => tests.value.filter(t => t.skipped).length)
+const scopeLabel = (o: any) => ({ collection: 'Collection', folder: 'Papka', request: "So'rov" } as Record<string, string>)[o?.scope] ?? ''
+const kindLabel = (o: any) => (o?.kind === 'prerequest' ? 'Pre-request' : o?.kind === 'test' ? 'Tests' : '')
 const setCookies = computed(() => ((r.value?.set_cookies ?? []) as string[]).map(parseSetCookie))
 const mode = ref<'pretty' | 'raw' | 'preview'>('pretty')
 const search = ref(''), cur = ref(0), jpath = ref('')
@@ -126,6 +134,7 @@ const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusx
       <button :class="{ on: view === 'body' }" data-testid="rp-body-tab" @click="view = 'body'">Body</button>
       <button :class="{ on: view === 'headers' }" data-testid="rp-headers-tab" @click="view = 'headers'">Headers ({{ headers.length }})</button>
       <button :class="{ on: view === 'cookies' }" data-testid="rp-cookies-tab" @click="view = 'cookies'">Cookies ({{ setCookies.length }})</button>
+      <button :class="{ on: view === 'tests' }" data-testid="rp-tests-tab" @click="view = 'tests'">Testlar<span class="badge" :class="{ 'badge-err': failed || sc?.errors?.length }" data-testid="rp-tests-badge">{{ tests.length ? `${passed}/${tests.length - skipped}` : (sc?.errors?.length ? '!' : '0') }}</span></button>
       <template v-if="view === 'body'">
         <span class="rp-sep" />
         <div class="seg-group" role="group" aria-label="Ko'rinish">
@@ -162,6 +171,28 @@ const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusx
       <div v-if="virtual" class="muted" data-testid="rp-virtual-note">{{ lines.length }} qator (virtual scroll)</div>
     </template>
 
+    <div v-else-if="view === 'tests'" data-testid="rp-tests" style="padding-top:10px;display:flex;flex-direction:column;gap:6px">
+      <div v-if="sc && sc.available === false" class="script-off" role="alert" data-testid="rp-scripts-off"><b>Skriptlar o'chiq.</b> {{ sc.message }} — <code>{{ sc.install }}</code></div>
+      <div v-else-if="!sc" class="muted" data-testid="rp-tests-none">Bu so'rovda (yoki ota papka/collection'da) skript yo'q. <b>Scripts</b> bo'limida <i>Tests</i> skripti yozing.</div>
+      <template v-else>
+        <div class="muted" data-testid="tests-summary" style="font-size:12.5px"><b class="ok">{{ passed }} o'tdi</b> · <b :class="failed ? 'err' : 'muted'">{{ failed }} muvaffaqiyatsiz</b><template v-if="skipped"> · {{ skipped }} o'tkazildi</template> · {{ tests.length }} ta test</div>
+        <div v-for="(t, i) in tests" :key="i" class="test-row" :data-status="t.skipped ? 'skip' : t.passed ? 'pass' : 'fail'" data-testid="test-row">
+          <span class="status-pill" :class="t.skipped ? '' : t.passed ? 'ok' : 'err'" style="font-size:10.5px;padding:2px 8px">{{ t.skipped ? 'SKIP' : t.passed ? 'PASS' : 'FAIL' }}</span>
+          <span style="flex:1;min-width:0"><span data-testid="test-name">{{ t.name }}</span>
+            <span v-if="t.error" class="err" style="display:block;font:12px var(--font-mono)" data-testid="test-error">{{ t.error.name }}: {{ t.error.message }}<button v-if="t.error.line" class="ghost sm" style="height:20px" data-testid="test-error-link" @click="openScriptAt(tab, t.error)">qator {{ t.error.line }}</button></span></span>
+          <span class="muted origin" data-testid="test-origin">{{ scopeLabel(t.origin) }}</span>
+        </div>
+        <div v-if="sc.errors.length" class="h-label" style="margin-top:10px">Skript xatolari</div>
+        <div v-for="(e, i) in sc.errors" :key="'e' + i" class="script-error" data-testid="script-error">
+          <div><span class="status-pill err" style="font-size:10.5px;padding:2px 8px">{{ e.name }}</span> <span data-testid="script-error-msg">{{ e.message }}</span></div>
+          <div class="muted" style="font-size:12px;margin-top:2px"><span data-testid="script-error-origin">{{ scopeLabel(e.origin) }}{{ e.origin.name ? ' «' + e.origin.name + '»' : '' }} · {{ kindLabel(e.origin) }}</span>
+            <button v-if="e.line" class="ghost sm" style="height:20px" data-testid="script-error-link" @click="openScriptAt(tab, e)">qator {{ e.line }} ↗</button></div>
+          <details v-if="e.stack"><summary class="muted" style="cursor:pointer;font-size:12px">stack trace</summary><pre data-testid="script-error-stack" style="margin-top:4px">{{ e.stack }}</pre></details>
+        </div>
+        <div v-if="sc.skipped" class="muted" data-testid="rp-skipped">So'rov <code>pm.execution.skipRequest()</code> bilan o'tkazib yuborildi.</div>
+        <div v-if="sc.next_set" class="muted" data-testid="rp-next">Keyingi so'rov: <code>{{ sc.next_request === null ? 'null (run to\'xtaydi)' : sc.next_request }}</code></div>
+      </template>
+    </div>
     <table v-else-if="view === 'cookies'" class="kv" data-testid="rp-cookies"><thead><tr><th style="text-align:left">Nom</th><th style="text-align:left">Qiymat</th><th style="text-align:left">Domen</th><th style="text-align:left">Yo'l</th><th style="text-align:left">Muddat</th><th style="text-align:left">Bayroqlar</th></tr></thead><tbody>
       <tr v-for="c in setCookies" :key="c.name" data-testid="rp-cookie-row"><td><b>{{ c.name }}</b></td><td style="word-break:break-all">{{ c.value }}</td><td>{{ c.domain }}</td><td>{{ c.path }}</td><td>{{ c.expires || (c.maxAge ? c.maxAge + ' s' : 'sessiya') }}</td><td>{{ [c.httpOnly && 'HttpOnly', c.secure && 'Secure', c.sameSite && 'SameSite=' + c.sameSite].filter(Boolean).join(' · ') }}</td></tr>
       <tr v-if="!setCookies.length"><td colspan="6" class="muted">Bu javob cookie o'rnatmadi</td></tr>
