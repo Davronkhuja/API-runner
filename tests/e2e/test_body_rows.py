@@ -134,7 +134,7 @@ def test_bulk_edit_params_and_back_to_table(ui, echo_server):
     assert vals[0:2] == ["a", "1"] and "b" in vals and "c" in vals and "x:y" in vals
     boxes = ui.locator("[data-testid=params-table] input[type=checkbox]")
     assert [boxes.nth(i).is_checked() for i in range(3)] == [True, False, True]
-    qs = parse_qs(urlsplit(T(ui, "url").input_value()).query)
+    qs = parse_qs(urlsplit(T(ui, "url").inner_text()).query)
     assert qs == {"a": ["1"], "c": ["x:y"]}                                       # o'chirilgan 'b' URL'da yo'q
     assert send(ui)["response"]["args"] == {"a": ["1"], "c": ["x:y"]}
 

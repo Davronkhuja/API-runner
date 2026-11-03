@@ -19,6 +19,7 @@ import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
 import { authSource, effectiveAuth, folderPath, scopedVars } from '../lib/scope'
 import { useTree } from '../stores/tree'
 import Icon from './Icon.vue'
+import UrlEditor from './UrlEditor.vue'
 import AuthEditor from './AuthEditor.vue'
 import { applyCurlToDraft, parseCurl } from '../lib/curl'
 import { generate, LANGS, snipReqFromDraft, type Lang } from '../lib/snippets'
@@ -57,25 +58,15 @@ const counts = computed(() => ({
   params: d.value.params.filter(p => p.enabled && p.key.trim()).length, headers: d.value.headers.filter(h => h.enabled && h.key.trim()).length,
   auth: 0, body: 0, settings: Object.keys(d.value.settings ?? {}).length, batch: 0,
 } as Record<string, number>))
-// URL ustidagi {{o'zgaruvchi}} chiplari: matn `<input>` da (shaffof), rangli nusxasi ustida; so'rov qismi (?…) xira
+// URL maydoni — bir qatorli CodeMirror (UrlEditor); {{o'zgaruvchi}} chiplari shu yerdan baholanadi
 const chipTip = ref<{ text: string; x: number; y: number } | null>(null)
-function showTip(e: MouseEvent, text: string) { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); chipTip.value = { text, x: Math.max(8, r.left), y: r.bottom + 6 } }
-const urlEl = ref<HTMLInputElement>(), urlScroll = ref(0)
-const syncScroll = () => requestAnimationFrame(() => { urlScroll.value = urlEl.value?.scrollLeft ?? 0 })
-const urlSegs = computed(() => {
-  const known = scopedVars(props.tab.ref), out: { t: string; q: boolean; v?: { ok: boolean; title: string } }[] = []
-  const url = d.value.url, qi = url.indexOf('?')
-  let last = 0
-  const push = (t: string, at: number, v?: { ok: boolean; title: string }) => t && out.push({ t, q: qi >= 0 && at >= qi, v })
-  for (const m of url.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)) {
-    push(url.slice(last, m.index), last)
-    const name = m[1], kv = known[name]
-    push(m[0], m.index!, kv ? { ok: true, title: `${name} → ${kv.scope}: ${kv.secret ? '••••' : kv.value}` } : name.startsWith('$') ? { ok: true, title: `${name} → dinamik (har so'rovda yangi)` } : { ok: false, title: `${name} — aniqlanmagan o'zgaruvchi` })
-    last = m.index! + m[0].length
-  }
-  push(url.slice(last), last)
-  return out
-})
+const urlEl = ref<InstanceType<typeof UrlEditor>>()
+function urlVar(name: string) {
+  const kv = scopedVars(props.tab.ref)[name]
+  if (kv) return { ok: true, title: `${name} → ${kv.scope}: ${kv.secret ? '••••' : kv.value}` }
+  return name.startsWith('$') ? { ok: true, title: `${name} → dinamik (har so'rovda yangi)` } : { ok: false, title: `${name} — aniqlanmagan o'zgaruvchi` }
+}
+watch(() => JSON.stringify(scopedVars(props.tab.ref)), () => nextTick(() => urlEl.value?.rebuild()))
 const lang = ref<Lang>('curl')
 const curlText = computed(() => {
   if (!curlOpen.value) return ''
@@ -132,10 +123,10 @@ async function pickBinary(e: Event) {
 function onUrlInput() { d.value.params = paramsFromUrl(d.value.url, d.value.params); d.value.pathVars = syncPathVars(d.value.url, d.value.pathVars); touch() }
 function onParamsChange() { d.value.url = composeUrl(d.value.url, d.value.params); touch() }
 // cURL paste (to'liq parser — paritet bandi; hozir minimal)
-function onPaste(e: ClipboardEvent) {
-  const parsed = parseCurl(e.clipboardData?.getData('text') ?? '')
+function onUrlPaste(text: string, prevent: () => void) {
+  const parsed = parseCurl(text)
   if (!parsed) return
-  e.preventDefault()
+  prevent()
   applyCurlToDraft(d.value, parsed)
   d.value.pathVars = syncPathVars(d.value.url, [])
   touch()
@@ -162,12 +153,8 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
           <option v-for="m in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']" :key="m" :class="'m-' + m">{{ m }}</option>
         </select>
         <div class="urlwrap">
-          <input ref="urlEl" v-model="d.url" class="hl" data-testid="url" aria-label="So'rov URL" spellcheck="false" autocomplete="off" placeholder="https://api.example.com/endpoint/{{id}}  yoki  curl '...' ni bu yerga joylashtiring"
-                 @input="onUrlInput(); syncScroll()" @paste="onPaste" @focus="showHist = true; hist.load(); syncScroll()" @blur="hideHist" @scroll="syncScroll" @keyup="syncScroll" @click="syncScroll"
-                 @keydown.enter="sendTab(tab)">
-          <div class="hlx" aria-hidden="true"><div class="in" :style="{ transform: `translateX(${-urlScroll}px)` }"><template v-for="(g, i) in urlSegs" :key="i"
-            ><span v-if="g.v" class="chip" :class="g.v.ok ? 'var-ok' : 'var-undef undef'" data-testid="var-chip" :data-tip="g.v.title" :aria-label="g.v.title" @mouseenter="showTip($event, g.v.title)" @mouseleave="chipTip = null" @mousedown.prevent="urlEl?.focus()">{{ g.t }}</span
-            ><span v-else :class="{ q: g.q }">{{ g.t }}</span></template></div></div>
+          <UrlEditor ref="urlEl" v-model="d.url" :vars="urlVar" placeholder="https://api.example.com/endpoint/{{id}}  yoki  curl '...' ni bu yerga joylashtiring"
+                     @input="onUrlInput" @paste="onUrlPaste" @focus="showHist = true; hist.load()" @blur="hideHist" @enter="sendTab(tab)" @tip="chipTip = $event" />
         </div>
       </div>
       <div v-if="showHist && urlHist.length" class="menu" style="position:absolute;left:18px;top:42px;right:150px" data-testid="url-history" role="listbox">

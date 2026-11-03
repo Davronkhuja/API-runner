@@ -36,7 +36,7 @@ PAIRS = (
     [(t, s) for t in ("text", "muted") for s in SURFACES]
     + [(t, s) for t in ("accent-text", "m-get", "m-post", "m-put", "m-patch", "m-delete", "ok", "err") for s in ("panel", "bg", "subtle", "hover", "accent-weak")]
     + [(t, "code") for t in ("j-key", "j-str", "j-num", "j-bool", "j-punc", "text", "muted")]
-    + [("ok", "ok-bg"), ("err", "err-bg"), ("var", "var-bg"), ("accent-text", "accent-weak"), ("on-accent", "accent"), ("mark-text", "mark"), ("mark-text", "mark-cur"), ("muted", "accent-weak")]
+    + [("ok", "ok-bg"), ("err", "err-bg"), ("var", "var-bg"), ("accent-text", "accent-weak"), ("on-accent", "accent"), ("mark-text", "mark"), ("mark-text", "mark-cur"), ("muted", "accent-weak"), ("text", "sel")]
 )
 
 

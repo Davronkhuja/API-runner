@@ -31,7 +31,7 @@ def test_edit_then_immediate_reload_keeps_last_change_repeatedly(ui):
     for i in range(8):                                         # poyga holatini ushlash uchun takror
         T(ui, "url").fill(f"http://last-{i}")
         reload(ui)
-        expect(T(ui, "url")).to_have_value(f"http://last-{i}")
+        expect(T(ui, "url")).to_have_text(f"http://last-{i}")
         expect(ui.locator(TAB).locator("[data-testid=dirty-dot]")).to_have_count(1)
 
 
@@ -40,7 +40,7 @@ def test_typing_keystrokes_then_immediate_reload(ui):
     T(ui, "url").fill("")
     T(ui, "url").press_sequentially("http://typed-live/path", delay=5)
     reload(ui)
-    expect(T(ui, "url")).to_have_value("http://typed-live/path")
+    expect(T(ui, "url")).to_have_text("http://typed-live/path")
 
 
 def test_params_headers_body_edits_survive_immediate_reload(ui):
@@ -56,7 +56,7 @@ def test_params_headers_body_edits_survive_immediate_reload(ui):
     ui.select_option("[data-testid=body-mode]", "raw")
     T(ui, "body-raw").fill("son-matn")
     reload(ui)
-    expect(T(ui, "url")).to_have_value("http://h/p?q=1")
+    expect(T(ui, "url")).to_have_text("http://h/p?q=1")
     ui.click("[data-section=headers]")
     expect(ui.locator("[data-testid=headers-table] input[type=text]").nth(1)).to_have_value("v")
     ui.click("[data-section=body]")
@@ -67,7 +67,7 @@ def test_new_unsaved_tab_survives_immediate_reload(ui):
     T(ui, "new-tab").click()
     T(ui, "url").fill("http://never-saved")
     reload(ui)
-    expect(T(ui, "url")).to_have_value("http://never-saved")
+    expect(T(ui, "url")).to_have_text("http://never-saved")
 
 
 def test_tab_switch_and_close_then_immediate_reload(ui):

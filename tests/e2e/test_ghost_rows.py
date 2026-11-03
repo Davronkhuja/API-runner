@@ -90,7 +90,7 @@ def test_opening_a_saved_request_has_ghosts_and_is_not_dirty_and_ghost_is_never_
     ui.click("[data-section=headers]")
     expect(rows(ui, "headers-table")).to_have_count(2)
     expect(T(ui, "dirty-dot")).to_have_count(0)
-    expect(T(ui, "url")).to_have_value("{{base}}/echo?p=1")                                 # URL'ga hech narsa qo'shilmadi
+    expect(T(ui, "url")).to_have_text("{{base}}/echo?p=1")                                 # URL'ga hech narsa qo'shilmadi
     cell(ui, "headers-table", 1, 0).fill("X-B")
     cell(ui, "headers-table", 1, 1).fill("2")
     T(ui, "save").click()
@@ -121,9 +121,9 @@ def test_url_sync_keeps_exactly_one_ghost(ui):
     expect(ghosts(ui, "params-table")).to_have_count(1)
     ui.fill("[data-testid=url]", "http://h/x?q=1")
     cell(ui, "params-table", 1, 0).fill("w")                                                # ghost'ga yozish URL'ni "?q=1&w=" ga o'zgartiradi
-    expect(T(ui, "url")).to_have_value("http://h/x?q=1&w=")
+    expect(T(ui, "url")).to_have_text("http://h/x?q=1&w=")
     cell(ui, "params-table", 1, 0).fill("")
-    expect(T(ui, "url")).to_have_value("http://h/x?q=1")                                    # ghost URL'ga '&' qo'shmaydi
+    expect(T(ui, "url")).to_have_text("http://h/x?q=1")                                    # ghost URL'ga '&' qo'shmaydi
 
 
 def test_removing_rows_keeps_one_ghost_and_never_leaves_empty_table(ui):

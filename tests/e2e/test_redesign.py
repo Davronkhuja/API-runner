@@ -156,13 +156,13 @@ def test_url_variable_chip_colors_and_hover_tooltip(ui):
     assert colors[0] == colors[1] != "rgba(0, 0, 0, 0)"
 
 
-def test_url_overlay_stays_aligned_when_url_scrolls(ui):
+def test_long_url_scrolls_inside_the_editor_and_chip_stays_on_its_text(ui):
     T(ui, "new-tab").click()
-    long = "https://example.com/" + "a" * 200 + "/{{who}}"
-    ui.fill("[data-testid=url]", long)
-    ui.evaluate("document.querySelector('[data-testid=url]').scrollLeft = 99999")
-    ui.evaluate("document.querySelector('[data-testid=url]').dispatchEvent(new Event('scroll'))")
-    ui.wait_for_function("document.querySelector('.urlfield .hlx .in').style.transform.includes('-')")
+    ui.fill("[data-testid=url]", "https://example.com/" + "a" * 200 + "/{{who}}")
+    ui.evaluate("document.querySelector('.urlfield .cm-scroller').scrollLeft = 99999")
+    chip = ui.locator(".urlfield [data-testid=var-chip]")
+    box, field = chip.bounding_box(), ui.locator(".urlfield").bounding_box()
+    assert chip.inner_text() == "{{who}}" and field["x"] < box["x"] < field["x"] + field["width"]       # chip matn bilan birga siljigan va ko'rinadi
 
 
 def test_status_pill_ok_and_err_and_timing_tooltip(ui):
@@ -244,7 +244,7 @@ def test_welcome_cards_recent_shortcuts_and_drop_import(ui, app, tmp_path):
 def test_welcome_curl_paste_fills_new_tab(ui):
     ui.evaluate("""() => { const dt = new DataTransfer(); dt.setData('text', "curl -X PUT 'https://a.io/x' -H 'X-A: b'");
       document.body.dispatchEvent(new ClipboardEvent('paste', {clipboardData: dt, bubbles: true, cancelable: true})); }""")
-    expect(T(ui, "url")).to_have_value("https://a.io/x")
+    expect(T(ui, "url")).to_have_text("https://a.io/x")
     expect(T(ui, "method")).to_have_value("PUT")
 
 

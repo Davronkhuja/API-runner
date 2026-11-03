@@ -2,6 +2,12 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.4] — 2026-11-04 — Fix: URL'da belgilangan joy ko'rinmasdi
+### Fixed
+- **URL maydonida belgilash (selection) ko'rinmasdi**: eski maydon shaffof `<input>` + ustiga rangli nusxa (overlay) edi va `::selection` matnni shaffof qilib qo'ygan. Endi URL — bir qatorli **CodeMirror 6** (`UrlEditor.vue`, body muharriri bilan bir xil asos): belgilash yorug'/qorong'i temada aniq ko'rinadi (yangi `--sel` token, WCAG AA matn kontrasti `test_design_tokens` da), kursor, undo/redo (⌘Z/⌘⇧Z), uzun URL gorizontal scroll, overlay va piksel-moslashtirish kerak emas.
+- Saqlangan: `{{var}}` chiplari (aniqlangan/aniqlanmagan/dinamik ranglari, hoverda scope va qiymat tooltip), so'rov qismi (`?…`) xira, URL↔Params sinxroni, cURL paste, URL tarixi, Enter — yuborish. Ko'p qatorli matn paste qilinsa qatorlar birlashtiriladi (URL doim bir qator).
+- 7 yangi e2e (`test_url_editor.py`): selection foni (computed style) yorug'/qorong'i, klaviatura bilan belgilash, undo/redo, chip/tooltip, paste, Enter/⌘Enter, kursor. Mavjud testlar `[data-testid=url]` (endi `contenteditable`) uchun `to_have_text` ga o'tkazildi.
+
 ## [2.3.3] — 2026-11-04 — Fix: jadvalga yangi qator qo'shish (ghost qator)
 ### Fixed
 - **Jadvallarda doim bitta bo'sh "ghost" qator** (Params, Headers, form-data, urlencoded, Variables, Environment/Globals): yangi qo'shish uchun alohida tugma kerak emas — ghost qatorga yozilishi bilan u oddiy qatorga aylanadi va pastda yangi ghost paydo bo'ladi. Ghost saqlanmaydi, URL'ga `&` qo'shmaydi, o'zi dirty holat yaratmaydi; faqat Kalit/Qiymat/Tavsif bo'sh bo'lsa ghost hisoblanadi (tavsifi bor qator oddiy). URL↔Params sinxronida (`?id=`), Bulk Edit'dan qaytganda va qator o'chirilganda ham aniq bitta ghost qoladi. Ghost'da checkbox, ushlagich va × ko'rinmaydi; fayl biriktirish (form-data) ghost'dan ham ishlaydi.

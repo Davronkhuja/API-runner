@@ -33,7 +33,7 @@ def test_curl_paste_fills_everything(ui):
     ui.evaluate("""() => { const i = document.querySelector('[data-testid=url]'); i.focus();
       const dt = new DataTransfer(); dt.setData('text', "curl -X PUT 'https://a.io/x?y=1' -H 'X-Foo: bar' -H 'Authorization: Bearer TT' -d '{\\"k\\":1}'");
       i.dispatchEvent(new ClipboardEvent('paste', {clipboardData: dt, bubbles: true, cancelable: true})); }""")
-    expect(T(ui, "url")).to_have_value("https://a.io/x?y=1")
+    expect(T(ui, "url")).to_have_text("https://a.io/x?y=1")
     expect(T(ui, "method")).to_have_value("PUT")
     ui.click("[data-section=params]")
     expect(ui.locator("[data-testid=params-table] input[type=text]").first).to_have_value("y")
@@ -68,7 +68,7 @@ def test_url_history_dropdown_filters_and_picks(ui, echo_server):
     expect(T(ui, "url-history")).to_have_count(0)
     T(ui, "url").fill("echo")
     ui.locator("[data-testid=url-history] button").first.click()
-    expect(T(ui, "url")).to_have_value(re.compile("/echo"))
+    expect(T(ui, "url")).to_have_text(re.compile("/echo"))
 
 
 def test_save_disabled_when_clean_and_save_as_dialog(ui, app):
@@ -413,7 +413,7 @@ def test_history_list_load_delete_clear(ui, echo_server):
     ui.click("[data-testid=sb-history]")
     expect(T(ui, "history-row")).to_have_count(1)
     T(ui, "history-row").click()
-    expect(T(ui, "url")).to_have_value(re.compile("/echo"))
+    expect(T(ui, "url")).to_have_text(re.compile("/echo"))
     ui.click("[data-testid=sb-history]")
     T(ui, "history-row").locator("button").click()
     expect(T(ui, "history-row")).to_have_count(0)
@@ -563,7 +563,7 @@ def test_history_drawer_open_load_clear_esc(ui, echo_server):
     T(ui, "history-btn").click()
     T(ui, "hd-row").first.click()
     expect(T(ui, "history-drawer")).to_have_count(0)
-    expect(T(ui, "url")).to_have_value(re.compile(r"/echo"))
+    expect(T(ui, "url")).to_have_text(re.compile(r"/echo"))
     T(ui, "history-btn").click()
     T(ui, "hd-clear").click()
     expect(T(ui, "hd-empty")).to_be_visible()

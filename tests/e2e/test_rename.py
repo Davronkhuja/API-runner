@@ -55,7 +55,7 @@ def test_rename_in_sidebar_then_save_dirty_tab_keeps_new_name_and_other_edits(ui
     T(ui, "rename-input").press("Enter")
     expect(row(ui, "Renamed")).to_have_count(1)
     expect(T(ui, "dirty-dot")).to_have_count(1)                                 # rename tab holatini "toza" qilib yubormadi
-    expect(T(ui, "url")).to_have_value("{{base}}/echo?edited=1")                 # boshqa saqlanmagan o'zgarish yo'qolmadi
+    expect(T(ui, "url")).to_have_text("{{base}}/echo?edited=1")                 # boshqa saqlanmagan o'zgarish yo'qolmadi
     T(ui, "save").click()
     expect(T(ui, "dirty-dot")).to_have_count(0)
     assert item_name(app, cid, "d") == "Renamed"
