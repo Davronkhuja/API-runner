@@ -19,12 +19,14 @@ const tree = useTree(), tabs = useTabs(), ws = useWorkspace()
 props.tab.state ??= {}
 const st = props.tab.state!      // reaktiv proksi (??= xom obyektni qaytaradi)
 st.order ??= null; st.checked ??= {}; st.data ??= null; st.log ??= []; st.filter ??= 'all'; st.iterations ??= null; st.delay ??= 0; st.stopOnError ??= false
-const cid = props.tab.ref!
+const [cid, fid] = props.tab.ref!.split(':')          // collection yoki papka (cid:fid) doirasi
+const scopeNode = computed<any>(() => (fid ? tree.findItem(cid, fid) : tree.cols[cid]))
+const scopeName = computed(() => scopeNode.value?.name ?? scopeNode.value?.info?.name ?? '')
 
 function flat(items: TreeItem[], path = ''): { id: string; name: string; method: string; path: string; item: RequestItem }[] {
   return items.flatMap(i => isFolder(i) ? flat(i.item, path + i.name + ' / ') : [{ id: i.id, name: i.name, method: i.request.method, path, item: i }])
 }
-const base = computed(() => flat(tree.cols[cid]?.item ?? []))
+const base = computed(() => flat((fid ? (scopeNode.value?.item ?? []) : (tree.cols[cid]?.item ?? []))))
 const items = computed(() => {
   const order: string[] | null = st.order
   if (!order) return base.value
@@ -137,7 +139,7 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
     <aside class="cfg scroll" aria-label="Runner sozlamalari">
       <div style="display:flex;flex-direction:column;gap:6px">
         <span class="lbl">Collection</span>
-        <div class="panel-box" style="padding:8px 12px;font-weight:500" data-testid="runner-collection">{{ tree.cols[cid]?.info.name }}</div>
+        <div class="panel-box" style="padding:8px 12px;font-weight:500" data-testid="runner-collection">{{ scopeName }}</div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px">
@@ -183,7 +185,7 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
 
     <section class="out" aria-label="Natijalar">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div><h1 style="margin:0;font-size:18px;font-weight:700">{{ tree.cols[cid]?.info.name }} — Runner</h1><p class="muted" style="margin:2px 0 0;font-size:12.5px">{{ log.length ? `Bugun, ${when} · ${iterations} iteratsiya` : 'Hali ishga tushirilmagan' }}</p></div>
+        <div><h1 style="margin:0;font-size:18px;font-weight:700">{{ scopeName }} — Runner</h1><p class="muted" style="margin:2px 0 0;font-size:12.5px">{{ log.length ? `Bugun, ${when} · ${iterations} iteratsiya` : 'Hali ishga tushirilmagan' }}</p></div>
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span data-testid="runner-progress-label">{{ running ? 'Bajarilmoqda…' : (log.length ? 'Tugadi' : 'Tayyor') }} · {{ done }} / {{ planned }}</span><span>{{ pct }}%</span></div>

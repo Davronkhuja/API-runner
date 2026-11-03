@@ -2,6 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.1] — 2026-11-04 — Papka/collection auth'ini topish va boshqarish
+### Added
+- **Papka/collection tabi Postman kabi**: daraxtda qator bosilsa preview tab ochiladi (ikki marta — doimiy); chevron faqat ochadi/yopadi; kontekst menyu saqlangan (Sozlamalar, Runner, …). Bo'limlar: **Overview** (so'rovlar/papkalar soni, auth xulosasi, o'zgaruvchilar, o'z auth'i bor so'rovlar soni, tavsif) | **Auth** | **Variables** | **Scripts** | **Run** (Runner'ni shu papka/collection doirasida ochadi — Runner endi `cid:papka` ref'ini qo'llab-quvvatlaydi).
+- **Meros manbasi**: so'rovning Auth tabida "Meros" tanlanganda qaysi papka/collection auth'i ishlatilishi (tur, nom) va "Papkaga/Collection'ga o'tish" havolasi ko'rinadi; hech narsada auth bo'lmasa — aniq tushuntirish. Papka Auth tabida ham yuqoridagi manba ko'rsatiladi.
+- **Ommaviy "Meros" taklifi**: papka/collection'ga auth qo'yilganda ichidagi o'z auth'i bor so'rovlar sanaladi (yaqinroq ota-papkasining o'z auth'i bilan to'silganlari hisobga olinmaydi). Dialog: har bir so'rov uchun tanlash, auth turi, **bir xil token/sozlamali so'rovlar ("ko'chirishdan qolgan") avtomatik aniqlanib oldindan tanlanadi**, "Auth yo'q" qilinganlar tanlanmaydi; Hammasini tanlash / Hech birini / O'zgarishsiz qoldirish (Esc). `POST /api/collections/<cid>/inherit-auth`: **o'zgartirishdan oldin avtomatik zaxira** (`…_pre-bulk-auth`), bitta atomik yozuv; ochiq tablardagi qoralamalar ham "Meros"ga o'tadi.
+- **Daraxtda qulf belgisi** (🔒): o'z auth'i bor collection, papka va so'rovlarda (tur tooltip'da; meros va "Auth yo'q" belgilanmaydi).
+- 12 yangi e2e (`test_node_tabs.py`) va 1 backend testi.
+### Changed
+- Papka bosilganda endi tab (preview) ham ochiladi; "tab ochiq emas" holatini tekshiruvchi bitta test yangilandi.
+### ROADMAP
+- Yangi **Bosqich 4b — Kundalik qulayliklar** (Initial/Current qiymatlar, `{{` avtoto'ldirish, Example'lar daraxtda, Docs paneli, Trash, Find & Replace, javoblar tarixi va diff, Send and Download, JWT RS*/ES*/NTLM/Hawk) va Bosqich 7 ga rejalashtirilgan run'lar (monitor) hamda proxy capture qo'shildi.
+
 ## [2.3.0] — 2026-11-04 — Bosqich 3 tugadi (skriptlar va testlar)
 ### Added (UI)
 - **Skript muharriri** (CodeMirror 6, JavaScript): so'rov tabida **Scripts** bo'limi (Pre-request / Tests), shuningdek collection va papka sozlamalarida (meros: collection → papka → so'rov). `pm.*` / legacy avtoto'ldirish (≈130 nom, izoh bilan), tayyor **snippetlar paneli** (Status 200, javob vaqti, JSON qiymati, javobdan muhitga yozish, token olish, header, `setNextRequest`, HMAC … — pre/test bo'yicha ajratilgan), qator raqamlari, xato qatorlarini belgilash. Skriptlar Postman `event[]` formatida saqlanadi (import/eksport bilan mos); saqlanmagan skript tahriri sahifa yangilanganda tiklanadi.

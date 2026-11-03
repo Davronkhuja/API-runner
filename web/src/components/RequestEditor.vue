@@ -13,7 +13,7 @@ import ScriptsPanel from './ScriptsPanel.vue'
 import { useWorkspace as _ws } from '../stores/workspace'
 import BatchPanel from './BatchPanel.vue'
 import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
-import { effectiveAuth, folderPath, scopedVars } from '../lib/scope'
+import { authSource, effectiveAuth, folderPath, scopedVars } from '../lib/scope'
 import { useTree } from '../stores/tree'
 import Icon from './Icon.vue'
 import AuthEditor from './AuthEditor.vue'
@@ -75,7 +75,7 @@ const curlText = computed(() => {
   try { return generate(lang.value, snipReqFromDraft(d.value, props.tab.ref)) } catch (e: any) { return `// Kod hosil qilib bo'lmadi: ${e.message}` }
 })
 const curlHtml = computed(() => (lang.value === 'curl' ? highlightCurl(curlText.value) : esc(curlText.value)))
-const inheritNote = computed(() => { const t = effectiveAuth(d.value.auth, props.tab.ref).type; return t === 'none' ? 'Meros: ota papka/collection auth\'i yo\'q — Auth yuborilmaydi.' : `Meros: ${t} (ota papka/collection)` })
+const authSrc = computed(() => authSource(props.tab.ref))
 // {{o'zgaruvchi}} chiplari: scope va qiymat hoverda, aniqlanmagani qizil
 const urlNames = computed(() => new Set([...d.value.url.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)].map(m => m[1])))
 const extraVars = computed(() => usedVars.value.filter(v => !urlNames.value.has(v.name)))
@@ -186,7 +186,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         </div>
       </template>
       <KvTable v-else-if="section === 'headers'" :rows="d.headers" testid="headers-table" @change="touch" />
-      <AuthEditor v-else-if="section === 'auth'" :auth="d.auth" allow-inherit :inherit-note="inheritNote" :scope-ref="tab.ref" @change="touch" />
+      <AuthEditor v-else-if="section === 'auth'" :auth="d.auth" allow-inherit :source="authSrc" :scope-ref="tab.ref" @change="touch" />
       <ScriptsPanel v-else-if="section === 'scripts'" :scripts="d.scripts" scope="request" :errors="scriptIssues" :goto="tab.state?.scriptGoto" @change="touch" />
       <div v-else-if="section === 'settings'" data-testid="req-settings">
         <p class="muted">Faqat shu so'rov uchun qayta belgilash; "Sukut" — global sozlama (⚙ Sozlamalar).</p>

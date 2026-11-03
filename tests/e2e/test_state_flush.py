@@ -122,4 +122,4 @@ def test_expanded_tree_state_survives_immediate_reload_without_losing_tabs(app, 
     page.locator("[data-testid=tree-row][data-name=F1]").click()          # papkani yopamiz
     reload(page)
     expect(page.locator("[data-testid=tree-row][data-name=A]")).to_have_count(0)
-    assert page.locator(f"{TAB} .title").all_inner_texts() == ["B"]        # tablar ham, daraxt holati ham saqlangan (birlashtirilgan PUT)
+    assert page.locator(f"{TAB} .title").all_inner_texts() == ["B", "F1"]   # tablar (papka bosilganda ochilgan preview ham), daraxt holati ham saqlangan (birlashtirilgan PUT)

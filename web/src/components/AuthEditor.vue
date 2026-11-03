@@ -2,10 +2,11 @@
 import { computed, ref } from 'vue'
 import { defaultCfg, type AuthDraft } from '../lib/auth'
 import { clearToken, getNewToken, isCodeFlow, isExpired, tokenFor } from '../lib/oauth'
-import { flatVars } from '../lib/scope'
+import { flatVars, type AuthSource } from '../lib/scope'
+import { authName, openNodeTab } from '../lib/nodes'
 import { showToast } from '../lib/ui'
 
-const props = defineProps<{ auth: AuthDraft; allowInherit?: boolean; inheritNote?: string; scopeRef?: string | null }>()
+const props = defineProps<{ auth: AuthDraft; allowInherit?: boolean; inheritNote?: string; scopeRef?: string | null; source?: AuthSource | null }>()
 const emit = defineEmits<{ change: [] }>()
 const showPass = ref(false)
 const touch = () => emit('change')
@@ -62,7 +63,15 @@ const copyTok = () => { navigator.clipboard?.writeText(tok.value?.access_token ?
       <option value="none">Auth yo'q</option><option value="bearer">Bearer Token</option><option value="basic">Basic Auth</option><option value="custom">Custom</option>
       <option value="apikey">API Key</option><option value="digest">Digest Auth</option><option value="oauth2">OAuth 2.0</option><option value="awsv4">AWS Signature V4</option><option value="jwt">JWT Bearer</option>
     </select>
-    <p v-if="auth.type === 'inherit'" class="muted" data-testid="auth-inherit-note">{{ inheritNote || 'Ota papka / collection auth\'idan olinadi.' }}</p>
+    <div v-if="auth.type === 'inherit'" class="inherit-box" data-testid="auth-inherit-box">
+      <template v-if="source">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="badge" style="background:var(--accent-weak);color:var(--accent-text)" data-testid="auth-inherit-type">{{ authName(source.pm) }}</span>
+          <span data-testid="auth-inherit-src"><b>«{{ source.name }}»</b> {{ source.scope === 'folder' ? 'papkasidan' : "collection'dan" }}</span>
+          <button class="sm" data-testid="auth-inherit-link" @click="openNodeTab(source.cid, source.scope === 'folder' ? source.id : null, 'auth')">{{ source.scope === 'folder' ? "Papkaga o'tish" : "Collection'ga o'tish" }}</button></div>
+        <p class="muted" style="margin:6px 0 0;font-size:12px" data-testid="auth-inherit-note">{{ inheritNote || `Meros: ${source.type} — «${source.name}» ${source.scope === 'folder' ? 'papkasi' : 'collection'} auth'i ishlatiladi.` }}</p>
+      </template>
+      <p v-else class="muted" style="margin:0" data-testid="auth-inherit-note">{{ inheritNote || "Meros: ota papka va collection'da auth yo'q — Auth yuborilmaydi." }}</p>
+    </div>
     <p v-if="auth.type === 'bearer'"><input v-model="auth.token" placeholder="Token" style="width:100%" data-testid="auth-token" @input="touch"></p>
     <p v-if="auth.type === 'basic'"><input v-model="auth.user" placeholder="Username" @input="touch"> <input v-model="auth.pass" :type="showPass ? 'text' : 'password'" placeholder="Password" data-testid="auth-pass" @input="touch"> <button class="ghost" data-testid="auth-eye" @click="showPass = !showPass">👁</button> <span class="muted" data-testid="auth-preview">Authorization: Basic {{ preview }}</span></p>
     <p v-if="auth.type === 'custom'"><input v-model="auth.custom" placeholder="Authorization qiymati" style="width:100%" data-testid="auth-custom" @input="touch"></p>

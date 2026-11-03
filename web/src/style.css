@@ -281,3 +281,7 @@ mark{background:var(--mark);color:var(--mark-text);border-radius:2px}mark.cur{ba
 .cl-warn{color:var(--m-post)}.cl-error,.cl-script-error{color:var(--err);background:var(--err-bg)}.cl-request{color:var(--accent-text)}.cl-response{color:var(--muted)}.cl-info{color:var(--m-put)}
 .cl pre{font-size:11.5px;margin:2px 0}
 .editor.tall{height:400px}.editor.tall .script-box{height:230px}
+.inherit-box{margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--subtle)}
+.lock{display:inline-flex;color:var(--muted);flex-shrink:0}
+.sec-card{padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--panel)}
+.sec-card .v{font-size:18px;font-weight:700;margin-top:2px}

@@ -66,6 +66,17 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [ ] Runner sozlamalari, batch integratsiyasi, real-time SSE, SQLite, eksport (JSON/HTML/JUnit), solishtirish
 - [ ] **Runner (dizayn maketidan qolganlari)**: parallel so'rovlar, "o'zgaruvchi qiymatlarini saqlash", "javoblarni saqlash", natijalar jadvalida **Testlar** ustuni (Bosqich 3 test natijalariga bog'liq), run raqami/tarixi sarlavhasi (`run #14`), "avvalgi run bilan solishtirish" va "Eksport" tugmalari Runner sahifasida
 
+## Bosqich 4b — Kundalik qulayliklar (Bosqich 4 dan keyin bajariladi)
+- [ ] Muhit o'zgaruvchilarida **Initial / Current** qiymatlar (eksportga faqat Initial ketadi); headerdagi "ko'z" quick-look (faol muhit + global qiymatlarni tez ko'rish va tahrirlash)
+- [ ] **`{{` avtoto'ldirish** (URL, params, headers, body, auth maydonlarida; scope va qiymat ko'rsatiladi) va belgilangan matndan o'zgaruvchi yaratish ("Set as variable")
+- [ ] **Example'lar ro'yxati** daraxtda so'rov ostida; ochish va tahrirlash (status, header, body)
+- [ ] **Docs paneli**: Markdown tavsif so'rov o'ng tomonida (collection/papka/so'rov)
+- [ ] **Trash**: o'chirilganlarni 30 kun saqlash va tiklash
+- [ ] **Workspace bo'ylab Find & Replace** (oldindan ko'rish va avtomatik zaxira bilan)
+- [ ] **So'rov javoblari tarixi** va ikki javobni solishtirish (diff)
+- [ ] **"Send and Download"** (javobni faylga saqlab yuborish)
+- [ ] Auth: **JWT RS\*/ES\*** (`cryptography` bilan), **NTLM**, **Hawk**
+
 ## Bosqich 5 — Import/Export
 - [ ] Postman v2.0/2.1, env/globals, OpenAPI/Swagger, Insomnia, HAR, cURL; export; round-trip testlar
 
@@ -74,6 +85,8 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 
 ## Bosqich 7 — Kengaytirilgan imkoniyatlar
 - [ ] CLI, mock server, hujjatlar generatsiyasi, paketlash
+- [ ] **Rejalashtirilgan run'lar (monitor)**: collection'ni jadval bo'yicha avtomatik ishga tushirish, natijalar tarixi va xato haqida ogohlantirish
+- [ ] **Proxy capture**: lokal proxy orqali o'tgan trafikni so'rov sifatida yozib olish va collection'ga saqlash
 - [x] Cmd+K qidiruv palitrasi (v2.2.1)
 - [ ] **Workspace almashtirgich** (header'dagi "Shaxsiy workspace" hozir oddiy matn; bir nechta workspace yaratish/almashtirish)
 

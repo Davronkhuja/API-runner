@@ -320,6 +320,33 @@ def create_backup_route():
     return jsonify({"ok": True, "name": os.path.basename(path)})
 
 
+@bp.post("/collections/<cid>/inherit-auth")
+def inherit_auth(cid):
+    """So'rovlarning o'z auth'ini olib tashlaydi (ya'ni "Meros"). Ommaviy o'zgarishdan OLDIN zaxira olinadi; bitta atomik yozuv."""
+    from .. import __version__
+    from ..storage import backup as bk
+    d = request.get_json(silent=True) or {}
+    ids = d.get("ids")
+    if not isinstance(ids, list) or not ids:
+        return jsonify({"error": "ids (ro'yxat) kerak"}), 400
+    ws = _ws()
+    with ws.lock:
+        col = ws.get_collection(cid)
+        targets = []
+        for iid in ids:
+            hit = tree_ops.find(col["item"], iid)
+            if not hit or "item" in hit[0]:
+                return jsonify({"error": "So'rov topilmadi: %s" % iid}), 404
+            targets.append(hit[0])
+        path = bk.create_backup(ws.root, current_app.extensions["saved_file"], __version__, current_app.extensions["backup_dir"], suffix="pre-bulk-auth")
+        changed = 0
+        for item in targets:
+            if (item.get("request") or {}).pop("auth", None) is not None:
+                changed += 1
+        ws.save_collection(col)
+    return jsonify({"ok": True, "changed": changed, "backup": os.path.basename(path)})
+
+
 @bp.post("/backups/restore")
 def restore_backup_route():
     from .. import __version__

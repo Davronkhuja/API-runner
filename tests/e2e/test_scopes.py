@@ -143,13 +143,14 @@ def test_path_variables_table_and_substitution(ui, echo_server):
 def test_collection_settings_save_auth_vars_description_roundtrip(ui, app):
     ui.locator("[data-name='Col']").dblclick()
     expect(T(ui, "tab-collection")).to_be_visible()
+    ui.click("[data-scope-section=auth]")
     ui.select_option("[data-testid=auth-type]", "bearer")
     T(ui, "auth-token").fill("NEWCOL")
     ui.click("[data-scope-section=vars]")
     T(ui, "var-add").click()
     ui.locator("[data-testid=var-key]").last.fill("extra")
     ui.locator("[data-testid=var-val]").last.fill("1")
-    ui.click("[data-scope-section=desc]")
+    ui.click("[data-scope-section=overview]")
     T(ui, "scope-desc").fill("Tavsif matni")
     T(ui, "scope-save").click()
     cid = app.api("GET", "/api/workspace")["collections"][0]["id"]
@@ -165,6 +166,7 @@ def test_folder_settings_via_context_menu_save_and_inherit_option(ui, app):
     ui.locator("[data-name='Fold']").click(button="right")
     ui.click("[data-act=settings]")
     expect(T(ui, "tab-folder")).to_be_visible()
+    ui.click("[data-scope-section=auth]")
     ui.select_option("[data-testid=auth-type]", "inherit")          # papka ham meros qila oladi
     ui.click("[data-scope-section=scripts]")
     T(ui, "script-pre").fill("console.log(1)")

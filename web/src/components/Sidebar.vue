@@ -8,6 +8,7 @@ import { openFromHistory } from '../lib/history'
 import { openRequest } from '../lib/actions'
 import { askConfirm, showToast, sidePanel } from '../lib/ui'
 import Icon from './Icon.vue'
+import { authName, hasRealAuth, openNodeTab } from '../lib/nodes'
 import { isFolder, type DropPosition, type RequestItem, type TreeItem } from '../types/model'
 import { draftFromItem } from '../lib/draft'
 
@@ -78,12 +79,17 @@ let clickTimer: ReturnType<typeof setTimeout> | null = null
 function onClick(e: MouseEvent, r: Row) {
   const k = keyOf(r)
   if (e.shiftKey || e.metaKey || e.ctrlKey) { tree.select(k, { shift: e.shiftKey, meta: e.metaKey || e.ctrlKey }); return }
-  if (r.isCollection || r.folder) { tree.toggle(k, r.item); tree.select(k); return }
+  if (r.isCollection || r.folder) {                                   // Postman kabi: qator bosilsa tab (preview) ochiladi va papka ochiladi/yopiladi
+    tree.toggle(k, r.item); tree.select(k)
+    openNodeTab(r.collectionId, r.isCollection ? null : r.id, 'overview', true)
+    return
+  }
   tree.select(k)
   openRequest(r.collectionId, r.id, false)
 }
 function onDbl(r: Row) {
-  if (r.isCollection) tabs.open('collection', r.collectionId, r.name, { permanent: true })
+  if (r.isCollection) openNodeTab(r.collectionId, null, 'overview')
+  else if (r.folder) openNodeTab(r.collectionId, r.id, 'overview')
   else if (!r.folder) openRequest(r.collectionId, r.id, true)
 }
 void clickTimer
@@ -93,9 +99,9 @@ function ctx(e: MouseEvent, r: Row) { menu.value = { x: e.clientX, y: e.clientY,
 async function menuAct(a: string) {
   const r = menu.value!.row; menu.value = null
   if (a === 'rename') { renaming.value = keyOf(r); renameVal.value = r.name }
-  else if (a === 'runner') tabs.open('runner', r.collectionId, 'Runner: ' + r.name, { permanent: true })
-  else if (a === 'open') tabs.open('collection', r.collectionId, r.name, { permanent: true })
-  else if (a === 'settings') tabs.open('collection', `${r.collectionId}:${r.id}`, r.name, { permanent: true })
+  else if (a === 'runner') tabs.open('runner', r.isCollection ? r.collectionId : `${r.collectionId}:${r.id}`, 'Runner: ' + r.name, { permanent: true })
+  else if (a === 'open') openNodeTab(r.collectionId, null, 'overview')
+  else if (a === 'settings') openNodeTab(r.collectionId, r.id, 'overview')
   else if (a === 'newreq') { const t = tabs.openNew(); t.draft!.name = 'Yangi so\'rov' }
   else if (a === 'newfolder') { await tree.addItem(r.collectionId, { name: 'Yangi papka', item: [] }, r.isCollection ? null : r.id) }
   else if (a === 'move') { moveDlg.value = { keys: tree.selection.length ? [...tree.selection] : [keyOf(r)] }; moveTarget.value = '' }
@@ -124,6 +130,8 @@ async function confirmMove() {
   if (!moveTarget.value) return
   try { await tree.move(d.keys, moveTarget.value, 'inside') } catch (e: any) { showToast(e.message, 'error') }
 }
+/** Tugunning o'z auth'i (meros emas, "Auth yo'q" emas) — daraxtda qulf belgisi uchun. */
+const ownAuth = (r: Row) => { const pm = r.isCollection ? tree.cols[r.collectionId]?.auth : r.folder ? (r.item as any)?.auth : (r.item as any)?.request?.auth; return hasRealAuth(pm as any) ? pm : null }
 const reqCount = (it: TreeItem | null): number => (it && isFolder(it) ? it.item.reduce((n, c) => n + (isFolder(c) ? reqCount(c) : 1), 0) : 0)
 const titles: Record<string, string> = { collections: 'Kolleksiyalar', environments: 'Muhitlar', history: 'Tarix', runner: 'Runner' }
 function openRunner() {
@@ -183,13 +191,14 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
              :style="{ paddingLeft: 8 + r.depth * 14 + 'px' }" :draggable="!r.isCollection"
              @click="onClick($event, r)" @dblclick="onDbl(r)" @contextmenu.prevent="ctx($event, r)" @keydown="onKey($event, r)"
              @dragstart="onDragStart($event, r)" @dragover="onDragOver($event, r)" @drop="onDrop($event)">
-          <span v-if="r.folder" class="ico" :style="{ transform: r.expanded ? 'rotate(90deg)' : 'none' }"><Icon name="chevron-right" :size="14" /></span>
+          <span v-if="r.folder" class="ico" data-testid="row-chevron" :style="{ transform: r.expanded ? 'rotate(90deg)' : 'none' }" @click.stop="tree.toggle(keyOf(r), r.item)"><Icon name="chevron-right" :size="14" /></span>
           <span v-if="r.isCollection" class="ico" style="width:18px;height:18px;border-radius:5px;background:var(--accent-weak);color:var(--accent-text);align-items:center;justify-content:center"><Icon name="layers" :size="12" /></span>
           <span v-else-if="r.folder" class="ico"><Icon name="folder" :size="15" /></span>
           <span v-else class="m" :class="'m-' + (r.item as any).request.method">{{ (r.item as any).request.method }}</span>
           <input v-if="renaming === rowKey(r.collectionId, r.id)" v-model="renameVal" aria-label="Yangi nom" style="flex:1;height:24px;padding:0 6px" data-testid="rename-input"
                  @click.stop @keydown.stop @keydown.enter="commitRename(r)" @keydown.esc="renaming = null" @blur="commitRename(r)" autofocus>
           <span v-else class="name" :style="{ fontWeight: r.folder ? 500 : 400 }">{{ r.name }}</span>
+          <span v-if="ownAuth(r)" class="lock" data-testid="auth-lock" role="img" :aria-label="`O'z auth'i bor: ${authName(ownAuth(r))}`" :title="`Auth: ${authName(ownAuth(r))} (o'z auth'i)`"><Icon name="lock" :size="12" /></span>
           <span v-if="r.folder && !r.isCollection" class="cnt">{{ reqCount(r.item) }}</span>
         </div>
       </div>
@@ -226,8 +235,8 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
     <div v-if="menu" class="overlay" style="background:none" @click="menu = null" @contextmenu.prevent="menu = null">
       <div class="menu" :style="{ left: menu.x + 'px', top: menu.y + 'px' }" data-testid="tree-menu" @click.stop>
         <button v-if="menu.row.isCollection" data-act="open" @click="menuAct('open')">Ochish</button>
-        <button v-if="menu.row.isCollection" data-act="runner" @click="menuAct('runner')">Runner</button>
-        <button v-if="menu.row.folder && !menu.row.isCollection" data-act="settings" @click="menuAct('settings')">Sozlamalar</button>
+        <button v-if="menu.row.folder" data-act="runner" @click="menuAct('runner')">Runner</button>
+        <button v-if="menu.row.folder && !menu.row.isCollection" data-act="settings" @click="menuAct('settings')">Sozlamalar (Auth, Variables, Scripts)</button>
         <button v-if="menu.row.folder" data-act="newfolder" @click="menuAct('newfolder')">Yangi papka</button>
         <button v-if="!menu.row.isCollection" data-act="rename" @click="menuAct('rename')">Nomini o'zgartirish</button>
         <button v-if="!menu.row.isCollection" data-act="dup" @click="menuAct('dup')">Dublikat</button>

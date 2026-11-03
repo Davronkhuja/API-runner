@@ -58,6 +58,21 @@ export function authChain(ref: string | null, includeSelfFolder = false): PmAuth
   return [...path.reverse().map(f => (f as any).auth as PmAuth), col.auth as PmAuth]
 }
 
+/** "Meros" qaysi tugundan kelayotgani: eng yaqin ota-papka / collection. `null` — hech birida auth yo'q. */
+export interface AuthSource { scope: 'collection' | 'folder'; name: string; id: string; cid: string; type: string; pm: any }
+export function authSource(ref: string | null): AuthSource | null {
+  const tree = useTree()
+  const [cid, id] = (ref ?? '').split(':')
+  const col = cid ? tree.cols[cid] : undefined
+  if (!col) return null
+  for (const f of folderPath(col, id || null).reverse()) {
+    const a = (f as any).auth
+    if (a && a.type) return { scope: 'folder', name: f.name, id: f.id, cid, type: a.type, pm: a }
+  }
+  const a = col.auth as any
+  return a && a.type ? { scope: 'collection', name: col.info.name, id: '', cid, type: a.type, pm: a } : null
+}
+
 export const effectiveAuth = (a: AuthDraft, ref: string | null) => resolveAuth(a, authChain(ref))
 
 /** Yuborishdan oldin async tayyorgarlik: OAuth token (olish/yangilash). Xato bo'lsa Error tashlaydi. */

@@ -164,3 +164,21 @@ def test_ui_state_put_merges_top_level_keys(client):
     assert client.get("/api/ui-state").get_json() == {"tabs": {"v": 1}, "expanded": {"a:b": False}}
     client.put("/api/ui-state", json={"tabs": {"v": 2}})
     assert client.get("/api/ui-state").get_json()["expanded"] == {"a:b": False}      # boshqa kalit yo'qolmadi
+
+
+def test_bulk_inherit_auth_makes_backup_first_and_removes_only_request_auth(client):
+    cid = client.post("/api/collections", json={"name": "C"}).get_json()["id"]
+    col = client.get(f"/api/collections/{cid}").get_json()
+    bearer = {"type": "bearer", "bearer": [{"key": "token", "value": "T"}]}
+    mk = lambda i, auth: {"id": i, "name": i, "request": {"method": "GET", "header": [], "url": {"raw": "x"}, **({"auth": auth} if auth else {})}, "response": []}  # noqa: E731
+    col["item"] = [{"id": "f", "name": "F", "auth": bearer, "item": [mk("a", bearer), mk("b", {"type": "noauth"}), mk("c", None)]}]
+    client.put(f"/api/collections/{cid}", json=col)
+    before = len(client.get("/api/backups").get_json())
+    r = client.post(f"/api/collections/{cid}/inherit-auth", json={"ids": ["a", "c"]}).get_json()
+    assert r["ok"] and r["changed"] == 1 and "pre-bulk-auth" in r["backup"]            # c'da auth yo'q edi — o'zgarmadi
+    assert len(client.get("/api/backups").get_json()) == before + 1
+    f = client.get(f"/api/collections/{cid}").get_json()["item"][0]
+    assert "auth" not in f["item"][0]["request"] and f["item"][1]["request"]["auth"] == {"type": "noauth"} and f["auth"] == bearer
+    assert client.post(f"/api/collections/{cid}/inherit-auth", json={"ids": []}).status_code == 400
+    assert client.post(f"/api/collections/{cid}/inherit-auth", json={"ids": ["nope"]}).status_code == 404
+    assert client.post(f"/api/collections/{cid}/inherit-auth", json={"ids": ["f"]}).status_code == 404      # papka emas
