@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.2.3] — 2026-11-03
+### Added
+- **Favikon**: `web/public/favicon.svg` (indigo kvadrat ichida oq chaqmoq — dizayn logotipi), `favicon.ico` (16/32/48), `apple-touch-icon.png` (180, to'liq kvadrat), `icon-192.png`, `icon-512.png`, `manifest.webmanifest` (`tools/make_icons.py` bilan hosil qilinadi; fayllar commit qilingan — Node'siz ishga tushish buzilmaydi). Yangi UI va `/legacy` sahifasida `<link rel="icon">` (SVG + ICO fallback), `apple-touch-icon`, `manifest`, `theme-color`.
+- Flask `/favicon.ico` va `/apple-touch-icon.png` ni haqiqiy fayl bilan, `Cache-Control: public, max-age=31536000, immutable` bilan qaytaradi (sessiya tokensiz — 404 yo'q).
+- Brauzer tab sarlavhasida holat: so'rov yuborilayotganda `● Yuborilmoqda — API Runner`, Runner/Batch ishlayotganda `● Runner 12/18 — API Runner` (bir nechta bo'lsa `(+N)`), tugagach `API Runner`.
+- 9 yangi e2e (`test_favicon.py`): ICO tuzilishi va cache, PNG o'lchamlari, brauzerda piksel tekshiruvi (rang, oq chaqmoq, shaffof/to'liq burchak), manifest, ikkala sahifadagi barcha `href` 200, tab sarlavhasi.
+### Removed
+- ⌘⇧O / ⌘⇧R yorliqlari (Chrome'da bookmark manager va hard reload bilan to'qnashadi). Import va Runner ⌘K palitrasida (`Import (Postman, OpenAPI)`, `Runner`); Bosh sahifa kartalari shunga ishora qiladi.
+
 ## [2.2.2] — 2026-11-03
 ### Added
 - Yorliqlar: **⌘⇧O** — Import, **⌘⇧R** — Runner (brauzerning ⌘O/⌘R yorliqlari bilan to'qnashmaydi); Bosh sahifadagi kartalar va yorliqlar ro'yxatida ko'rsatilgan. 2 yangi e2e.

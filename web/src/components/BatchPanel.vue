@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { newBatchState, startBatch, stopBatch, statsOf, toCSV, download, type BatchState } from '../lib/batch'
-import { fmtBytes, fmtMs, showToast } from '../lib/ui'
+import { activity, fmtBytes, fmtMs, showToast } from '../lib/ui'
 import { parseDataFile, isDataFile } from '../lib/datafile'
 import { highlightJson } from '../lib/highlight'
 import DataPreview from './DataPreview.vue'
@@ -49,6 +49,8 @@ async function run() {
     try { await hist.add('run', { ts: Date.now(), label: props.tab.draft!.url, count: done.results.length, results: done.results.map(r => ({ index: r.index, status: r.status, time: r.time, size: r.size, url: r.url })) }) } catch { /* tarix yozilmasa ham natija ko'rinadi */ }
   })
 }
+watch(() => [b.value.status, b.value.results.length, b.value.total], () => { if (b.value.status === 'running') activity[props.tab.id] = `Batch ${b.value.results.length}/${b.value.total}`; else delete activity[props.tab.id] }, { immediate: true })
+onBeforeUnmount(() => delete activity[props.tab.id])
 const runs = computed(() => hist.runs)
 const cmpRun = computed(() => runs.value.find(r => r.id === cmpId.value))
 async function openCmp() { await hist.load(); showCmp.value = true; cmpId.value = hist.runs[1]?.id ?? hist.runs[0]?.id ?? null }

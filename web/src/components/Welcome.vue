@@ -32,7 +32,7 @@ function runner() {
   tabs.open('runner', m.id, 'Runner: ' + m.name, { permanent: true })
 }
 function pasteHint() { showToast('Buyruqni ⌘V bilan joylashtiring — maydonlar o\'zi to\'ladi', 'info') }
-const shortcuts = [['Yangi so\'rov', '⌘ T'], ['Yuborish', '⌘ ↵'], ['Saqlash', '⌘ S'], ['Tabni yopish', '⌘ W'], ['Keyingi tab', '⌃ Tab'], ['Qidirish', '⌘ K'], ['Import', '⌘ ⇧ O'], ['Runner', '⌘ ⇧ R']]
+const shortcuts = [['Yangi so\'rov', '⌘ T'], ['Yuborish', '⌘ ↵'], ['Saqlash', '⌘ S'], ['Tabni yopish', '⌘ W'], ['Keyingi tab', '⌃ Tab'], ['Qidirish', '⌘ K']]
 const drop = (e: DragEvent) => { const f = e.dataTransfer?.files?.[0]; if (f) { e.preventDefault(); e.stopPropagation(); emit('import-file', f) } }
 </script>
 
@@ -46,8 +46,8 @@ const drop = (e: DragEvent) => { const f = e.dataTransfer?.files?.[0]; if (f) { 
       <div class="cards">
         <button class="card" data-testid="wl-new" @click="tabs.openNew()"><span class="ci solid"><Icon name="plus" :size="18" /></span><span class="ct">Yangi so'rov</span><span class="cd">Bo'sh tab ochiladi</span><span style="display:flex;gap:4px;margin-top:auto"><span class="kbd">⌘</span><span class="kbd">T</span></span></button>
         <button class="card" data-testid="wl-curl" @click="pasteHint"><span class="ci">$_</span><span class="ct">cURL'dan</span><span class="cd">Buyruqni joylashtiring — maydonlar o'zi to'ladi</span><span style="display:flex;gap:4px;margin-top:auto"><span class="kbd">⌘</span><span class="kbd">V</span></span></button>
-        <button class="card" data-testid="wl-import" @click="emit('import')"><span class="ci"><Icon name="download" :size="18" /></span><span class="ct">Import</span><span class="cd">Postman, OpenAPI</span><span style="display:flex;gap:4px;margin-top:auto"><span class="kbd">⌘</span><span class="kbd">⇧</span><span class="kbd">O</span></span></button>
-        <button class="card" data-testid="wl-runner" @click="runner"><span class="ci"><Icon name="play" :size="18" /></span><span class="ct">Runner</span><span class="cd">Collection yoki CSV bilan ko'p marta</span><span style="display:flex;gap:4px;margin-top:auto"><span class="kbd">⌘</span><span class="kbd">⇧</span><span class="kbd">R</span></span></button>
+        <button class="card" data-testid="wl-import" @click="emit('import')"><span class="ci"><Icon name="download" :size="18" /></span><span class="ct">Import</span><span class="cd">Postman, OpenAPI</span><span class="cd" style="margin-top:auto;font-size:11.5px">yoki ⌘K → «Import»</span></button>
+        <button class="card" data-testid="wl-runner" @click="runner"><span class="ci"><Icon name="play" :size="18" /></span><span class="ct">Runner</span><span class="cd">Collection yoki CSV bilan ko'p marta</span><span class="cd" style="margin-top:auto;font-size:11.5px">yoki ⌘K → «Runner»</span></button>
       </div>
       <label class="dz" data-testid="wl-dropzone" @dragover.prevent @drop="drop">
         <Icon name="upload" :size="22" />

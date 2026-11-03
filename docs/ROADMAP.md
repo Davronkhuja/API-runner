@@ -79,7 +79,8 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 
 ## Dizayn va yorliqlar (v2.2.1–2.2.2)
 - [x] Yangi dizayn tizimi (`docs/design/*.dc.html` maketlari, tokenlar, lokal shriftlar, ⌘K, bosh sahifa, Runner maketi)
-- [x] Brauzerga to'qnashmaydigan yorliqlar: Import — **⌘⇧O**, Runner — **⌘⇧R** (maketdagi ⌘O/⌘R brauzerning "fayl ochish"/"qayta yuklash" yorliqlari bilan to'qnashadi)
+- [x] Import va Runner — ⌘K palitrasida (maketdagi ⌘O/⌘R, shuningdek ⌘⇧O/⌘⇧R Chrome'da "fayl ochish", "hard reload" va "bookmark manager" bilan to'qnashgani uchun yorliq berilmadi; v2.2.3)
+- [x] Favikon (SVG + ICO 16/32/48 + apple-touch-icon + 192/512 + manifest), tab sarlavhasida holat (v2.2.3)
 
 ## Bosqich 8 — Sayqal va sifat
 - [ ] Ishlash tezligi, UX, hujjatlar

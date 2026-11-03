@@ -17,7 +17,7 @@ import SettingsTab from './components/SettingsTab.vue'
 import CookiesTab from './components/CookiesTab.vue'
 import { post as apiPost } from './api/client'
 import { readLocalStorage, defaultNotice } from './lib/migrate'
-import { cmdkOpen, showToast, sidePanel } from './lib/ui'
+import { activity, cmdkOpen, showToast } from './lib/ui'
 import AppHeader from './components/AppHeader.vue'
 import IconRail from './components/IconRail.vue'
 import StatusBar from './components/StatusBar.vue'
@@ -29,6 +29,13 @@ import { parseDataFile, isDataFile } from './lib/datafile'
 import HistoryDrawer from './components/HistoryDrawer.vue'
 
 const tabs = useTabs(), tree = useTree(), ws = useWorkspace(), hist = useHistory()
+// Brauzer tab sarlavhasi: davom etayotgan ish bo'lsa "● Runner 12/18 — API Runner"
+const busyTitle = computed(() => {
+  const sending = tabs.tabs.filter(t => t.response?.loading).length
+  const parts = [...Object.values(activity), ...(sending ? ['Yuborilmoqda'] : [])]
+  return parts.length ? `● ${parts[0]}${parts.length > 1 ? ` (+${parts.length - 1})` : ''} — API Runner` : 'API Runner'
+})
+watch(busyTitle, t => { document.title = t }, { immediate: true })
 const ready = ref(false)
 const saveAs = ref<{ tab: Tab; name: string; target: string; resolve: (ok: boolean) => void } | null>(null)
 const dropping = ref(false)
@@ -83,8 +90,6 @@ function onKey(e: KeyboardEvent) {
   const mod = e.metaKey || e.ctrlKey
   const k = e.key.toLowerCase()
   if (e.ctrlKey && e.key === 'Tab') { e.preventDefault(); tabs.next(e.shiftKey ? -1 : 1) }
-  else if (mod && e.shiftKey && k === 'o') { e.preventDefault(); clickImport() }
-  else if (mod && e.shiftKey && k === 'r') { e.preventDefault(); openRunnerFromKey() }
   else if (mod && k === 'k') { e.preventDefault(); cmdkOpen.value = !cmdkOpen.value }
   else if (mod && k === 't' && e.shiftKey) { e.preventDefault(); tabs.reopenClosed() }
   else if (mod && k === 't') { e.preventDefault(); tabs.openNew() }
@@ -126,11 +131,6 @@ async function handleFile(file: File) {
     await tree.load()
     showToast(`Import qilindi: ${r.name}`, 'success')
   } catch (err: any) { showToast(err.message, 'error') }
-}
-function openRunnerFromKey() {
-  sidePanel.value = 'runner'
-  const m = tree.metas[0]
-  if (m) tabs.open('runner', m.id, 'Runner: ' + m.name, { permanent: true })
 }
 const clickImport = () => document.querySelector<HTMLInputElement>('[data-testid=import-file]')?.click()
 async function onWindowDrop(e: DragEvent) {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import Icon from './Icon.vue'
-import { fmtMs } from '../lib/ui'
+import { activity, fmtMs } from '../lib/ui'
 import { useTree } from '../stores/tree'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
@@ -101,6 +101,8 @@ async function run() {
   running.value = false
 }
 const stop = () => { stopFlag = true }
+watch([running, done, planned], () => { if (running.value) activity[props.tab.id] = `Runner ${done.value}/${planned.value}`; else delete activity[props.tab.id] }, { immediate: true })
+onBeforeUnmount(() => delete activity[props.tab.id])
 const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' })
 </script>
 
