@@ -1,4 +1,7 @@
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
+
+/** Davom etayotgan ishlar (tab id → matn): brauzer tab sarlavhasida "● Runner 12/18 — API Runner" ko'rinadi. */
+export const activity = reactive<Record<string, string>>({})
 
 /** Chap panel (rail bilan boshqariladi) va ⌘K palitrasi holati. */
 export type SidePanel = 'collections' | 'environments' | 'history' | 'runner'

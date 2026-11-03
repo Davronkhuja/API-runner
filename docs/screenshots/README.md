@@ -25,6 +25,9 @@ Yaratish: `SHOT_PHASE=before|after python3 -m pytest tests/e2e/test_screenshots.
 | Collection sozlamalari | ![collection-settings](before/light/collection-settings.png) | ![collection-settings](after/light/collection-settings.png) |
 | ⌘K qidiruv | — | ![cmdk](after/light/cmdk.png) |
 | URL ichidagi {{var}} chip hover | — | ![editor-var-hover](after/light/editor-var-hover.png) |
+| scripts-editor | — | ![scripts-editor](after/light/scripts-editor.png) |
+| tests-tab | — | ![tests-tab](after/light/tests-tab.png) |
+| console-panel | — | ![console-panel](after/light/console-panel.png) |
 
 ## Qorong'i tema
 
@@ -48,3 +51,6 @@ Yaratish: `SHOT_PHASE=before|after python3 -m pytest tests/e2e/test_screenshots.
 | Collection sozlamalari | ![collection-settings](before/dark/collection-settings.png) | ![collection-settings](after/dark/collection-settings.png) |
 | ⌘K qidiruv | — | ![cmdk](after/dark/cmdk.png) |
 | URL ichidagi {{var}} chip hover | — | ![editor-var-hover](after/dark/editor-var-hover.png) |
+| scripts-editor | — | ![scripts-editor](after/dark/scripts-editor.png) |
+| tests-tab | — | ![tests-tab](after/dark/tests-tab.png) |
+| console-panel | — | ![console-panel](after/dark/console-panel.png) |

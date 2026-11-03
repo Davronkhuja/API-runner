@@ -60,6 +60,8 @@ Portni o'zgartirish: `ecosystem.config.js` dagi `APIRUNNER_PORT` ni tahrirlang, 
 
 `run.command` PM2 ostidagi `api-runner` ni taniydi: port shu jarayon tomonidan band bo'lsa uni **to'xtatmaydi**, balki `pm2 restart api-runner` bajarilsinmi deb so'raydi (terminal bo'lmasa faqat buyruqni ko'rsatadi).
 
+Skriptlar (pre-request / tests, `pm.*`) uchun ixtiyoriy `quickjs-ng` kerak (`requirements-scripts.txt`; `run.command` o'zi o'rnatadi, o'rnatilmasa skriptlar o'chiq bo'ladi): `.venv/bin/python -m pip install -r requirements-scripts.txt`.
+
 Muhit o'zgaruvchilari: `APIRUNNER_PORT`, `APIRUNNER_WORKSPACE`, `APIRUNNER_NO_BROWSER=1`, `APIRUNNER_VENV_ARGS` (venv yaratishga qo'shimcha argument).
 Node.js kerak emas — frontend build natijasi (`apirunner/static/app/`) repoga kiritilgan.
 

@@ -66,7 +66,7 @@ def test_header_controls(ui):
 
 def test_statusbar_server_console_cookies_version(ui, app):
     expect(T(ui, "server-status")).to_contain_text("Server ulangan")
-    expect(T(ui, "console-btn")).to_be_disabled()
+    expect(T(ui, "console-btn")).to_be_enabled()
     expect(T(ui, "version")).to_contain_text("v2.")
     T(ui, "cookies-btn").click()
     expect(T(ui, "cookies-tab")).to_be_visible()
@@ -429,17 +429,24 @@ def test_runner_data_file_clear_and_preview(ui, tmp_path):
     expect(T(ui, "runner-dropzone")).to_be_visible()
 
 
-# ── brauzerga to'qnashmaydigan yorliqlar ──
-def test_shift_shortcuts_import_and_runner(ui):
+# ── Import / Runner: ⌘K palitrasida (⌘⇧O/⌘⇧R brauzer yorliqlari bilan to'qnashgani uchun olib tashlangan) ──
+def test_import_and_runner_are_cmdk_commands(ui):
+    ui.keyboard.press("Control+k")
+    ui.keyboard.type("import")
+    expect(T(ui, "cmdk-row")).to_contain_text("Import")
     with ui.expect_file_chooser():
-        ui.keyboard.press("Control+Shift+O")
-    ui.keyboard.press("Control+Shift+R")
+        ui.keyboard.press("Enter")
+    ui.keyboard.press("Control+k")
+    ui.keyboard.type("runner")
+    ui.keyboard.press("Enter")
     expect(T(ui, "runner-tab")).to_be_visible()
-    expect(T(ui, "sb-title")).to_have_text("Runner")
 
 
-def test_welcome_shows_shift_shortcuts(ui):
-    expect(T(ui, "wl-import")).to_contain_text("⇧")
-    expect(T(ui, "wl-runner")).to_contain_text("⇧")
-    expect(T(ui, "no-tabs")).to_contain_text("⌘ ⇧ O")
-    expect(T(ui, "no-tabs")).to_contain_text("⌘ ⇧ R")
+def test_shift_shortcuts_are_gone_and_welcome_points_to_cmdk(ui):
+    ui.keyboard.press("Control+Shift+R")
+    ui.keyboard.press("Control+Shift+O")
+    expect(T(ui, "runner-tab")).to_have_count(0)
+    expect(T(ui, "no-tabs")).to_be_visible()
+    expect(T(ui, "no-tabs")).not_to_contain_text("⇧")
+    expect(T(ui, "wl-import")).to_contain_text("⌘K")
+    expect(T(ui, "wl-runner")).to_contain_text("⌘K")

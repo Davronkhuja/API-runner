@@ -3,7 +3,9 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
-import { draftFromItem, extFromDraft, requestFromDraft } from './draft'
+import { draftFromItem, eventsFromDraft, extFromDraft, requestFromDraft } from './draft'
+import { applyScriptResult, scriptsFor } from './scripts'
+import { logRequest, logResponse } from './console'
 import { prepareAuth, specFor } from './scope'
 import { showToast } from './ui'
 import type { RequestItem } from '../types/model'
@@ -18,7 +20,8 @@ export async function saveTab(tab: Tab): Promise<boolean> {
   if (!tab.ref) return saveAsHandler.fn ? saveAsHandler.fn(tab) : false
   const [cid, id] = tab.ref.split(':')
   const request = requestFromDraft(tab.draft)
-  await tree.updateItem(cid, id, { name: tab.draft.name, request, 'x-apirunner': extFromDraft(tab.draft) })
+  const existing = (tree.findItem(cid, id) as any)?.event
+  await tree.updateItem(cid, id, { name: tab.draft.name, request, event: eventsFromDraft(tab.draft, existing), 'x-apirunner': extFromDraft(tab.draft) })
   tabs.markSaved(tab.id, { title: tab.draft.name })
   return true
 }
@@ -26,7 +29,7 @@ export async function saveTab(tab: Tab): Promise<boolean> {
 export async function createRequestIn(tab: Tab, cid: string, parentId: string | null, name: string) {
   const tabs = useTabs(), tree = useTree()
   tab.draft!.name = name
-  const id = await tree.addItem(cid, { name, request: requestFromDraft(tab.draft!), response: [], 'x-apirunner': extFromDraft(tab.draft!) }, parentId)
+  const id = await tree.addItem(cid, { name, request: requestFromDraft(tab.draft!), response: [], event: eventsFromDraft(tab.draft!), 'x-apirunner': extFromDraft(tab.draft!) }, parentId)
   tabs.markSaved(tab.id, { ref: `${cid}:${id}`, title: name })
   tree.reveal(cid, id)
 }
@@ -48,9 +51,14 @@ export async function sendTab(tab: Tab) {
     await prepareAuth(tab.draft, tab.ref)
     const spec = specFor(tab.draft, tab.ref)
     spec.timeout = 30
+    const scripts = scriptsFor(tab.ref, tab.draft.scripts, tab.draft.name)
+    if (scripts) Object.assign(spec, { scripts, ref: tab.ref, scripts_info: { requestName: tab.draft.name, requestId: tab.ref?.split(':')[1] ?? '' } })
+    logRequest(spec.method, tab.draft.url, tab.id)
     const r = await post('/run_one', spec)
     tab.response = r
-    hist.add('request', { ...spec, env_vars: undefined, timestamp: Date.now(), status: r.status }).catch(() => {})
+    logResponse(r, tab.id)
+    await applyScriptResult(r.scripts, { tabId: tab.id, ref: tab.ref })
+    hist.add('request', { ...spec, env_vars: undefined, scripts: undefined, ref: undefined, scripts_info: undefined, timestamp: Date.now(), status: r.status }).catch(() => {})
     hist.add('url', { method: tab.draft.method, url: tab.draft.url }).catch(() => {})
   } catch (e: any) {
     tab.response = { status: 'ERR', response: e.message, time: 0, size: 0, resp_headers: {}, url: tab.draft.url }

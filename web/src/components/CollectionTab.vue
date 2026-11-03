@@ -6,6 +6,8 @@ import { useTree } from '../stores/tree'
 import { useTabs, type Tab } from '../stores/tabs'
 import { authFromPm, authToPm, type AuthDraft } from '../lib/auth'
 import { showToast } from '../lib/ui'
+import { eventsFromText, lastErrors, textFromEvents, type ScriptSet } from '../lib/scripts'
+import ScriptsPanel from './ScriptsPanel.vue'
 import AuthEditor from './AuthEditor.vue'
 import VarsTable from './VarsTable.vue'
 
@@ -15,29 +17,25 @@ const [cid, fid] = (props.tab.ref ?? '').split(':')
 const isFolder = !!fid
 const node = computed<any>(() => (isFolder ? tree.findItem(cid, fid) : tree.cols[cid]))
 const meta = computed(() => tree.metas.find(m => m.id === cid))
-const section = ref('auth')
+const section = ref(props.tab.state?.section ?? 'auth')
+watch(() => props.tab.state?.section, v => { if (v) section.value = v })
 
-interface Form { auth: AuthDraft; vars: any[]; pre: string; test: string; description: string }
+interface Form { auth: AuthDraft; vars: any[]; scripts: ScriptSet; description: string }
 const form = ref<Form | null>(null)
-const execOf = (ev: any[] | undefined, listen: string) => ((ev ?? []).find(e => e.listen === listen)?.script?.exec ?? []).join('\n')
 function load() {
   const n = node.value
   if (!n) { form.value = null; return }
   form.value = {
     auth: authFromPm(n.auth), vars: JSON.parse(JSON.stringify(n.variable ?? [])).map((v: any) => ({ type: 'default', ...v })),
-    pre: execOf(n.event, 'prerequest'), test: execOf(n.event, 'test'), description: n['x-apirunner']?.description ?? '',
+    scripts: textFromEvents(n), description: n['x-apirunner']?.description ?? '',
   }
 }
 watch(() => props.tab.ref, load, { immediate: true })
 const touch = () => tabs.touch(props.tab.id)
 
-function eventsFrom(f: Form) {
-  const mk = (listen: string, src: string) => (src.trim() ? [{ listen, script: { type: 'text/javascript', exec: src.split('\n') } }] : [])
-  return [...mk('prerequest', f.pre), ...mk('test', f.test)]
-}
 async function save() {
   const f = form.value!
-  const patch: any = { variable: f.vars.filter(v => v.key), event: eventsFrom(f), auth: authToPm(f.auth) ?? null }
+  const patch: any = { variable: f.vars.filter(v => v.key), event: eventsFromText(node.value.event, f.scripts), auth: authToPm(f.auth) ?? null }
   try {
     if (isFolder) {
       await tree.updateItem(cid, fid, { ...patch, 'x-apirunner': { ...(node.value['x-apirunner'] ?? {}), description: f.description } })
@@ -68,11 +66,7 @@ async function save() {
     <div style="padding-top:10px">
       <AuthEditor v-if="section === 'auth'" :auth="form.auth" :allow-inherit="isFolder" :scope-ref="props.tab.ref" @change="touch" />
       <VarsTable v-else-if="section === 'vars'" :rows="form.vars" testid="scope-vars" @change="touch" />
-      <div v-else-if="section === 'scripts'">
-        <p class="muted">Pre-request / Tests skriptlari saqlanadi; bajarilishi Bosqich 3 da.</p>
-        <b>Pre-request</b><textarea v-model="form.pre" data-testid="scope-pre" style="width:100%;height:110px;font-family:ui-monospace,monospace" @input="touch" />
-        <b>Tests</b><textarea v-model="form.test" data-testid="scope-test" style="width:100%;height:110px;font-family:ui-monospace,monospace" @input="touch" />
-      </div>
+      <ScriptsPanel v-else-if="section === 'scripts'" :scripts="form.scripts" :scope="isFolder ? 'folder' : 'collection'" :scope-id="isFolder ? fid : cid" :errors="lastErrors" :goto="tab.state?.scriptGoto" @change="touch" />
       <textarea v-else v-model="form.description" data-testid="scope-desc" placeholder="Tavsif (Markdown)" style="width:100%;height:200px" @input="touch" />
     </div>
   </div>

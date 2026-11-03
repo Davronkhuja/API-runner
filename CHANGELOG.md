@@ -2,6 +2,50 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.0] — 2026-11-04 — Bosqich 3 tugadi (skriptlar va testlar)
+### Added (UI)
+- **Skript muharriri** (CodeMirror 6, JavaScript): so'rov tabida **Scripts** bo'limi (Pre-request / Tests), shuningdek collection va papka sozlamalarida (meros: collection → papka → so'rov). `pm.*` / legacy avtoto'ldirish (≈130 nom, izoh bilan), tayyor **snippetlar paneli** (Status 200, javob vaqti, JSON qiymati, javobdan muhitga yozish, token olish, header, `setNextRequest`, HMAC … — pre/test bo'yicha ajratilgan), qator raqamlari, xato qatorlarini belgilash. Skriptlar Postman `event[]` formatida saqlanadi (import/eksport bilan mos); saqlanmagan skript tahriri sahifa yangilanganda tiklanadi.
+- Javob panelida **Testlar** tabi: o'tdi/muvaffaqiyatsiz/o'tkazildi soni, har bir test (PASS/FAIL/SKIP, xabar, manba: Collection/Papka/So'rov), **skript xatolari** (nom, xabar, manba, stack trace) — har birida «qator N» havolasi: muharrirda (yoki collection/papka tabida) shu qatorga o'tadi va qator belgilanadi; muvaffaqiyatsiz test qatorlari ham belgilanadi. `skipRequest` / `setNextRequest` holati ko'rsatiladi.
+- **Console paneli** (status bardagi Console): so'rov/javob loglari, `console.log/info/warn/error/debug`, skript xatolari (stack bilan), qo'llab-quvvatlanmaydigan API ogohlantirishlari; filtrlar, qidiruv, tozalash, o'zgarishi mumkin balandlik; yopiqda o'qilmagan xatolar badge'i; xato qatoriga o'tish.
+- **Sozlamalar → Skriptlar**: holat (quickjs-ng versiyasi) va sozlanadigan chegaralar — skript vaqti, xotira, `pm.sendRequest` soni (sukutga qaytarish bilan).
+- **quickjs-ng yo'q holat**: skript tablari ko'rinadi (matn saqlanadi), «Skriptlar o'chiq» tushuntirishi va o'rnatish buyrug'i (`pip install quickjs-ng`, nusxalash tugmasi) — Scripts bo'limida, Sozlamalarda, Testlar tabida va Console'da; so'rovlar odatdagidek yuboriladi.
+- **Runner**: skriptlar har so'rovda ishlaydi; **`setNextRequest(nom|null)`** (Postman semantikasi), **`skipRequest`** (`SKIPPED`, xato hisoblanmaydi), iteratsiya data qatori `pm.iterationData`ga uzatiladi, o'zgaruvchilar so'rovlar orasida saqlanadi; cheksiz tsikldan himoya (1000 qadam). **Batch**: skriptlar har qatorda (concurrency bilan), natija kartalarida `tests p/t` va skript xatolari badge'i.
+- ⌘K/Skript natijalari: muhit/global/collection o'zgaruvchilari skriptdan keyin UI'da avtomatik yangilanadi.
+### Changed
+- `ui-state` dan tiklangan eski qoralamalar `normalizeDraft` bilan yangi maydonlar (`scripts`, `settings`, `pathVars`, …) to'ldiriladi.
+- Status bardagi Console tugmasi faol; `docs/ROADMAP.md` yangilandi (Console, Data/Local scope bajarildi).
+### Bosqich 3 yakuni
+Bajarildi: skript engine (v2.2.4) + UI (shu versiya). ADR 0007 ga ko'ra `quickjs-ng`; xavfsizlik chegarasi, thread-safety (concurrency=10 stress testlari), async semantika, `pm.sendRequest` engine orqali, `require`/legacy, aniq ogohlantirishlar, sozlanadigan limitlar va Postman'ning real ommaviy namunalari bilan muvofiqlik testlari. Ochiq qolganlari: `pm.visualizer`, `pm.vault`, `pm.cookies.jar` ning ba'zi metodlari, `tv4`/`ajv`/`cheerio`, Intl; Runner natijalarida **Testlar ustuni** va run tarixi — Bosqich 4.
+
+## [2.2.4] — 2026-11-04 — Bosqich 3 (1/3: skript engine, backend)
+### Added
+- **Skript sandbox** (`apirunner/core/scripting/`, ADR 0007 — `quickjs-ng`): pre-request va test skriptlari collection → papka → so'rov tartibida. Kontekstda host ob'ekti, fayl, tarmoq, modul yuklovchi, hatto Python callable ham yo'q; host bilan aloqa JS tomonidagi navbat orqali (quickjs vaqt limiti bilan Python callable'ga ruxsat bermaydi). Har bajarish o'z kontekstini yaratadi — thread'lar orasida bo'lishilmaydi (concurrency=10 stress testi).
+- **`pm.*`**: `environment` / `globals` / `collectionVariables` / `variables` / `iterationData` (`get/set/unset/has/clear/toObject/replaceIn`), `request` (o'qish va o'zgartirish: method, url + query, headers, body), `response` (`code`, `status`, `headers`, `json()`, `text()`, `responseTime`, `cookies`, `to.have.status/header/body/jsonBody`, `to.be.ok/success/error/…`), `test` (+ `skip`, async va `done` uslubi), `expect` (chai), `sendRequest` (callback va Promise), `execution.setNextRequest/skipRequest`, `info`, `cookies` (+ qisman `jar()`), `console.*`.
+- **Event loop**: `await`, Promise, `setTimeout/setInterval` va `pm.sendRequest` tugaguncha skript tugamagan hisoblanadi; umumiy vaqt chegarasi (haqiqiy kutish bilan).
+- **`pm.sendRequest` asosiy engine orqali**: auth (bearer/basic/apikey), global sozlamalar (proxy, SSL, redirect, CA, mTLS), cookie jar, `{{o'zgaruvchi}}`; so'rovlar soni va ichma-ich chuqurlik chegarasi.
+- **`require`**: `lodash`, `crypto-js`, `moment`, `chai`, `dayjs`, `uuid`, `xml2js` (kichik), `atob`/`btoa`. Qo'llab-quvvatlanmagan modul/API (`cheerio`, `tv4`, `pm.visualizer`, `pm.vault`, noma'lum `pm.*` …) **jim o'tmaydi** — Console'da ogohlantirish.
+- **Legacy**: `tests["…"] = bool`, `responseBody/Code/Time/Headers`, `postman.setEnvironmentVariable/get/clear…`, `setGlobalVariable…`, `setNextRequest`, `environment`/`globals`/`data`/`request` obyektlari, `xml2Json`, global `_`, `CryptoJS`, `moment`.
+- **Xato izolyatsiyasi**: skript xatosi so'rovni to'xtatmaydi; xato `{name, message, stack, line, origin{scope,name,id,kind}}` bilan qaytadi (qator raqami skript matniga mos). Sintaksis xato, vaqt/xotira/stack chegarasi aniq xabarlar bilan; chegaradan oshgach qolgan skriptlar o'tkazib yuboriladi, natijalar saqlanadi.
+- **Saqlash qoidasi**: skript workspace'ni faqat `pm.environment/globals/collectionVariables` orqali o'zgartiradi, yozuvni skript emas, server qiladi (qulf ostida, faqat o'zgargan kalitlar; qiymat o'zgarmasa diskka yozilmaydi). Faol muhit yo'q bo'lsa — o'zgarish faqat shu bajarish uchun (Console'da ogohlantirish).
+- **Data/Local scope**: `pm.iterationData` (CSV/JSON qator), `pm.variables.set` (local) — saqlanmaydi. Ustuvorlik: Global < Collection < Environment < Data < Local.
+- **Oqim** (`core/flow.py`): Postman Runner semantikasi — iteratsiyalar, `setNextRequest(nom|null)`, `skipRequest`; CLI (Bosqich 7) va muvofiqlik testlari uchun.
+- API: `/run_one` va `/run` (batch) `scripts` + `ref` qabul qiladi va natijaga `scripts{tests, console, errors, next_request, skipped, changed}` qo'shadi; `GET /api/scripts/status`; `PUT /api/workspace/meta` → `script_limits` (timeout 100–300000 ms, xotira 8–1024 MB, `pm.sendRequest` soni 0–200).
+- `requirements-scripts.txt` (`quickjs-ng`, ixtiyoriy): `run.command` o'rnatadi; o'rnatilmasa ogohlantiradi, ilova ishlayveradi — skriptlar o'chiq, so'rovlar odatdagidek.
+- `THIRD_PARTY_LICENSES.md`: chai 4.5.0, lodash 4.18.1, crypto-js 4.2.0, dayjs 1.11.23, moment 2.31.0 (MIT) — versiya va litsenziya matnlari.
+- **Muvofiqlik testlari** (Postman'ning real ommaviy namunalari, o'zgarishsiz): Sample Collection (collection/papka/so'rov skriptlari, `zyx()` xatosi, console, `sendRequest`, `setNextRequest("Done")`), nested `sendRequest` (`res.stream.toString()`), Twitter (legacy `tests[]`, `postman.setEnvironmentVariable`, `events` kaliti), helpers (`environment.x`), catURL (`responseHeaders.location`, `request.data`, redirect), shuningdek ularning naqshlari asosidagi murakkab oqim (pre-request'da token olish + `setNextRequest` tsikli + legacy `tests[]`).
+- 75 yangi test: `test_scripting` (23), `test_scripts_integration` (18), `test_postman_compat` (9) va boshqalar.
+### Fixed
+- `x-www-form-urlencoded` tanasida `{{o'zgaruvchi}}` (brauzer `%7B%7B…%7D%7D` ga kodlagan) yechilmasdi; endi har maydon dekodlanib, yechilib, qayta kodlanadi (qiymatdagi `&`/`=` buzilmaydi).
+
+## [2.2.3] — 2026-11-03
+### Added
+- **Favikon**: `web/public/favicon.svg` (indigo kvadrat ichida oq chaqmoq — dizayn logotipi), `favicon.ico` (16/32/48), `apple-touch-icon.png` (180, to'liq kvadrat), `icon-192.png`, `icon-512.png`, `manifest.webmanifest` (`tools/make_icons.py` bilan hosil qilinadi; fayllar commit qilingan — Node'siz ishga tushish buzilmaydi). Yangi UI va `/legacy` sahifasida `<link rel="icon">` (SVG + ICO fallback), `apple-touch-icon`, `manifest`, `theme-color`.
+- Flask `/favicon.ico` va `/apple-touch-icon.png` ni haqiqiy fayl bilan, `Cache-Control: public, max-age=31536000, immutable` bilan qaytaradi (sessiya tokensiz — 404 yo'q).
+- Brauzer tab sarlavhasida holat: so'rov yuborilayotganda `● Yuborilmoqda — API Runner`, Runner/Batch ishlayotganda `● Runner 12/18 — API Runner` (bir nechta bo'lsa `(+N)`), tugagach `API Runner`.
+- 9 yangi e2e (`test_favicon.py`): ICO tuzilishi va cache, PNG o'lchamlari, brauzerda piksel tekshiruvi (rang, oq chaqmoq, shaffof/to'liq burchak), manifest, ikkala sahifadagi barcha `href` 200, tab sarlavhasi.
+### Removed
+- ⌘⇧O / ⌘⇧R yorliqlari (Chrome'da bookmark manager va hard reload bilan to'qnashadi). Import va Runner ⌘K palitrasida (`Import (Postman, OpenAPI)`, `Runner`); Bosh sahifa kartalari shunga ishora qiladi.
+
 ## [2.2.2] — 2026-11-03
 ### Added
 - Yorliqlar: **⌘⇧O** — Import, **⌘⇧R** — Runner (brauzerning ⌘O/⌘R yorliqlari bilan to'qnashmaydi); Bosh sahifadagi kartalar va yorliqlar ro'yxatida ko'rsatilgan. 2 yangi e2e.

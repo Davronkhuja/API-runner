@@ -9,7 +9,8 @@ import uuid
 
 from flask import Blueprint, Response, current_app, jsonify, request, stream_with_context
 
-from ..core.engine import ExecContext, execute
+from ..core.engine import ExecContext, execute  # noqa: F401
+from ..core.scripted import Services, run_item
 from ..storage import model
 from ..storage.migrate import LEGACY_COLLECTION_ID, LEGACY_COLLECTION_NAME
 from ..storage.legacy_view import flat_view
@@ -242,13 +243,12 @@ def run_one():
     if not (cfg.get("url") or "").strip():
         return jsonify({"error": "no url"}), 400
     spec = dict(cfg, url=cfg["url"].strip(), timeout=cfg.get("timeout") or 30)
-    ctx = ExecContext(variables=cfg.get("env_vars") or {},
-                      allowed_file_roots=current_app.extensions["jobs"].allowed_file_roots,
-                      cookies=current_app.extensions["cookies"])
-    res = execute(spec, ctx)
+    jobs = current_app.extensions["jobs"]
+    services = Services(ws=current_app.extensions["workspace"], cookies=current_app.extensions["cookies"], allowed_file_roots=jobs.allowed_file_roots)
+    res = run_item(spec, services, scripts=cfg.get("scripts"), ref=cfg.get("ref"), row=cfg.get("row"), info=cfg.get("scripts_info"))
     return jsonify({
         "status": "ERR" if res["status"] == "ERROR" else res["status"],
         "time": round(res["time"], 3), "size": res["size"], "response": res["response"],
         "resp_headers": res["resp_headers"], "url": res["url"],
-        "set_cookies": res.get("set_cookies", []), "redirects": res.get("redirects", 0),
+        "set_cookies": res.get("set_cookies", []), "redirects": res.get("redirects", 0), "scripts": res.get("scripts"),
     })

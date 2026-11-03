@@ -3,7 +3,7 @@ import threading
 import time
 import webbrowser
 
-from flask import Flask, Response
+from flask import Flask, Response, request, send_from_directory
 
 from .api import legacy, oauth, security, workspace_api
 from .core.jobs import JobManager
@@ -36,7 +36,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.extensions["backup_dir"] = backup_dir
     app.extensions["saved_file"] = saved_file
     app.extensions["cookies"] = CookieStore(os.path.join(ws.root, "state.db"))
-    app.extensions["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root), cookies=app.extensions["cookies"])
+    app.extensions["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root), cookies=app.extensions["cookies"], workspace=ws)
     app.config.update(UPLOAD_DIR=upload_dir, SESSION_TOKEN=session_token or security.new_token(),
                       MIGRATION=result["legacy"], MIGRATION_RESULT=result)
 
@@ -59,6 +59,15 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     def legacy_index():
         """Eski UI — yangi frontend paritetga yetib, e2e yashil bo'lguncha saqlanadi."""
         return page(os.path.join(static, "index.html"))
+
+    @app.get("/favicon.ico")
+    @app.get("/apple-touch-icon.png")
+    def root_icons():
+        """Brauzerlar ildizdan so'raydigan ikonkalar: haqiqiy fayl, uzoq cache (fayl o'zgarmaydi)."""
+        name = request.path.lstrip("/")
+        resp = send_from_directory(os.path.join(static, "app"), name, max_age=31536000)
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return resp
 
     @app.get("/")
     def index():

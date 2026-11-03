@@ -3,6 +3,8 @@ import os
 
 from flask import Blueprint, current_app, jsonify, request
 
+from ..core import scripting
+from ..core.scripting.sandbox import Limits
 from ..storage import model, tree_ops
 from ..storage.migrate import import_localstorage
 from ..storage.workspace import Conflict, NotFound
@@ -126,6 +128,13 @@ def put_globals():
     return jsonify({"ok": True})
 
 
+# skriptlar (quickjs-ng): holat va chegaralar
+@bp.get("/scripts/status")
+def scripts_status():
+    return jsonify({"available": scripting.available(), "version": scripting.version(), "install": scripting.INSTALL_HINT,
+                    "limits": Limits.from_meta(_ws().meta()).as_dict(), "defaults": scripting.DEFAULT_LIMITS})
+
+
 # cookie jar (SQLite)
 @bp.get("/cookies")
 def list_cookies():
@@ -240,6 +249,8 @@ def put_meta():
     allowed = {k: d[k] for k in ("active_environment_id", "legacy_default_notified") if k in d}
     if isinstance(d.get("settings"), dict):
         allowed["settings"] = d["settings"]
+    if isinstance(d.get("script_limits"), dict):
+        allowed["script_limits"] = Limits.from_meta({"script_limits": d["script_limits"]}).as_dict()      # chegaralarga keltiriladi
     _ws().update_meta(**allowed)
     return jsonify({"ok": True, "meta": _ws().meta()})
 

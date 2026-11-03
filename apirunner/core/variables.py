@@ -57,6 +57,18 @@ def replace_variables(text, variables):
     return out
 
 
+def resolve_form_body(body, variables):
+    """x-www-form-urlencoded matn: har maydon dekodlanadi → `{{}}` yechiladi → qayta kodlanadi (qiymatdagi maxsus belgilar buzilmaydi)."""
+    from urllib.parse import quote_plus, unquote_plus
+    out = []
+    for pair in str(body or "").split("&"):
+        if not pair:
+            continue
+        k, eq, v = pair.partition("=")
+        out.append(quote_plus(replace_variables(unquote_plus(k), variables)) + (eq + quote_plus(replace_variables(unquote_plus(v), variables)) if eq else ""))
+    return "&".join(out)
+
+
 def apply_path_variables(url, path_vars):
     """`/users/:id` dagi `:id` ni qiymat bilan almashtiradi (faqat yo'l qismida; port va sxema tegilmaydi)."""
     if not path_vars:

@@ -4,11 +4,15 @@ import threading
 import time
 
 from .engine import ExecContext, execute
+from .scripted import Services, run_item
 
 
-def run_batch(config, emit, stop_event, allowed_file_roots=(), allowed_files=frozenset(), cookies=None):
+def run_batch(config, emit, stop_event, allowed_file_roots=(), allowed_files=frozenset(), cookies=None, workspace=None):
     """`config` — /run tanasi. `emit(type, data)` — "result" va yakunda "done" hodisalari."""
     rows = config.get("rows") or [{}]
+    data_rows = rows
+    scripts = config.get("scripts")
+    services = Services(ws=workspace, cookies=cookies, allowed_file_roots=allowed_file_roots, allowed_files=allowed_files)
     delay = float(config.get("delay", 0) or 0)
     concurrency = max(1, min(10, int(config.get("concurrency", 1) or 1)))
     retry_count = max(0, min(5, int(config.get("retry_count", 0) or 0)))
@@ -23,9 +27,14 @@ def run_batch(config, emit, stop_event, allowed_file_roots=(), allowed_files=fro
     def one(row, index):
         if stop_event.is_set():
             return None
-        ctx = ExecContext(variables=row, retry_count=retry_count, stop=stop_event.is_set,
-                          allowed_file_roots=allowed_file_roots, allowed_files=allowed_files, cookies=cookies)
-        res = execute(config, ctx)
+        if scripts and (scripts.get("prerequest") or scripts.get("test")):
+            res = run_item({**config, "env_vars": row}, services, scripts=scripts, ref=config.get("ref"), row=data_rows[index - 1],
+                           info={"iteration": index - 1, "iterationCount": total, "requestName": config.get("request_name", "")},
+                           ctx_kwargs={"retry_count": retry_count, "stop": stop_event.is_set})
+        else:
+            ctx = ExecContext(variables=row, retry_count=retry_count, stop=stop_event.is_set,
+                              allowed_file_roots=allowed_file_roots, allowed_files=allowed_files, cookies=cookies)
+            res = execute(config, ctx)
         with lock:
             counts["failed" if res["error"] else "successful"] += 1
             counts["completed"] += 1

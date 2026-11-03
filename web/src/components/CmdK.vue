@@ -34,7 +34,8 @@ const others = computed<Hit[]>(() => [
   { key: 'a:settings', kind: 'action', label: 'Sozlamalar', sub: '', run: () => { tabs.open('settings', 'settings', 'Sozlamalar', { permanent: true }) } },
   { key: 'a:cookies', kind: 'action', label: 'Cookie Manager', sub: '', run: () => { tabs.open('cookies', 'cookies', 'Cookie\'lar', { permanent: true }) } },
   { key: 'a:theme', kind: 'action', label: 'Temani almashtirish', sub: '', run: toggleTheme },
-  { key: 'a:runner', kind: 'action', label: 'Runner', sub: '', run: () => { sidePanel.value = 'runner' } },
+  { key: 'a:import', kind: 'action', label: 'Import (Postman, OpenAPI)', sub: '.json', run: () => { document.querySelector<HTMLInputElement>('[data-testid=import-file]')?.click() } },
+  { key: 'a:runner', kind: 'action', label: 'Runner', sub: 'Collection Runner', run: () => { sidePanel.value = 'runner'; const m = tree.metas[0]; if (m) tabs.open('runner', m.id, 'Runner: ' + m.name, { permanent: true }) } },
   ...ws.environments.map<Hit>(e => ({ key: 'e:' + e.id, kind: 'env', label: e.name, sub: 'Muhit', run: () => { tabs.open('environment', e.id, e.name, { permanent: true }) } })),
 ])
 const hits = computed(() => {

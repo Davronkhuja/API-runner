@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { newBatchState, startBatch, stopBatch, statsOf, toCSV, download, type BatchState } from '../lib/batch'
-import { fmtBytes, fmtMs, showToast } from '../lib/ui'
+import { activity, fmtBytes, fmtMs, showToast } from '../lib/ui'
 import { parseDataFile, isDataFile } from '../lib/datafile'
 import { highlightJson } from '../lib/highlight'
 import DataPreview from './DataPreview.vue'
@@ -49,6 +49,8 @@ async function run() {
     try { await hist.add('run', { ts: Date.now(), label: props.tab.draft!.url, count: done.results.length, results: done.results.map(r => ({ index: r.index, status: r.status, time: r.time, size: r.size, url: r.url })) }) } catch { /* tarix yozilmasa ham natija ko'rinadi */ }
   })
 }
+watch(() => [b.value.status, b.value.results.length, b.value.total], () => { if (b.value.status === 'running') activity[props.tab.id] = `Batch ${b.value.results.length}/${b.value.total}`; else delete activity[props.tab.id] }, { immediate: true })
+onBeforeUnmount(() => delete activity[props.tab.id])
 const runs = computed(() => hist.runs)
 const cmpRun = computed(() => runs.value.find(r => r.id === cmpId.value))
 async function openCmp() { await hist.load(); showCmp.value = true; cmpId.value = hist.runs[1]?.id ?? hist.runs[0]?.id ?? null }
@@ -113,6 +115,8 @@ void tabs
           <div style="display:flex;gap:10px;align-items:center">
             <span class="status-pill" :class="badge(r.status)">{{ r.status }}</span><span>#{{ r.index }}</span><span>{{ fmtMs(r.time) }}</span><span>{{ fmtBytes(r.size) }}</span>
             <span v-if="r.retries" class="muted" data-testid="retry-badge">↻{{ r.retries }}</span>
+            <span v-if="r.scripts?.tests?.length" class="badge" :class="{ 'badge-err': r.scripts.tests.some((t: any) => !t.passed) }" data-testid="result-tests" :title="r.scripts.tests.map((t: any) => (t.passed ? '✓ ' : '✗ ') + t.name).join('\n')">tests {{ r.scripts.tests.filter((t: any) => t.passed).length }}/{{ r.scripts.tests.length }}</span>
+            <span v-if="r.scripts?.errors?.length" class="badge badge-err" data-testid="result-script-errors">skript xatosi {{ r.scripts.errors.length }}</span>
             <span class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">{{ r.url }}</span>
             <button class="ghost" data-testid="card-toggle" :aria-expanded="!folded[r.index]" aria-label="Kartani yig'ish / yoyish" title="Yig'ish" @click="folded[r.index] = !folded[r.index]">{{ folded[r.index] ? '▸' : '▾' }}</button>
             <button class="ghost" @click="toggleHdr(r.index)">Headers</button>

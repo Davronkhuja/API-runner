@@ -16,7 +16,7 @@ from typing import Callable, Optional
 import httpx
 
 from .auth import apply_auth_config
-from .variables import apply_path_variables, replace_variables
+from .variables import apply_path_variables, replace_variables, resolve_form_body
 
 MAX_TEXT_RESPONSE = 500_000
 MUTATING = ("POST", "PUT", "PATCH", "DELETE")
@@ -35,6 +35,7 @@ class ExecContext:
     allowed_file_roots: tuple = ()                     # fayl parametrlari uchun ruxsat etilgan papkalar
     allowed_files: frozenset = frozenset()             # foydalanuvchi aniq tanlagan fayllar
     cookies: object = None                             # CookieStore (None = cookie jar o'chiq)
+    keep_text: bool = False                            # natijaga xom javob matnini (`body_text`) qo'shish — skriptlar uchun
 
     def stopped(self):
         return bool(self.stop and self.stop())
@@ -81,7 +82,7 @@ def _build_kwargs(spec, ctx, opened):
         val = replace_variables(item.get("value", ""), v)
         (file_params if item.get("type") == "file" else params)[n] = val
 
-    body = replace_variables(spec.get("body", ""), v)
+    body = resolve_form_body(spec.get("body", ""), v) if body_type == "form" else replace_variables(spec.get("body", ""), v)
     ctype = spec.get("content_type", "")
     has_ct = lambda: "content-type" in {k.lower() for k in headers}  # noqa: E731
     if body and ctype and not has_ct():
@@ -257,7 +258,8 @@ def execute(spec, ctx=None):
                     "url": str(resp.url), "response": _parse_body(resp),
                     "resp_headers": dict(resp.headers), "error": not ok, "retries": attempt,
                     "timing": trace.result(elapsed), "http_version": resp.http_version,
-                    "set_cookies": resp.headers.get_list("set-cookie"), "redirects": len(resp.history)}
+                    "set_cookies": resp.headers.get_list("set-cookie"), "redirects": len(resp.history),
+                    **({"body_text": resp.text} if ctx.keep_text else {})}
         except httpx.TimeoutException:
             last_elapsed = time.perf_counter() - start
             last_err = "Request timed out ({:.0f}s)".format(timeout)

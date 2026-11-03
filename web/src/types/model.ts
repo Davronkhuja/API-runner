@@ -21,12 +21,14 @@ export interface RequestItem {
   name: string
   request: PmRequest
   response: unknown[] // Examples
+  event?: { listen: string; script: { type?: string; exec: string[] | string } }[]
   'x-apirunner'?: { legacy?: Record<string, any>; settings?: Record<string, any> }
 }
 export interface FolderItem {
   id: string
   name: string
   item: TreeItem[]
+  event?: { listen: string; script: { type?: string; exec: string[] | string } }[]
   'x-apirunner'?: { expanded?: boolean }
 }
 export type TreeItem = RequestItem | FolderItem

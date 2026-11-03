@@ -47,7 +47,7 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] 27 test (`test_dnd_spec.py`) — hammasi yashil
 ### Qolganlari
 - [x] Collection/folder darajasidagi Auth, Variables, Description (meros) · Scripts saqlanadi, bajarilishi Bosqich 3 (v2.1.14)
-- [x] Variable scope'lar (Globals<Collection<Papka<Env), path variables, dinamik o'zgaruvchilar, secret maskalash (v2.1.13–14); Data/Local — Bosqich 3 skriptlari bilan
+- [x] Variable scope'lar (Globals<Collection<Papka<Env), path variables, dinamik o'zgaruvchilar, secret maskalash (v2.1.13–14); Data/Local — `pm.iterationData` / `pm.variables` (v2.2.4)
 - [x] Auth turlari (API Key, Digest, OAuth 2.0 [CC/Password/Code/PKCE/Implicit], AWS SigV4, JWT HS*) — v2.1.15–16; JWT RS*/ES* ochiq
 - [x] Body turlari (form-data, urlencoded jadval, binary, GraphQL) — v2.2.0
 - [x] Qator checkbox/tavsif/bulk edit — v2.2.0
@@ -58,9 +58,9 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] Server tomonda tarix (SQLite; v2.1.x)
 
 ## Bosqich 3 — Skriptlar va testlar
-- [ ] Pre-request / Tests skriptlari (meros tartibida), `pm.*` API, kutubxonalar
-- [ ] Avtoto'ldirish, snippet'lar, Postman skriptlari o'zgarishsiz
-- [ ] **Console paneli** (status bardagi "Console" — dizayn maketida bor, hozir faol emas; `console.log` va so'rov jurnali, v2.2.1 dan keyin ochiq)
+- [x] Pre-request / Tests skriptlari (meros tartibida), `pm.*` API, kutubxonalar — v2.2.4 (ADR 0007: quickjs-ng)
+- [x] Avtoto'ldirish, snippet'lar, Postman skriptlari o'zgarishsiz (real namunalar bilan testlangan) — v2.3.0
+- [x] **Console paneli** (status bardan ochiladi: so'rov/javob loglari, `console.log`, skript xatolari) — v2.3.0
 
 ## Bosqich 4 — Collection Runner v2
 - [ ] Runner sozlamalari, batch integratsiyasi, real-time SSE, SQLite, eksport (JSON/HTML/JUnit), solishtirish
@@ -79,7 +79,8 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 
 ## Dizayn va yorliqlar (v2.2.1–2.2.2)
 - [x] Yangi dizayn tizimi (`docs/design/*.dc.html` maketlari, tokenlar, lokal shriftlar, ⌘K, bosh sahifa, Runner maketi)
-- [x] Brauzerga to'qnashmaydigan yorliqlar: Import — **⌘⇧O**, Runner — **⌘⇧R** (maketdagi ⌘O/⌘R brauzerning "fayl ochish"/"qayta yuklash" yorliqlari bilan to'qnashadi)
+- [x] Import va Runner — ⌘K palitrasida (maketdagi ⌘O/⌘R, shuningdek ⌘⇧O/⌘⇧R Chrome'da "fayl ochish", "hard reload" va "bookmark manager" bilan to'qnashgani uchun yorliq berilmadi; v2.2.3)
+- [x] Favikon (SVG + ICO 16/32/48 + apple-touch-icon + 192/512 + manifest), tab sarlavhasida holat (v2.2.3)
 
 ## Bosqich 8 — Sayqal va sifat
 - [ ] Ishlash tezligi, UX, hujjatlar

@@ -226,3 +226,22 @@ def test_screen_cmdk_and_var_hover(shot_page):
     p.keyboard.type("pay")
     expect(T(p, "cmdk-row").first).to_be_visible()
     shoot("cmdk")
+
+
+@pytest.mark.skipif(PHASE == "before", reason="skriptlar eski UI'da yo'q")
+def test_screen_scripts_tests_tab_and_console(shot_page):
+    p, theme = shot_page
+    open_req(p, "v2/mobile/contracts/main")
+    shoot = shooter(p, theme)
+    p.click("[data-section=scripts]")
+    T(p, "script-pre").fill("// Token bo'lmasa — pre-request'da olamiz\nif (!pm.environment.get('token')) {\n    pm.environment.set('token', 'abc-123');\n}\npm.request.headers.add({ key: 'X-Request-Id', value: pm.variables.replaceIn('{{$guid}}') });")
+    p.click("[data-testid=script-tab-test]")
+    T(p, "script-test").fill("pm.test('Status kodi 200', function () {\n    pm.response.to.have.status(200);\n});\npm.test('Javob vaqti < 500 ms', function () {\n    pm.expect(pm.response.responseTime).to.be.below(500);\n});\npm.test('Sahifa 2 ga teng', function () {\n    pm.expect(pm.response.json().args.page[0]).to.equal('2');\n});\nconsole.log('Tekshiruv tugadi', pm.info.requestName);")
+    shoot("scripts-editor")
+    send_ok(p)
+    T(p, "rp-tests-tab").click()
+    expect(T(p, "test-row").first).to_be_visible()
+    shoot("tests-tab")
+    T(p, "console-btn").click()
+    expect(T(p, "console-entry").first).to_be_visible()
+    shoot("console-panel")

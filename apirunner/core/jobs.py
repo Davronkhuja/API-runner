@@ -6,11 +6,12 @@ from .runner import run_batch
 
 
 class JobManager:
-    def __init__(self, allowed_file_roots=(), cookies=None):
+    def __init__(self, allowed_file_roots=(), cookies=None, workspace=None):
         self._jobs = {}
         self._lock = threading.Lock()
         self.allowed_file_roots = tuple(allowed_file_roots)
         self.cookies = cookies
+        self.workspace = workspace
 
     def start(self, config):
         job_id = str(uuid.uuid4())
@@ -23,7 +24,7 @@ class JobManager:
 
         def work():
             try:
-                run_batch(config, emit, job["stop_event"], self.allowed_file_roots, cookies=self.cookies)
+                run_batch(config, emit, job["stop_event"], self.allowed_file_roots, cookies=self.cookies, workspace=self.workspace)
             except Exception as exc:  # noqa: BLE001 — stream osilib qolmasin
                 emit("done", {"total": 0, "completed": 0, "successful": 0, "failed": 0,
                               "min_time": 0, "max_time": 0, "avg_time": 0,

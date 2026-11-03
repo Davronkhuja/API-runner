@@ -2,6 +2,7 @@ import type { PmRequest, RequestItem } from '../types/model'
 
 export interface KV { key: string; value: string; enabled: boolean; description?: string; kind?: 'text' | 'file' }
 import { cleanSettings, type ReqSettings } from './settings'
+import { emptyScripts, eventsFromText, textFromEvents, type ScriptSet } from './scripts'
 import { authFromPm, authHeader, authToPm, emptyAuth, type AuthDraft, type AuthType } from './auth'
 export { authHeader, type AuthType }
 export interface RequestDraft {
@@ -13,6 +14,7 @@ export interface RequestDraft {
   auth: AuthDraft
   pathVars: { key: string; value: string }[]
   settings: ReqSettings
+  scripts: ScriptSet
   body: { mode: 'none' | 'raw' | 'json' | 'form' | 'multipart' | 'binary' | 'graphql'; raw: string; contentType: string; fields: KV[]; file: { path: string; name: string }; gql: { query: string; variables: string } }
 }
 
@@ -43,7 +45,7 @@ export function paramsFromUrl(url: string, existing: KV[]): KV[] {
 export function newDraft(name = 'Yangi so\'rov'): RequestDraft {
   return {
     name, method: 'GET', url: '', params: [emptyKV()], headers: [emptyKV()],
-    auth: emptyAuth('inherit'), pathVars: [], settings: {},
+    auth: emptyAuth('inherit'), pathVars: [], settings: {}, scripts: emptyScripts(),
     body: { mode: 'none', raw: '', contentType: '', fields: [emptyKV()], file: { path: '', name: '' }, gql: { query: '', variables: '' } },
   }
 }
@@ -54,6 +56,7 @@ const withTrailing = (rows: KV[]) => (rows.length && !rows[rows.length - 1].key 
 export function draftFromItem(item: RequestItem): RequestDraft {
   const d = newDraft(item.name)
   d.settings = cleanSettings(item['x-apirunner']?.settings)
+  d.scripts = textFromEvents(item)
   const lg = item['x-apirunner']?.legacy
   if (lg) {
     d.method = lg.method ?? 'GET'
@@ -112,6 +115,15 @@ export function requestFromDraft(d: RequestDraft): PmRequest {
   else if (m === 'multipart') req.body = { mode: 'formdata', formdata: rows(d.body.fields).map(f => ({ key: f.key, value: f.value, type: f.kind === 'file' ? 'file' : 'text', ...(f.enabled ? {} : { disabled: true }) })) }
   return req
 }
+
+/** Eski sessiyadan tiklangan qoralama: keyin qo'shilgan maydonlar (scripts, settings, pathVars …) bo'lmasa to'ldiriladi. */
+export function normalizeDraft(d: any): RequestDraft {
+  const base = newDraft(d?.name)
+  return { ...base, ...d, body: { ...base.body, ...(d?.body ?? {}) }, scripts: { ...base.scripts, ...(d?.scripts ?? {}) }, settings: d?.settings ?? {}, pathVars: d?.pathVars ?? [], auth: { ...base.auth, ...(d?.auth ?? {}) } }
+}
+
+/** Saqlashda `event[]` (pre-request / tests). Boshqa event'lar saqlanadi. */
+export const eventsFromDraft = (d: RequestDraft, existing?: any[]) => eventsFromText(existing, d.scripts)
 
 /** Saqlashda `x-apirunner` kengaytmasi (faqat bo'sh bo'lmagan sozlamalar). */
 export const extFromDraft = (d: RequestDraft) => { const s = cleanSettings(d.settings); return Object.keys(s).length ? { settings: s } : {} }
