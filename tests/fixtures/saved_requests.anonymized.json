@@ -1,0 +1,702 @@
+{
+  "folders": [
+    {
+      "id": "bb59a11d-3dea-5933-9f88-5a7feb0d75be",
+      "name": "name-1",
+      "expanded": true,
+      "created_at": "2026-08-17T15:27:11.967177",
+      "updated_at": "2026-08-17T15:27:26.666734"
+    },
+    {
+      "id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "name": "name-2",
+      "expanded": true,
+      "created_at": "2026-08-18T16:56:12.809007"
+    },
+    {
+      "id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "name": "name-3",
+      "expanded": true,
+      "created_at": "2026-08-24T16:49:19.664684"
+    },
+    {
+      "id": "8d02923b-ce92-5bad-afa7-aeead1d761b4",
+      "name": "name-4",
+      "expanded": true,
+      "created_at": "2026-09-29T12:15:48.408380"
+    },
+    {
+      "id": "8ad1b9bf-408b-5180-a51b-350df477ac77",
+      "name": "name-5",
+      "expanded": true,
+      "created_at": "2026-10-30T14:57:23.935731",
+      "updated_at": "2026-10-30T14:57:31.908512"
+    }
+  ],
+  "requests": [
+    {
+      "name": "name-6",
+      "method": "GET",
+      "url": "https://host-1.example.test/path-1",
+      "authorization": "",
+      "params": [],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "dc4b8cd3-4873-5356-984e-78f993f444d3",
+      "created_at": "2026-08-17T15:07:33.436346"
+    },
+    {
+      "name": "name-7",
+      "folder_id": "bb59a11d-3dea-5933-9f88-5a7feb0d75be",
+      "method": "POST",
+      "url": "https://host-2.example.test/path-2",
+      "authorization": "Bearer REDACTED",
+      "params": [],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "82b27c5b-f66f-5890-9ebb-9b71ac8f2a63",
+      "updated_at": "2026-08-17T15:40:50.681387",
+      "created_at": "2026-08-17T15:26:56.222473"
+    },
+    {
+      "name": "name-8",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "POST",
+      "url": "https://host-3.example.test/path-3",
+      "authorization": "Bearer REDACTED",
+      "params": [],
+      "headers": [],
+      "body": "{\"key1\": \"value\"}",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "37e14b3a-0bd6-5400-90bf-96b4352822cd",
+      "updated_at": "2026-08-18T22:02:59.813272",
+      "created_at": "2026-08-18T16:56:20.407551"
+    },
+    {
+      "name": "name-9",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "POST",
+      "url": "https://host-3.example.test/path-4",
+      "authorization": "Bearer REDACTED",
+      "params": [],
+      "headers": [],
+      "body": "{\"key2\": \"value\"}",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "d8074038-513d-5828-99e6-49145df5123e",
+      "updated_at": "2026-08-19T09:52:09.952813",
+      "created_at": "2026-08-18T22:29:12.618876"
+    },
+    {
+      "name": "name-10",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "POST",
+      "url": "https://host-3.example.test/path-5",
+      "authorization": "Bearer REDACTED",
+      "params": [],
+      "headers": [],
+      "body": "{\"key3\": \"value\"}",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "16de8d39-8c9d-5728-a05c-f7a900066d59",
+      "updated_at": "2026-08-19T10:10:05.998217",
+      "created_at": "2026-08-19T09:55:11.010232"
+    },
+    {
+      "name": "name-11",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "DELETE",
+      "url": "https://host-3.example.test/path-6",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-12",
+          "value": "value-1"
+        }
+      ],
+      "headers": [],
+      "body": "{\"key3\": \"value\"}",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "303d7709-1490-5f44-8042-9ef826885d44",
+      "updated_at": "2026-08-19T17:12:57.341693",
+      "created_at": "2026-08-19T17:06:35.960032"
+    },
+    {
+      "name": "name-13",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "GET",
+      "url": "https://host-4.example.test/path-7",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-14",
+          "value": "value-2"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "dda2d76a-1222-54ad-abc0-9dff5293b217",
+      "updated_at": "2026-08-26T11:06:28.517410",
+      "created_at": "2026-08-24T16:52:02.250322"
+    },
+    {
+      "name": "name-15",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "POST",
+      "url": "https://host-3.example.test/path-8",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-16",
+          "value": "value-3"
+        },
+        {
+          "name": "name-17",
+          "value": "value-4"
+        }
+      ],
+      "headers": [],
+      "body": "{\"key3\": \"value\"}",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "54837e59-9f44-59a0-b9db-2e79062748ec",
+      "updated_at": "2026-08-24T17:56:10.406515",
+      "created_at": "2026-08-24T17:43:42.078014"
+    },
+    {
+      "name": "name-18",
+      "folder_id": null,
+      "method": "GET",
+      "url": "https://host-5.example.test/path-9",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-19",
+          "value": "value-5"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "b20bdeaa-7d64-5a89-8620-d6403311d57a",
+      "updated_at": "2026-09-14T13:13:26.464589",
+      "created_at": "2026-09-14T13:00:38.059111"
+    },
+    {
+      "name": "name-20",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "GET",
+      "url": "https://host-4.example.test/path-10",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-21",
+          "value": "value-6"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "162b533b-d1a0-55cb-924a-8ab0445942c9",
+      "updated_at": "2026-09-16T16:56:08.212357",
+      "created_at": "2026-09-16T16:52:00.740725"
+    },
+    {
+      "name": "name-22",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "POST",
+      "url": "https://host-3.example.test/path-11",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-12",
+          "value": "value-7"
+        }
+      ],
+      "headers": [],
+      "body": "{\"key3\": \"value\"}",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "4514b5b0-14bd-5db7-9014-d93cc0e2e844",
+      "updated_at": "2026-09-17T10:18:18.879181",
+      "created_at": "2026-09-17T10:15:46.038291"
+    },
+    {
+      "name": "name-23",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "GET",
+      "url": "https://host-4.example.test/path-12",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-19",
+          "value": "value-8"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "ad11fe54-c46a-5212-84ba-64d0188d69f5",
+      "updated_at": "2026-09-21T10:23:46.967847",
+      "created_at": "2026-09-21T10:22:37.219336"
+    },
+    {
+      "name": "name-24",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "GET",
+      "url": "https://host-4.example.test/path-13",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-19",
+          "value": "value-8"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "626b03c9-47a7-5006-9292-b4678eb7b65e",
+      "updated_at": "2026-10-16T18:04:51.575940",
+      "created_at": "2026-09-21T17:03:04.206839"
+    },
+    {
+      "name": "name-25",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "PUT",
+      "url": "https://host-4.example.test/path-14",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-12",
+          "value": "value-9"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "0d546840-6937-5111-a49f-d769ac0565af",
+      "updated_at": "2026-09-22T14:13:59.543666",
+      "created_at": "2026-09-22T14:12:24.368607"
+    },
+    {
+      "name": "name-26",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "GET",
+      "url": "https://host-4.example.test/path-15",
+      "authorization": "",
+      "params": [
+        {
+          "name": "name-27",
+          "value": "value-10"
+        }
+      ],
+      "headers": [
+        {
+          "name": "name-28",
+          "value": "value-11"
+        }
+      ],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "4c28e229-9c44-5528-b238-72502abedb92",
+      "updated_at": "2026-09-23T10:32:09.461151",
+      "created_at": "2026-09-23T10:30:32.247648"
+    },
+    {
+      "name": "name-29",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "POST",
+      "url": "https://host-4.example.test/path-16",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-12",
+          "value": "value-12"
+        }
+      ],
+      "headers": [
+        {
+          "name": "name-28",
+          "value": "value-11"
+        }
+      ],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "449b33b9-ea55-58a3-9660-b12e490e184f",
+      "updated_at": "2026-09-25T15:37:09.435842",
+      "created_at": "2026-09-25T15:36:15.422791"
+    },
+    {
+      "name": "name-30",
+      "folder_id": "8d02923b-ce92-5bad-afa7-aeead1d761b4",
+      "method": "GET",
+      "url": "https://host-6.example.test/path-17",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-14",
+          "value": "value-13",
+          "type": "text"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "f99f0ee9-f7b4-58a6-ba7c-ef8f849238b7",
+      "updated_at": "2026-10-05T10:16:03.991202",
+      "created_at": "2026-09-29T12:15:56.604901"
+    },
+    {
+      "name": "name-31",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "POST",
+      "url": "https://host-3.example.test/path-18",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-32",
+          "value": "value-14",
+          "type": "text"
+        },
+        {
+          "name": "name-33",
+          "value": "value-15",
+          "type": "text"
+        },
+        {
+          "name": "name-34",
+          "value": "value-16",
+          "type": "file"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "85d45f31-6e13-5cbc-86af-2cd624103636",
+      "updated_at": "2026-10-02T18:27:04.957559",
+      "created_at": "2026-10-02T15:49:10.145826"
+    },
+    {
+      "name": "name-35",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "GET",
+      "url": "https://host-3.example.test/path-19",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-36",
+          "value": "value-17",
+          "type": "text"
+        },
+        {
+          "name": "name-27",
+          "value": "value-18",
+          "type": "text"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "4cfcae37-278c-5443-b093-e1b17dd9eed3",
+      "updated_at": "2026-10-23T10:22:15.135394",
+      "created_at": "2026-10-07T11:43:20.841687"
+    },
+    {
+      "name": "name-37",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "GET",
+      "url": "https://host-4.example.test/path-20",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-19",
+          "value": "value-19",
+          "type": "text"
+        },
+        {
+          "name": "name-38",
+          "value": "value-20",
+          "type": "text"
+        },
+        {
+          "name": "name-39",
+          "value": "value-21",
+          "type": "text"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "529ce706-4f6f-5574-8c31-daec005e9cd2",
+      "updated_at": "2026-10-19T13:24:27.412192",
+      "created_at": "2026-10-07T17:20:31.015497"
+    },
+    {
+      "name": "name-40",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "GET",
+      "url": "https://host-4.example.test/path-21",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-41",
+          "value": "value-22",
+          "type": "text"
+        },
+        {
+          "name": "name-19",
+          "value": "value-23",
+          "type": "text"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "9ccc3c7f-debc-545e-9c09-0342a775985f",
+      "updated_at": "2026-10-16T18:06:51.222786",
+      "created_at": "2026-10-16T18:05:10.524982"
+    },
+    {
+      "name": "name-42",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "GET",
+      "url": "https://host-4.example.test/path-22",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-19",
+          "value": "value-24",
+          "type": "text"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "9fa901fd-a721-5c95-b803-5072f4d3209a",
+      "updated_at": "2026-10-22T10:34:42.844412",
+      "created_at": "2026-10-19T13:54:39.314767"
+    },
+    {
+      "name": "name-43",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "GET",
+      "url": "https://host-4.example.test/path-23",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-44",
+          "value": "value-25",
+          "type": "text"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "259a6d1c-264f-55dd-98c5-75c67c8420dd",
+      "updated_at": "2026-10-22T10:38:23.212301",
+      "created_at": "2026-10-22T10:34:40.019958"
+    },
+    {
+      "name": "name-45",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "method": "GET",
+      "url": "https://host-4.example.test/path-24",
+      "authorization": "Bearer REDACTED",
+      "params": [],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "c28c6532-e2f3-5dbe-b3ec-d4033fb60501",
+      "updated_at": "2026-10-27T11:07:21.363961",
+      "created_at": "2026-10-23T10:21:42.112343"
+    },
+    {
+      "authorization": "Bearer REDACTED",
+      "body": "",
+      "body_type": "json",
+      "content_type": "application/json",
+      "created_at": "2026-10-27T11:04:05.298499",
+      "folder_id": "29045757-77e0-580c-8335-f3247cf88bcc",
+      "headers": [],
+      "method": "GET",
+      "name": "name-46",
+      "params": [
+        {
+          "name": "name-44",
+          "type": "text",
+          "value": "value-25"
+        }
+      ],
+      "updated_at": "2026-10-22T10:38:23.212301",
+      "url": "https://host-4.example.test/path-23",
+      "id": "ecf8bdf0-0e4a-52de-acf1-adfdce6219d2"
+    },
+    {
+      "name": "name-47",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "GET",
+      "url": "https://host-3.example.test/path-25",
+      "authorization": "Bearer REDACTED",
+      "params": [],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "631d31d1-7ca4-55e3-ac85-bdf9a9ef3b6c",
+      "updated_at": "2026-10-27T12:20:44.153625",
+      "created_at": "2026-10-27T12:20:15.530009"
+    },
+    {
+      "name": "name-48",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "GET",
+      "url": "https://host-3.example.test/path-26",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-49",
+          "value": "value-26",
+          "type": "text"
+        },
+        {
+          "name": "name-50",
+          "value": "value-27",
+          "type": "text"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "869eb113-00b9-5766-8b57-abd7d61df32b",
+      "updated_at": "2026-10-27T16:30:34.653900",
+      "created_at": "2026-10-27T12:32:24.846980"
+    },
+    {
+      "authorization": "Bearer REDACTED",
+      "body": "",
+      "body_type": "json",
+      "content_type": "application/json",
+      "created_at": "2026-10-27T13:20:03.343705",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "headers": [],
+      "method": "GET",
+      "name": "name-51",
+      "params": [],
+      "updated_at": "2026-10-28T12:36:16.196176",
+      "url": "https://host-3.example.test/path-27",
+      "id": "e1851528-0f28-588c-a8ea-cb902672963f"
+    },
+    {
+      "name": "name-52",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "GET",
+      "url": "https://host-3.example.test/path-28",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-53",
+          "value": "value-28",
+          "type": "text"
+        },
+        {
+          "name": "name-54",
+          "value": "value-28",
+          "type": "text"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "1b6c9336-9224-5021-a36f-8b86a55a1c6e",
+      "updated_at": "2026-10-28T12:35:38.370560",
+      "created_at": "2026-10-27T17:52:10.146673"
+    },
+    {
+      "name": "name-55",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "GET",
+      "url": "https://host-3.example.test/path-29",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-53",
+          "value": "value-28",
+          "type": "text"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "4f6f8e1b-be59-5c39-b2fc-ce45598ef6ce",
+      "updated_at": "2026-10-27T18:44:58.071425",
+      "created_at": "2026-10-27T18:44:50.959181"
+    },
+    {
+      "name": "name-56",
+      "folder_id": "aba7b6b2-ade2-588b-a2bd-f60bedffc76d",
+      "method": "GET",
+      "url": "https://host-3.example.test/path-30",
+      "authorization": "Bearer REDACTED",
+      "params": [
+        {
+          "name": "name-36",
+          "value": "value-29",
+          "type": "text"
+        },
+        {
+          "name": "name-27",
+          "value": "value-10",
+          "type": "text"
+        }
+      ],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "d05fff17-0f6d-5e24-8be2-3a32550963d4",
+      "updated_at": "2026-10-27T18:53:18.004038",
+      "created_at": "2026-10-27T18:52:32.174083"
+    },
+    {
+      "name": "name-57",
+      "folder_id": "8ad1b9bf-408b-5180-a51b-350df477ac77",
+      "method": "GET",
+      "url": "https://host-7.example.test/path-31",
+      "authorization": "Bearer REDACTED",
+      "params": [],
+      "headers": [],
+      "body": "",
+      "content_type": "application/json",
+      "body_type": "json",
+      "id": "bfd21f67-4d77-52e3-bf9e-3b98579d8144",
+      "updated_at": "2026-10-30T14:58:55.753069",
+      "created_at": "2026-10-30T14:58:06.735675"
+    }
+  ]
+}

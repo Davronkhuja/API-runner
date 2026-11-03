@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apirunner"
+dynamic = ["version"]
+description = "Lokal Postman-ga o'xshash API klient"
+requires-python = ">=3.10"
+dependencies = ["flask>=3.0.0", "httpx[http2]>=0.27.0"]
+
+[tool.setuptools.dynamic]
+version = { attr = "apirunner.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["apirunner*"]
+
+[tool.setuptools.package-data]
+apirunner = ["static/**/*"]
