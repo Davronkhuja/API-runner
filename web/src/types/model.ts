@@ -42,6 +42,7 @@ export interface Collection {
   event?: unknown[]
 }
 export interface EnvValue { key: string; value: string; enabled: boolean; type: 'default' | 'secret' }
-export interface Environment { id: string; name: string; values: EnvValue[] }
+export type EnvKind = 'dev' | 'test' | 'prod'
+export interface Environment { id: string; name: string; values: EnvValue[]; kind?: EnvKind | ''; confirm_writes?: boolean }
 export interface CollectionMeta { id: string; name: string; requests: number }
 export type DropPosition = 'before' | 'after' | 'inside'

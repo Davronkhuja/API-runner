@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.6] — 2026-11-04 — Prod xavfsizligi (B guruhi)
+### Added
+- **Muhit turi Dev / Test / Prod** (rang va belgi): muhit muharririda "Turi" tugmalari, `kind` va `confirm_writes` muhit bilan birga saqlanadi (server noto'g'ri qiymatni 400 bilan rad etadi). Prod faol bo'lsa headerda aniq **PROD** belgisi.
+- **Yozuvchi so'rovlardan oldin tasdiq**: faol muhitda yoqilgan bo'lsa POST/PUT/PATCH/DELETE (so'rov tabi va Batch) yuborishdan oldin dialog — Prod uchun sukut bo'yicha yoqiq, har qanday muhitda sozlanadi; bekor qilinsa hech narsa yuborilmaydi.
+- **Runner sukut bo'yicha faqat GET** belgilab ochiladi (qo'lda belgilangan saqlanadi).
+- **RunGuard**: Prod faol bo'lsa Runner ishga tushishdan oldin dialog — metodlar bo'yicha sonlar, "Faqat GET" (tavsiya, sukut) va "Hammasi"; ikkinchisi `prod` yozilmaguncha bloklangan.
+- Yangi dizayn tokenlari `--env-dev/test/prod/prod-bg` (WCAG AA tekshiruvi bilan).
+- 11 yangi e2e (`test_prod_safety.py`).
+
 ## [2.3.5] — 2026-11-04 — Qo'lda tekshiruv xatolari (A guruhi)
 ### Fixed
 - **Eski server ogohlantirishi**: UI build'iga versiya yoziladi (`__UI_VERSION__`, manba `apirunner/__init__.py`), status bar `/api/version` ni har 20 soniyada so'raydi; farq bo'lsa "⚠ Server eski — `pm2 restart api-runner`". README'da "yangilashdan keyin restart" qadami.

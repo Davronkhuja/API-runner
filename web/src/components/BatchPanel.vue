@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { confirmWrite } from '../lib/envkind'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
@@ -44,6 +45,7 @@ function onEsc(e: KeyboardEvent) { if (e.key === 'Escape') { if (full.value) ful
 onMounted(() => window.addEventListener('keydown', onEsc))
 onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
 async function run() {
+  if (!(await confirmWrite(props.tab.draft!.method))) return
   await tabs.flush()
   await startBatch(props.tab, {}, async done => {
     try { await hist.add('run', { ts: Date.now(), label: props.tab.draft!.url, count: done.results.length, results: done.results.map(r => ({ index: r.index, status: r.status, time: r.time, size: r.size, url: r.url })) }) } catch { /* tarix yozilmasa ham natija ko'rinadi */ }

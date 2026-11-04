@@ -12,6 +12,7 @@ import TabBar from './components/TabBar.vue'
 import RequestEditor from './components/RequestEditor.vue'
 import EnvTab from './components/EnvTab.vue'
 import RunnerTab from './components/RunnerTab.vue'
+import RunGuard from './components/RunGuard.vue'
 import CollectionTab from './components/CollectionTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
 import CookiesTab from './components/CookiesTab.vue'
@@ -193,6 +194,7 @@ function openRunnerWithData(name: string, text: string) {
     <div v-if="confirmDialog" class="overlay"><div class="dialog" role="dialog" aria-modal="true" data-testid="confirm-dialog">
       <p>{{ confirmDialog.msg }}</p>
       <div class="btns"><button @click="confirmDialog.resolve(false)">Bekor qilish</button><button class="primary" data-testid="confirm-ok" @click="confirmDialog.resolve(true)">{{ confirmDialog.ok }}</button></div></div></div>
+    <RunGuard />
     <div v-if="saveAs" class="overlay"><div class="dialog" role="dialog" aria-modal="true" data-testid="saveas-dialog">
       <b>So'rovni saqlash</b>
       <p><input v-model="saveAs.name" style="width:100%" data-testid="saveas-name" @keydown.enter="confirmSaveAs"></p>

@@ -8,6 +8,7 @@ import { applyScriptResult, scriptsFor } from './scripts'
 import { logRequest, logResponse } from './console'
 import { prepareAuth, specFor } from './scope'
 import { showToast } from './ui'
+import { confirmWrite } from './envkind'
 import type { RequestItem } from '../types/model'
 
 /** Saqlash dialogi kerak bo'lgan (hali saqlanmagan) tab uchun App.vue shuni to'ldiradi. */
@@ -45,6 +46,7 @@ export function openRequest(cid: string, id: string, permanent = false) {
 
 export async function sendTab(tab: Tab) {
   if (!tab.draft || !tab.draft.url.trim()) { showToast('URL kiriting!', 'warn'); return }
+  if (!(await confirmWrite(tab.draft.method))) return
   const hist = useHistory()
   await useTabs().flush()
   tab.response = { loading: true }

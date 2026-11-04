@@ -377,6 +377,8 @@ def runner(ui):
     ui.locator("[data-name='Ijara']").click(button="right")
     ui.click("[data-act=runner]")
     expect(T(ui, "runner-tab")).to_be_visible()
+    for cb in ui.locator("[data-testid=runner-item] input[type=checkbox]").all():       # sukut: faqat GET belgilangan — bu testlarga hammasi kerak
+        cb.check()
 
 
 def test_runner_layout_iterations_stats_progress_and_filters(ui, tmp_path):

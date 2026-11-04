@@ -3,7 +3,8 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import Icon from './Icon.vue'
 import { applyScriptResult, scriptsFor } from '../lib/scripts'
 import { logRequest, logResponse, push as pushLog } from '../lib/console'
-import { activity, fmtMs } from '../lib/ui'
+import { activity, askRunGuard, fmtMs } from '../lib/ui'
+import { isProd } from '../lib/envkind'
 import { useTree } from '../stores/tree'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
@@ -34,7 +35,8 @@ const items = computed(() => {
   const known = order.filter(id => byId.has(id)).map(id => byId.get(id)!)
   return [...known, ...base.value.filter(x => !order.includes(x.id))]
 })
-const isOn = (id: string) => st.checked[id] !== false
+// Sukut: faqat GET belgilangan (qo'lda belgilangani saqlanadi)
+const isOn = (id: string) => st.checked[id] ?? items.value.find(x => x.id === id)?.method === 'GET'
 
 const dragId = ref<string | null>(null)
 const overIdx = ref<number | null>(null)
@@ -71,7 +73,8 @@ let stopFlag = false
 const enabled = computed(() => items.value.filter(x => isOn(x.id)))
 const rowsCount = computed(() => st.data?.rows?.length ?? 0)
 const iterations = computed(() => Math.max(1, Number(st.iterations) || rowsCount.value || 1))
-const planned = computed(() => iterations.value * enabled.value.length)
+const getOnlyRun = ref(false)          // RunGuard: Prod'da faqat GET
+const planned = computed(() => iterations.value * (getOnlyRun.value ? enabled.value.filter(x => x.method === 'GET').length : enabled.value.length))
 const log = computed<any[]>(() => st.log)
 const done = computed(() => log.value.length)
 const okCount = computed(() => log.value.filter(r => typeof r.status === 'number' && r.status < 400).length)
@@ -84,9 +87,21 @@ const stat = (s: any) => (typeof s === 'number' && s < 400 ? 'ok' : s === 'SKIPP
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 const strRow = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row ?? {}).map(([k, v]) => [k, v == null ? '' : String(v)]))
 
-async function run() {
-  running.value = true; stopFlag = false; st.log = []
-  const list = enabled.value
+/** Prod faol bo'lsa avval RunGuard; keyin run(). */
+async function start() {
+  let onlyGet = false
+  if (isProd(ws.activeEnv)) {
+    const counts: Record<string, number> = {}
+    for (const x of enabled.value) counts[x.method] = (counts[x.method] ?? 0) + iterations.value
+    const a = await askRunGuard(ws.activeEnv!.name, counts)
+    if (!a) return
+    onlyGet = a === 'get'
+  }
+  await run(onlyGet)
+}
+async function run(onlyGet = false) {
+  running.value = true; stopFlag = false; st.log = []; getOnlyRun.value = onlyGet
+  const list = onlyGet ? enabled.value.filter(x => x.method === 'GET') : enabled.value
   const names = new Map<string, number>()
   list.forEach((x, i) => { if (!names.has(x.name)) names.set(x.name, i) })        // setNextRequest: shu nomli birinchi so'rov
   const total = iterations.value
@@ -179,7 +194,7 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
 
       <div style="margin-top:auto">
         <button v-if="running" class="stop" data-testid="runner-stop" @click="stop">To'xtatish</button>
-        <button v-else class="go" data-testid="runner-run" :disabled="!planned" @click="run"><Icon name="play" :size="15" />Ishga tushirish · {{ planned }} so'rov</button>
+        <button v-else class="go" data-testid="runner-run" :disabled="!planned" @click="start"><Icon name="play" :size="15" />Ishga tushirish · {{ planned }} so'rov</button>
       </div>
     </aside>
 
