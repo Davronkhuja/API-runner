@@ -106,6 +106,7 @@ def test_file_param_upload_and_post(ui, echo_server, tmp_path):
     f.write_text("fayl-ichi")
     new_req(ui, echo_server + "/echo", "POST")
     ui.click("[data-section=params]")
+    ui.locator("[data-testid=params-table] input[type=text]").nth(0).fill("doc")                 # ghost'da 📎 yo'q — qator oddiy bo'lgach paydo bo'ladi
     ui.locator("[data-testid=params-table] input[type=file]").first.set_input_files(str(f))
     expect(ui.locator("[data-testid=params-table]")).to_contain_text("up.txt")
     T(ui, "send").click()

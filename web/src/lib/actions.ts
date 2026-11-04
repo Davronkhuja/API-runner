@@ -57,6 +57,7 @@ export async function sendTab(tab: Tab) {
     logRequest(spec.method, tab.draft.url, tab.id)
     const r = await post('/run_one', spec)
     tab.response = r
+    useTabs().persistSoon()          // holat/o'lcham/sarlavhalar sahifa yangilanganda ham qoladi (matn emas)
     logResponse(r, tab.id)
     await applyScriptResult(r.scripts, { tabId: tab.id, ref: tab.ref })
     hist.add('request', { ...spec, env_vars: undefined, scripts: undefined, ref: undefined, scripts_info: undefined, timestamp: Date.now(), status: r.status }).catch(() => {})

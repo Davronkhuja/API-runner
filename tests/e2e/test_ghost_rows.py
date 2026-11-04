@@ -51,7 +51,7 @@ def test_new_request_tables_start_with_exactly_one_ghost_without_row_controls(ui
     for mode, table in (("form", "form-table"), ("multipart", "formdata-table")):
         ui.select_option("[data-testid=body-mode]", mode)
         expect(ghosts(ui, table)).to_have_count(1)
-    expect(ghosts(ui, "formdata-table").locator("input[type=file]")).to_have_count(1)    # fayl biriktirish ghost'dan ham mumkin
+    expect(ghosts(ui, "formdata-table").locator("input[type=file]")).to_have_count(0)    # ghost'da 📎 yo'q
 
 
 def test_column_headers_and_bulk_edit_at_the_right_end_of_header(ui):
@@ -185,12 +185,13 @@ def test_enter_and_tab_move_between_cells_and_rows(ui):
     expect(ghosts(ui, "headers-table")).to_have_count(1)
 
 
-def test_attach_file_on_ghost_row_makes_a_file_row_and_a_new_ghost(ui, tmp_path):
+def test_attach_icon_appears_once_the_row_is_a_normal_row(ui, tmp_path):
     f = tmp_path / "up.txt"
     f.write_text("x")
     new_tab(ui)
     ui.click("[data-section=body]")
     ui.select_option("[data-testid=body-mode]", "multipart")
+    cell(ui, "formdata-table", 0, 0).fill("doc")
     ui.locator("[data-testid=formdata-table] input[type=file]").first.set_input_files(str(f))
     expect(T(ui, "formdata-table")).to_contain_text("up.txt")
     expect(rows(ui, "formdata-table")).to_have_count(2)

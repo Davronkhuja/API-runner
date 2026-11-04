@@ -79,11 +79,11 @@ const label = (v: string) => (v.includes('::') ? v.split('::')[1] : v)
     <textarea v-if="bulk" v-model="bulkText" :data-testid="(testid ?? 'kv') + '-bulk'" aria-label="Bulk Edit" placeholder="kalit:qiymat (har qatorda bittadan; // — o'chirilgan)" style="width:100%;height:160px;font-family:var(--font-mono)" @input="applyBulk" />
     <div v-else class="kv-wrap">
       <table class="kv kv-head" aria-hidden="false">
-        <colgroup><col style="width:22px"><col style="width:26px"><col><col><col style="width:30%"><col style="width:88px"></colgroup>
-        <thead><tr><th colspan="2" /><th scope="col">Kalit</th><th scope="col">Qiymat</th><th scope="col">Tavsif</th><th style="text-align:right;padding-right:6px"><button class="ghost sm" data-testid="kv-bulk" style="height:22px" @click="toggleBulk">Bulk Edit</button></th></tr></thead>
+        <colgroup><col style="width:22px"><col style="width:26px"><col><col><col style="width:30%"><col style="width:112px"></colgroup>
+        <thead><tr><th colspan="2" /><th scope="col">Kalit</th><th scope="col">Qiymat</th><th scope="col">Tavsif</th><th style="text-align:right;padding-right:6px"><button class="ghost sm" data-testid="kv-bulk" style="height:22px;width:auto;padding:0 8px;white-space:nowrap" @click="toggleBulk">Bulk Edit</button></th></tr></thead>
       </table>
       <table class="kv" :data-testid="testid">
-        <colgroup><col style="width:22px"><col style="width:26px"><col><col><col style="width:30%"><col style="width:88px"></colgroup>
+        <colgroup><col style="width:22px"><col style="width:26px"><col><col><col style="width:30%"><col style="width:112px"></colgroup>
         <tbody>
           <tr v-for="(r, i) in rows" :key="i" :class="{ dragover: over === i, ghost: isGhost(i) }" :data-ghost="isGhost(i) || undefined" :draggable="!isGhost(i)"
               @dragstart="dragFrom = i" @dragover.prevent="over = i" @dragleave="over = null" @drop.prevent="drop(i)" @dragend="dragFrom = over = null">
@@ -96,7 +96,7 @@ const label = (v: string) => (v.includes('::') ? v.split('::')[1] : v)
             </td>
             <td><input type="text" :data-cell="`${i}:2`" placeholder="Tavsif" aria-label="Tavsif" v-model="r.description" data-testid="kv-desc" draggable="false" @input="touch" @keydown="onKey($event, i, 2)"></td>
             <td style="text-align:right;padding-right:4px;white-space:nowrap">
-              <label v-if="files" title="Fayl biriktirish" aria-label="Fayl biriktirish" style="cursor:pointer;margin-right:4px">📎<input type="file" hidden tabindex="-1" @change="upload(i, $event)"></label>
+              <label v-if="files && !isGhost(i)" title="Fayl biriktirish" aria-label="Fayl biriktirish" style="cursor:pointer;margin-right:4px">📎<input type="file" hidden tabindex="-1" @change="upload(i, $event)"></label>
               <button v-if="!isGhost(i)" class="ghost" aria-label="Qatorni o'chirish" tabindex="-1" title="O'chirish (Alt+Backspace)" @click="remove(i)">×</button>
             </td>
           </tr>

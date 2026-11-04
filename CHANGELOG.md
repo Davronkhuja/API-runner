@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.5] — 2026-11-04 — Qo'lda tekshiruv xatolari (A guruhi)
+### Fixed
+- **Eski server ogohlantirishi**: UI build'iga versiya yoziladi (`__UI_VERSION__`, manba `apirunner/__init__.py`), status bar `/api/version` ni har 20 soniyada so'raydi; farq bo'lsa "⚠ Server eski — `pm2 restart api-runner`". README'da "yangilashdan keyin restart" qadami.
+- **Sahifa yangilangach javob paneli**: holat/o'lcham/sarlavhalar endi har javobdan keyin saqlanadi (avval faqat keyingi tahrirda yozilardi); matn saqlanmaydi, shuning uchun bo'sh `<pre>` o'rniga "Javob saqlanmagan" holati va "Qayta yuborish" tugmasi. Yuklanayotgan (`loading`) holat saqlanmaydi.
+- **Ghost qatorda 📎 yo'q**; "Bulk Edit" sarlavhada bir qatorda (nowrap, kengroq ustun).
+- **Disabled holat** (masalan o'zgarishsiz "Saqlash") yorug' va qorong'i temada bir xil: xira, `not-allowed`, hover'da o'zgarmaydi.
+- ⌘K'da Import va Runner buyruqlari bor ekan — testlar bilan mustahkamlandi.
+### Added
+- 7 yangi e2e (`test_stage4_fixes.py`).
+
 ## [2.3.4] — 2026-11-04 — Fix: URL'da belgilangan joy ko'rinmasdi
 ### Fixed
 - **URL maydonida belgilash (selection) ko'rinmasdi**: eski maydon shaffof `<input>` + ustiga rangli nusxa (overlay) edi va `::selection` matnni shaffof qilib qo'ygan. Endi URL — bir qatorli **CodeMirror 6** (`UrlEditor.vue`, body muharriri bilan bir xil asos): belgilash yorug'/qorong'i temada aniq ko'rinadi (yangi `--sel` token, WCAG AA matn kontrasti `test_design_tokens` da), kursor, undo/redo (⌘Z/⌘⇧Z), uzun URL gorizontal scroll, overlay va piksel-moslashtirish kerak emas.

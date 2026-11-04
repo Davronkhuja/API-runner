@@ -7,6 +7,7 @@ import { esc, highlightJson } from '../lib/highlight'
 import { jsonPath } from '../lib/jsonpath'
 import { fmtBytes, fmtMs, showToast } from '../lib/ui'
 import Icon from './Icon.vue'
+import { sendTab } from '../lib/actions'
 import { parseSetCookie } from '../lib/cookies'
 import { openScriptAt, type ScriptResult } from '../lib/scripts'
 
@@ -162,7 +163,11 @@ const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusx
         <span v-if="jpResult.error" class="err" data-testid="rp-jp-error">{{ jpResult.error }}</span>
         <span v-else-if="jpResult.value" class="muted" data-testid="rp-jp-count">{{ jpResult.value.length }} natija</span>
       </div>
-      <iframe v-if="mode === 'preview'" sandbox="" :srcdoc="String(r?.response ?? '')" data-testid="rp-preview" class="rp-frame" />
+      <div v-if="r?.truncated && r.response === undefined" class="resp-missing" data-testid="resp-not-saved" role="status">
+        <b>Javob saqlanmagan</b><span>Sahifa yangilangach javob matni xotirada qolmaydi (holat, o'lcham va sarlavhalar saqlanadi).</span>
+        <button class="sm primary" data-testid="resp-resend" @click="sendTab(tab)">Qayta yuborish</button>
+      </div>
+      <iframe v-else-if="mode === 'preview'" sandbox="" :srcdoc="String(r?.response ?? '')" data-testid="rp-preview" class="rp-frame" />
       <div v-else-if="virtual" ref="box" class="vlist" data-testid="resp-body" :data-virtual="true" :style="{ height: H + 'px' }" @scroll="top = ($event.target as HTMLElement).scrollTop">
         <div :style="{ height: lines.length * LH + 'px', position: 'relative' }"><div :style="{ transform: `translateY(${start * LH}px)` }">
           <div v-for="l in slice" :key="l.n" class="vline" :style="{ height: LH + 'px', lineHeight: LH + 'px' }" v-html="l.html" /></div></div>

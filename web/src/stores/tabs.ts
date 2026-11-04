@@ -50,7 +50,7 @@ export const useTabs = defineStore('tabs', () => {
   function snapshot() {
     return {
       v: 1, activeId: activeId.value,
-      tabs: tabs.value.map(t => ({ ...t, response: t.response ? { ...t.response, response: undefined, truncated: true } : null })),
+      tabs: tabs.value.map(t => ({ ...t, response: t.response && !t.response.loading ? { ...t.response, response: undefined, truncated: true } : null })),
     }
   }
   let pending = false
@@ -207,5 +207,5 @@ export const useTabs = defineStore('tabs', () => {
   function retitle(ref: string, title: string) { tabs.value.filter(t => t.ref === ref).forEach(t => (t.title = title)); persistNow() }
   function dropRef(ref: string) { tabs.value = tabs.value.filter(t => t.ref !== ref); if (!tabs.value.some(t => t.id === activeId.value)) activeId.value = tabs.value[0]?.id ?? null; persistNow() }
 
-  return { tabs, activeId, active, closed, restore, persistNow, flush, flushOnUnload, setPersistence, add, open, openNew, activate, next, touch, markSaved, close, closeMany, closeOthers, closeRight, closeAll, reopenClosed, duplicate, reorder, retitle, renameRef, renameRequest, dropRef }
+  return { tabs, activeId, active, closed, restore, persistNow, persistSoon, flush, flushOnUnload, setPersistence, add, open, openNew, activate, next, touch, markSaved, close, closeMany, closeOthers, closeRight, closeAll, reopenClosed, duplicate, reorder, retitle, renameRef, renameRequest, dropRef }
 })
