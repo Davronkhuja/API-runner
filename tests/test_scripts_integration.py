@@ -160,6 +160,7 @@ def test_limits_api_clamps_and_applies(client, echo):
     assert r["meta"]["script_limits"] == {"timeout_ms": 100, "memory_mb": 24, "max_requests": 2}
     d = run_one(client, echo, test=[S("while(true){}")])
     assert d["status"] == 200 and d["scripts"]["errors"][0]["name"] == "TimeoutError" and "100 ms" in d["scripts"]["errors"][0]["message"]
+    client.put("/api/workspace/meta", json={"script_limits": {"timeout_ms": 8000, "memory_mb": 24, "max_requests": 2}})   # xotira chegarasi vaqt chegarasidan oldin urilsin (yuklama ostida 100 ms yetmaydi)
     d = run_one(client, echo, test=[S("const a=[]; while(true) a.push(new Array(10000).fill(1))")])
     assert d["scripts"]["errors"][0]["name"] == "MemoryError" and "24 MB" in d["scripts"]["errors"][0]["message"]
     client.put("/api/workspace/meta", json={"script_limits": {"timeout_ms": 5000, "memory_mb": 64, "max_requests": 2}})

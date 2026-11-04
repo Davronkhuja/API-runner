@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>API Runner — yonma-yon variant</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#A5B4FC}a:hover{color:#C7D2FE}
+.th-dark{--bg:#0B0D12;--panel:#12151C;--rail:#0E1016;--border:#22262F;--border-strong:#2E3340;--text:#E5E7EC;--muted:#949CAC;--subtle:#181B23;--hover:#1C2029;--accent-text:#A5B4FC;--accent-weak:#1D2040;--code:#0E1117;--m-get:#4ADE80;--m-post:#FBBF24;--m-put:#60A5FA;--m-delete:#F87171;--j-key:#C4B5FD;--j-str:#86EFAC;--j-num:#FCD34D;--j-bool:#93C5FD;--j-punc:#949CAC;--ok-bg:#12291C;--ok:#4ADE80;--var-bg:#2D2212;--var:#FCD34D}
+.th-light{--bg:#F6F7F9;--panel:#FFFFFF;--rail:#EEF0F4;--border:#E2E5EA;--border-strong:#D3D7DE;--text:#151821;--muted:#596170;--subtle:#F1F3F6;--hover:#EBEEF3;--accent-text:#4338CA;--accent-weak:#EEF0FF;--code:#FBFBFD;--m-get:#157A3A;--m-post:#AD4F08;--m-put:#1D4ED8;--m-delete:#B91C1C;--j-key:#6D28D9;--j-str:#15803D;--j-num:#B45309;--j-bool:#1D4ED8;--j-punc:#596170;--ok-bg:#E8F6EE;--ok:#15803D;--var-bg:#FFF4E5;--var:#9A4A00}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.ib:hover{background:var(--hover);color:var(--text)}
+.row{display:flex;align-items:center;gap:8px;width:100%;height:26px;padding:0 8px;border:0;border-radius:5px;background:transparent;color:var(--text);font:400 12.5px Inter,sans-serif;text-align:left;cursor:pointer}
+.row:hover{background:var(--hover)}
+.row.on{background:var(--accent-weak)}
+.sub{height:32px;padding:0 2px;margin-right:16px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font:500 12.5px Inter,sans-serif;cursor:pointer}
+.sub:hover{color:var(--text)}
+.sub.on{color:var(--text);border-bottom-color:var(--accent)}
+.seg{height:24px;padding:0 9px;border:0;border-radius:5px;background:transparent;color:var(--muted);font:500 11.5px Inter,sans-serif;cursor:pointer}
+.seg.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.cell{width:100%;height:28px;padding:0 8px;border:0;background:transparent;color:var(--text);font:400 12px 'JetBrains Mono',monospace;outline:none;box-sizing:border-box}
+.cell::placeholder{color:var(--muted)}
+.code{font:400 12px/19px 'JetBrains Mono',monospace;white-space:pre}
+.chk{width:14px;height:14px;accent-color:var(--accent);margin:0}
+.kbd{font:500 10.5px Inter;color:var(--muted);border:1px solid var(--border-strong);border-radius:4px;padding:0 5px}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="--accent: {{accent}}; width: 100%; height: 900px; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; font-size: 12.5px; overflow: hidden">
+
+  <header style="height: 40px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-bottom: 1px solid var(--border); background: var(--rail)">
+    <div style="width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
+    <span style="font-weight: 700">API Runner</span>
+    <div style="flex: 1; display: flex; justify-content: center">
+      <button style="display: flex; align-items: center; gap: 8px; width: 380px; height: 26px; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--subtle); color: var(--muted); font: 400 12px Inter; cursor: pointer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span style="flex: 1; text-align: left">Qidirish yoki buyruq…</span><span class="kbd">⌘K</span>
+      </button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #F59E0B"></span>
+      <span style="font-weight: 600">Online Mahalla — prod</span>
+      <span style="font-size: 10.5px; font-weight: 700; color: #F59E0B; border: 1px solid #F59E0B; border-radius: 4px; padding: 0 4px">PROD</span>
+    </div>
+    <button class="ib" aria-label="Joylashuvni almashtirish" onClick="{{toggleLayout}}" title="Yonma-yon / ustma-ust">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="{{layoutIcon}}"/></svg>
+    </button>
+    <button class="ib" aria-label="Tema almashtirish" onClick="{{toggleTheme}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></button>
+  </header>
+
+  <div style="flex: 1; min-height: 0; display: flex">
+    <aside style="width: 248px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--border)">
+      <div style="display: flex; gap: 2px; padding: 6px; border-bottom: 1px solid var(--border)">
+        <button class="seg on" style="flex: 1">Kolleksiya</button><button class="seg" style="flex: 1">Muhit</button><button class="seg" style="flex: 1">Tarix</button>
+      </div>
+      <div style="padding: 6px 6px 2px"><input class="cell" aria-label="Filtr" placeholder="Filtr  ( / )" style="height: 26px; border: 1px solid var(--border); border-radius: 5px; font-family: Inter"></div>
+      <div style="flex: 1; overflow-y: auto; padding: 4px 6px">
+        <sc-for list="{{tree}}" as="r" hint-placeholder-count="14">
+          <button class="{{r.cls}}" style="padding-left: {{r.pad}}">
+            <sc-if value="{{r.folder}}" hint-placeholder-val="{{ false }}"><span style="color: var(--muted); display: flex"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="{{r.chev}}"/></svg></span></sc-if>
+            <sc-if value="{{r.isReq}}" hint-placeholder-val="{{ true }}"><span style="width: 36px; flex-shrink: 0; font: 700 9.5px 'JetBrains Mono'; {{r.mstyle}}">{{r.method}}</span></sc-if>
+            <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; {{r.weight}}">{{r.name}}</span>
+            <sc-if value="{{r.lock}}" hint-placeholder-val="{{ false }}"><span title="O'z auth'i bor" style="color: var(--muted); display: flex"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></sc-if>
+          </button>
+        </sc-for>
+      </div>
+    </aside>
+
+    <main style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+      <div style="height: 32px; flex-shrink: 0; display: flex; background: var(--rail); border-bottom: 1px solid var(--border)">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 0 12px; background: var(--bg); border-right: 1px solid var(--border); box-shadow: inset 0 2px 0 var(--accent)"><span style="font: 700 9.5px 'JetBrains Mono'; color: var(--m-get)">GET</span>v1/gcp/pinfl</div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 0 12px; color: var(--muted); border-right: 1px solid var(--border)"><span style="font: 700 9.5px 'JetBrains Mono'; color: var(--m-post)">POST</span>certified_seedlings_survey<span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent)"></span></div>
+      </div>
+
+      <div style="display: flex; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border)">
+        <div style="flex: 1; min-width: 0; display: flex; align-items: center; height: 32px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--code); overflow: hidden">
+          <span style="height: 100%; display: flex; align-items: center; padding: 0 10px; border-right: 1px solid var(--border); font: 700 12px 'JetBrains Mono'; color: var(--m-get)">GET</span>
+          <span style="padding: 0 10px; font: 400 12.5px 'JetBrains Mono'; white-space: nowrap; overflow: hidden"><span style="background: var(--var-bg); color: var(--var); border-radius: 3px; padding: 1px 3px">{{baseVar}}</span>/api/v1/gcp/pinfl<span style="color: var(--muted)">?pinfl=</span><span style="background: var(--var-bg); color: var(--var); border-radius: 3px; padding: 1px 3px">{{pinflVar}}</span></span>
+        </div>
+        <button style="height: 32px; padding: 0 16px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; font: 600 12.5px Inter; cursor: pointer; display: flex; align-items: center; gap: 8px">Yuborish <span style="opacity: .75; font-size: 11px">⌘↵</span></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; display: flex; flex-direction: {{dir}}">
+        <section aria-label="So'rov" style="flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 0 12px; border-right: {{splitBorderR}}; border-bottom: {{splitBorderB}}">
+          <div style="display: flex; border-bottom: 1px solid var(--border)">
+            <button class="sub on">Params <span style="color: var(--muted)">1</span></button><button class="sub">Auth <span style="color: var(--muted)">↑ papka</span></button><button class="sub">Headers <span style="color: var(--muted)">3</span></button><button class="sub">Body</button><button class="sub">Skriptlar</button><button class="sub">Sozlamalar</button>
+          </div>
+          <div style="padding: 10px 0">
+            <div style="border: 1px solid var(--border); border-radius: 6px; overflow: hidden">
+              <div style="display: grid; grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr); height: 26px; align-items: center; background: var(--subtle); font: 600 11px Inter; color: var(--muted)"><span></span><span style="padding: 0 8px">Kalit</span><span style="padding: 0 8px">Qiymat</span><span style="padding: 0 8px">Tavsif</span></div>
+              <div style="display: grid; grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr); border-top: 1px solid var(--border); align-items: center"><span style="display: flex; justify-content: center"><input type="checkbox" class="chk" aria-label="Yoqish" checked="{{ true }}"></span><input class="cell" aria-label="Kalit" value="pinfl"><input class="cell" aria-label="Qiymat" value="{{pinflVar}}" style="color: var(--var)"><input class="cell" aria-label="Tavsif" value="14 xonali JSHSHIR" style="font-family: Inter; color: var(--muted)"></div>
+              <div style="display: grid; grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr); border-top: 1px solid var(--border)"><span></span><input class="cell" aria-label="Yangi kalit" placeholder="Kalit"><input class="cell" aria-label="Yangi qiymat" placeholder="Qiymat"><input class="cell" aria-label="Yangi tavsif" placeholder="Tavsif" style="font-family: Inter"></div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-label="Javob" style="flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 0 12px">
+          <div style="display: flex; align-items: center; border-bottom: 1px solid var(--border)">
+            <button class="sub on">Body</button><button class="sub">Headers <span style="color: var(--muted)">12</span></button><button class="sub">Testlar <span style="color: var(--ok)">2/2</span></button>
+            <div style="flex: 1"></div>
+            <span style="padding: 2px 7px; border-radius: 4px; background: var(--ok-bg); color: var(--ok); font: 700 11px 'JetBrains Mono'">200 OK</span>
+            <span style="margin-left: 10px; color: var(--muted)"><b style="color: var(--text); font-weight: 600">212</b> ms · <b style="color: var(--text); font-weight: 600">0.6</b> KB</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 8px 0">
+            <div style="display: flex; gap: 2px; padding: 2px; border-radius: 6px; background: var(--subtle)"><button class="seg on">Pretty</button><button class="seg">Raw</button><button class="seg">Preview</button></div>
+            <input class="cell" aria-label="JSONPath" placeholder="$.data.*" style="width: 180px; height: 26px; border: 1px solid var(--border); border-radius: 5px">
+          </div>
+          <div style="flex: 1; min-height: 0; display: flex; overflow: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--code); padding: 6px 0">
+            <div class="code" style="padding: 0 10px; color: var(--muted); opacity: .6; text-align: right"><sc-for list="{{lines}}" as="l" hint-placeholder-count="14"><div>{{l.n}}</div></sc-for></div>
+            <div class="code"><sc-for list="{{lines}}" as="l" hint-placeholder-count="14"><div><sc-for list="{{l.parts}}" as="p" hint-placeholder-count="3"><span style="color: {{p.c}}">{{p.t}}</span></sc-for></div></sc-for></div>
+          </div>
+          <div style="height: 10px"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <footer style="height: 24px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 10px; border-top: 1px solid var(--border); background: var(--rail); font-size: 11px; color: var(--muted)">
+    <span style="display: flex; align-items: center; gap: 5px"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--ok)"></span>Server · UI v2.3.4 = server v2.3.4</span>
+    <span>Console</span><span>Cookie'lar</span>
+    <div style="flex: 1"></div>
+    <span>Zaxira 15:30</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"sideBySide":{"editor":"boolean","default":true},"accent":{"editor":"color","default":"#5558E6","options":["#5558E6","#0E7490","#C2410C","#15803D"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { dark: null, side: null }; }
+  tokenize(src) {
+    const re = /("(?:[^"\\]|\\.)*")(\s*:)?|\b(true|false|null)\b|(-?\d+(?:\.\d+)?)|([{}\[\],:])|(\s+)|([^\s"{}\[\],:]+)/g;
+    return src.split('\n').map((line, i) => { const parts = []; let m; re.lastIndex = 0;
+      while ((m = re.exec(line))) {
+        if (m[1] && m[2]) { parts.push({ t: m[1], c: 'var(--j-key)' }); parts.push({ t: m[2], c: 'var(--j-punc)' }); }
+        else if (m[1]) parts.push({ t: m[1], c: 'var(--j-str)' });
+        else if (m[3]) parts.push({ t: m[3], c: 'var(--j-bool)' });
+        else if (m[4]) parts.push({ t: m[4], c: 'var(--j-num)' });
+        else if (m[5]) parts.push({ t: m[5], c: 'var(--j-punc)' });
+        else parts.push({ t: m[0], c: 'var(--text)' });
+      } return { n: i + 1, parts }; });
+  }
+  renderVals() {
+    const dark = this.state.dark === null ? (this.props.dark ?? true) : this.state.dark;
+    const side = this.state.side === null ? (this.props.sideBySide ?? true) : this.state.side;
+    const mc = (m) => 'color: var(--m-' + m.toLowerCase() + ')';
+    const rows = [
+      { f: 1, name: 'Saqlangan so\'rovlar', d: 0, open: true }, { f: 1, name: 'Hujjat uz', d: 1 }, { f: 1, name: 'Ijara', d: 1 },
+      { f: 1, name: 'Online Mahalla', d: 1, open: true, lock: true },
+      { m: 'GET', name: 'v1/ssp_insert_status', d: 2 }, { m: 'GET', name: 'v2/yatt/info', d: 2, lock: true },
+      { m: 'PUT', name: 'v1/auth_users_tokens/disactivate', d: 2 }, { m: 'POST', name: 'v1/document/financial_support', d: 2 },
+      { m: 'GET', name: 'v1/gcp/pinfl', d: 2, on: true }, { m: 'GET', name: 'v1/fhdyo/by-pinfl', d: 2 },
+      { m: 'POST', name: 'certified_seedlings_survey', d: 2 }, { f: 1, name: 'eco-service', d: 1 }, { f: 1, name: '100-loyiha', d: 1 }
+    ];
+    const tree = rows.map(r => ({ name: r.name, folder: !!r.f, isReq: !r.f, method: r.m || '', mstyle: r.m ? mc(r.m) : '', lock: !!r.lock,
+      cls: r.on ? 'row on' : 'row', pad: (6 + r.d * 12) + 'px', chev: r.open ? 'm6 9 6 6 6-6' : 'm9 6 6 6-6 6', weight: r.f ? 'font-weight: 500' : '' }));
+    const src = JSON.stringify({ success: true, data: { pinfl: '[PINFL]', last_name: '[FAMILIYA]', first_name: '[ISM]', birth_date: '[SANA]', region: 'Toshkent sh.', district: '[TUMAN]', is_alive: true }, request_id: '[ID]' }, null, 2);
+    return {
+      themeClass: dark ? 'th-dark' : 'th-light', accent: this.props.accent ?? '#5558E6',
+      toggleTheme: () => this.setState({ dark: !dark }), toggleLayout: () => this.setState({ side: !side }),
+      dir: side ? 'row' : 'column', splitBorderR: side ? '1px solid var(--border)' : '0', splitBorderB: side ? '0' : '1px solid var(--border)',
+      layoutIcon: side ? 'M12 4v16' : 'M3 12h18',
+      tree, baseVar: '{{base_url}}', pinflVar: '{{pinfl}}', lines: this.tokenize(src)
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>API Runner — tarix va solishtirish</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA}a:hover{color:#312E81}
+.th-light{--bg:#F6F7F9;--panel:#FFFFFF;--border:#E2E5EA;--border-strong:#D3D7DE;--text:#151821;--muted:#596170;--subtle:#F1F3F6;--hover:#EBEEF3;--accent-text:#4338CA;--accent-weak:#EEF0FF;--m-get:#157A3A;--m-post:#AD4F08;--m-put:#1D4ED8;--m-delete:#B91C1C;--ok-bg:#E8F6EE;--ok:#15803D;--err-bg:#FDECEC;--err:#B91C1C;--warn-bg:#FFF4E5;--warn:#9A4A00;--add-bg:#E6F6EC;--del-bg:#FCE8E8;--code:#FBFBFD}
+.th-dark{--bg:#0E1015;--panel:#151820;--border:#252933;--border-strong:#323743;--text:#E7E9EE;--muted:#9AA2B1;--subtle:#1B1F28;--hover:#1F2430;--accent-text:#A5B4FC;--accent-weak:#1E2142;--m-get:#4ADE80;--m-post:#FBBF24;--m-put:#60A5FA;--m-delete:#F87171;--ok-bg:#12291C;--ok:#4ADE80;--err-bg:#2E1517;--err:#F87171;--warn-bg:#2D2212;--warn:#FCD34D;--add-bg:#11281A;--del-bg:#2E1517;--code:#11141B}
+.h{display:grid;grid-template-columns:20px 46px minmax(0,1fr) auto;align-items:center;gap:8px;width:100%;min-height:46px;padding:6px 10px;border:0;border-radius:8px;background:transparent;color:var(--text);font:400 13px Inter,sans-serif;text-align:left;cursor:pointer}
+.h:hover{background:var(--hover)}
+.h.on{background:var(--accent-weak)}
+.pill{height:26px;padding:0 10px;border:1px solid var(--border);border-radius:13px;background:var(--panel);color:var(--muted);font:500 12px Inter;cursor:pointer}
+.pill.on{background:var(--text);color:var(--panel);border-color:var(--text)}
+.btn{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:500 12.5px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--hover)}
+.code{font:400 12.5px/21px 'JetBrains Mono',monospace;white-space:pre}
+.chk{width:14px;height:14px;accent-color:var(--accent);margin:0}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="--accent: {{accent}}; width: 100%; height: 900px; display: flex; flex-wrap: wrap; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; font-size: 13px; overflow: hidden">
+  <aside style="width: 400px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--border)">
+    <div style="padding: 16px 16px 10px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; justify-content: space-between"><span style="font-weight: 600; font-size: 14px">Tarix</span><button class="btn" style="height: 28px; font-size: 12px">Tozalash…</button></div>
+      <input aria-label="Tarixdan qidirish" placeholder="URL, metod yoki status bo'yicha qidirish" style="height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: 400 12.5px Inter">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap">
+        <sc-for list="{{filters}}" as="f" hint-placeholder-count="4"><button class="{{f.cls}}" onClick="{{f.pick}}">{{f.label}}</button></sc-for>
+      </div>
+    </div>
+    <div style="flex: 1; overflow-y: auto; padding: 0 8px 12px">
+      <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+        <div>
+          <div style="padding: 10px 10px 4px; font: 600 11px Inter; color: var(--muted); text-transform: uppercase; letter-spacing: .05em">{{g.day}}</div>
+          <sc-for list="{{g.items}}" as="it" hint-placeholder-count="5">
+            <button class="{{it.cls}}" onClick="{{it.pick}}">
+              <input type="checkbox" class="chk" aria-label="Solishtirish uchun tanlash" checked="{{it.picked}}">
+              <span style="font: 700 10.5px 'JetBrains Mono'; {{it.mstyle}}">{{it.method}}</span>
+              <span style="min-width: 0">
+                <span style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'JetBrains Mono'; font-size: 12.5px">{{it.path}}</span>
+                <span style="display: block; font-size: 11.5px; color: var(--muted)">{{it.host}}<sc-if value="{{it.hasRepeat}}" hint-placeholder-val="{{ false }}"> · ×{{it.repeat}}</sc-if></span>
+              </span>
+              <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px">
+                <span style="font: 700 10.5px 'JetBrains Mono'; padding: 1px 6px; border-radius: 4px; {{it.sStyle}}">{{it.status}}</span>
+                <span style="font-size: 11px; color: var(--muted)">{{it.time}}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </aside>
+
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; padding: 20px 28px; gap: 14px">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+      <span style="font: 700 12px 'JetBrains Mono'; color: var(--m-get)">GET</span>
+      <span style="font: 500 14px 'JetBrains Mono'">/api/v2/mobile/lists</span>
+      <span style="color: var(--muted)">api.online-ijara.uz</span>
+      <div style="flex: 1"></div>
+      <button class="btn">Tabda ochish</button>
+      <button class="btn">Collection'ga saqlash</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+      <div style="padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); display: flex; align-items: center; gap: 10px">
+        <span style="font: 700 11px 'JetBrains Mono'; padding: 2px 7px; border-radius: 5px; background: var(--ok-bg); color: var(--ok)">200</span>
+        <span style="font-weight: 600">A · bugun 11:42</span><span style="margin-left: auto; color: var(--muted)">241 ms · 3.1 KB</span>
+      </div>
+      <div style="padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); display: flex; align-items: center; gap: 10px">
+        <span style="font: 700 11px 'JetBrains Mono'; padding: 2px 7px; border-radius: 5px; background: var(--ok-bg); color: var(--ok)">200</span>
+        <span style="font-weight: 600">B · bugun 15:10</span><span style="margin-left: auto; color: var(--muted)">198 ms · 3.3 KB</span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; font-size: 12.5px">
+      <span style="padding: 3px 9px; border-radius: 6px; background: var(--add-bg); color: var(--ok); font-weight: 600">+3 qator</span>
+      <span style="padding: 3px 9px; border-radius: 6px; background: var(--del-bg); color: var(--err); font-weight: 600">−1 qator</span>
+      <span style="color: var(--muted)">Headers: 1 farq (Date chiqarib tashlandi)</span>
+      <div style="flex: 1"></div>
+      <label style="display: flex; align-items: center; gap: 6px; color: var(--muted)"><input type="checkbox" class="chk" checked="{{ true }}">Vaqt va ID maydonlarini e'tiborsiz qoldirish</label>
+    </div>
+
+    <div style="flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--code); padding: 8px 0">
+      <sc-for list="{{diff}}" as="d" hint-placeholder-count="16">
+        <div class="code" style="display: grid; grid-template-columns: 44px 22px minmax(0, 1fr); background: {{d.bg}}">
+          <span style="color: var(--muted); text-align: right; padding-right: 8px; opacity: .7">{{d.n}}</span>
+          <span style="color: {{d.mc}}; text-align: center">{{d.mark}}</span>
+          <span style="color: {{d.c}}">{{d.t}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"color","default":"#4F46E5","options":["#4F46E5","#0E7490","#C2410C","#15803D"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { filter: 'all', sel: 0 }; }
+  renderVals() {
+    const dark = !!this.props.dark, s = this.state;
+    const mc = (m) => 'color: var(--m-' + m.toLowerCase() + ')';
+    const ok = 'background: var(--ok-bg); color: var(--ok)', err = 'background: var(--err-bg); color: var(--err)', warn = 'background: var(--warn-bg); color: var(--warn)';
+    const raw = [
+      ['Bugun', 'GET', '/api/v2/mobile/lists', 'api.online-ijara.uz', '200', ok, '15:10', 7],
+      ['Bugun', 'POST', '/api/v1/document/certified_seedlings_survey', 'api.online-mahalla.uz', '200', ok, '15:02', 1],
+      ['Bugun', 'GET', '/api/v1/gcp/pinfl', 'api.online-mahalla.uz', '404', warn, '14:47', 2],
+      ['Bugun', 'POST', '/api/v1/mobile/basic_tool', 'api.online-ijara.uz', '500', err, '11:20', 3],
+      ['Kecha', 'GET', '/get', 'httpbin.org', '200', ok, '18:05', 1],
+      ['Kecha', 'GET', '/api/v1/ssp_insert_status', 'api.online-mahalla.uz', '200', ok, '17:44', 1],
+      ['Kecha', 'PUT', '/api/v1/auth_users_tokens/disactivate', 'api.online-mahalla.uz', '401', warn, '16:12', 1]
+    ];
+    const pass = (st) => s.filter === 'all' || (s.filter === '2xx' && st[0] === '2') || (s.filter === '4xx' && st[0] === '4') || (s.filter === '5xx' && st[0] === '5');
+    const items = raw.map((r, i) => ({ i, day: r[0], method: r[1], path: r[2], host: r[3], status: r[4], sStyle: r[5], time: r[6], repeat: r[7], hasRepeat: r[7] > 1, mstyle: mc(r[1]), picked: i === s.sel, cls: i === s.sel ? 'h on' : 'h', pick: () => this.setState({ sel: i }) })).filter(it => pass(it.status));
+    const groups = ['Bugun', 'Kecha'].map(day => ({ day, items: items.filter(it => it.day === day) })).filter(g => g.items.length);
+    const filters = [['all', 'Hammasi'], ['2xx', '2xx'], ['4xx', '4xx'], ['5xx', '5xx']].map(([id, label]) => ({ label, cls: s.filter === id ? 'pill on' : 'pill', pick: () => this.setState({ filter: id }) }));
+    const same = { bg: 'transparent', mark: '', mc: 'var(--muted)', c: 'var(--text)' };
+    const add = { bg: 'var(--add-bg)', mark: '+', mc: 'var(--ok)', c: 'var(--text)' };
+    const del = { bg: 'var(--del-bg)', mark: '−', mc: 'var(--err)', c: 'var(--text)' };
+    const lines = [
+      [same, '{'], [same, '  "success": true,'], [same, '  "data": {'], [same, '    "regions": ['],
+      [same, '      { "id": 1, "name": "Toshkent sh." },'], [same, '      { "id": 2, "name": "Toshkent vil." },'],
+      [del, '      { "id": 3, "name": "Samarqand" }'], [add, '      { "id": 3, "name": "Samarqand vil." },'], [add, '      { "id": 4, "name": "Buxoro vil." }'],
+      [same, '    ],'], [same, '    "contract_types": ["straight", "main"],'], [add, '    "payment_methods": ["click", "payme"],'],
+      [same, '    "version": "2.4"'], [same, '  }'], [same, '}']
+    ];
+    const diff = lines.map(([k, t], i) => ({ ...k, t, n: i + 1 }));
+    return { themeClass: dark ? 'th-dark' : 'th-light', accent: this.props.accent ?? '#4F46E5', groups, filters, diff };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>API Runner — papka tabi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA}a:hover{color:#312E81}
+.th-light{--bg:#F6F7F9;--panel:#FFFFFF;--border:#E2E5EA;--border-strong:#D3D7DE;--text:#151821;--muted:#596170;--subtle:#F1F3F6;--hover:#EBEEF3;--accent-text:#4338CA;--accent-weak:#EEF0FF;--m-get:#157A3A;--m-post:#AD4F08;--m-put:#1D4ED8;--m-delete:#B91C1C;--ok-bg:#E8F6EE;--ok:#15803D;--err-bg:#FDECEC;--err:#B91C1C;--warn-bg:#FFF4E5;--warn:#9A4A00}
+.th-dark{--bg:#0E1015;--panel:#151820;--border:#252933;--border-strong:#323743;--text:#E7E9EE;--muted:#9AA2B1;--subtle:#1B1F28;--hover:#1F2430;--accent-text:#A5B4FC;--accent-weak:#1E2142;--m-get:#4ADE80;--m-post:#FBBF24;--m-put:#60A5FA;--m-delete:#F87171;--ok-bg:#12291C;--ok:#4ADE80;--err-bg:#2E1517;--err:#F87171;--warn-bg:#2D2212;--warn:#FCD34D}
+.sub{height:40px;padding:0 2px;margin-right:22px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font:500 13.5px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.sub:hover{color:var(--text)}
+.sub.on{color:var(--text);border-bottom-color:var(--accent)}
+.btn{height:34px;padding:0 14px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:500 13px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{background:var(--hover)}
+.pri{height:34px;padding:0 16px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:600 13px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.card{border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+.lbl{font:600 11px Inter;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.tr{display:grid;grid-template-columns:62px minmax(0,1fr) 170px 80px 90px;align-items:center;gap:10px;height:40px;padding:0 16px;border-top:1px solid var(--border);font-size:13px}
+.tr:hover{background:var(--hover)}
+.name-edit{border:1px solid transparent;border-radius:6px;padding:2px 6px;margin-left:-6px;background:transparent;color:var(--text);font:700 22px Inter,sans-serif;letter-spacing:-.01em;outline:none;width:420px}
+.name-edit:hover{border-color:var(--border)}
+.name-edit:focus{border-color:var(--accent);background:var(--panel)}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="--accent: {{accent}}; width: 100%; height: 900px; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; font-size: 13px; overflow: hidden">
+  <div style="padding: 22px 32px 0; background: var(--panel); border-bottom: 1px solid var(--border)">
+    <div style="display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px">
+      <a href="#">Saqlangan so'rovlar</a><span>/</span><span>Papka</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px; margin-top: 8px; flex-wrap: wrap">
+      <span style="width: 36px; height: 36px; border-radius: 10px; background: var(--accent-weak); color: var(--accent-text); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></span>
+      <input class="name-edit" aria-label="Papka nomi" value="Online Mahalla">
+      <div style="flex: 1"></div>
+      <button class="btn">Hujjat yaratish</button>
+      <button class="btn">Eksport</button>
+      <a href="Runner.dc.html" class="pri" style="text-decoration: none"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5v14l11-7z"/></svg>Papkani ishga tushirish</a>
+    </div>
+    <div role="tablist" style="display: flex; margin-top: 14px">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5"><button role="tab" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}<sc-if value="{{t.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; padding: 0 7px; border-radius: 10px; background: var(--subtle); color: var(--muted)">{{t.badge}}</span></sc-if></button></sc-for>
+    </div>
+  </div>
+
+  <sc-if value="{{isOverview}}" hint-placeholder-val="{{ true }}">
+    <div style="flex: 1; overflow-y: auto; padding: 24px 32px; display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start">
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <section class="card" style="padding: 18px 20px">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px"><span class="lbl">Tavsif</span><button class="btn" style="height: 28px; font-size: 12px">Tahrirlash</button></div>
+          <p style="margin: 0 0 8px; font-size: 14px; line-height: 1.6">Online Mahalla tizimining ichki API'lari: fuqarolar ma'lumoti (PINFL bo'yicha), YaTT, mikroloyihalar va hujjatlar.</p>
+          <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted)">Auth: <code style="font-family: 'JetBrains Mono'">om_token</code> — har 24 soatda yangilanadi. Prod'da POST/PUT so'rovlarni ehtiyot bilan yuboring.</p>
+        </section>
+
+        <section class="card" style="overflow: hidden">
+          <div style="display: flex; align-items: center; padding: 14px 16px"><span class="lbl" style="flex: 1">So'rovlar · 13</span><input aria-label="So'rovlarni filtrlash" placeholder="Filtr…" style="height: 28px; width: 200px; padding: 0 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); color: var(--text); font: 400 12.5px Inter"></div>
+          <div class="tr" style="height: 32px; background: var(--subtle); font: 600 11.5px Inter; color: var(--muted)"><span>Metod</span><span>Nomi</span><span>Auth</span><span>Oxirgi</span><span style="text-align: right">Vaqt</span></div>
+          <sc-for list="{{reqs}}" as="r" hint-placeholder-count="8">
+            <div class="tr">
+              <span style="font: 700 11px 'JetBrains Mono'; {{r.mstyle}}">{{r.method}}</span>
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.name}}</span>
+              <span style="font-size: 12px; {{r.authStyle}}">{{r.auth}}</span>
+              <span><span style="font: 700 11px 'JetBrains Mono'; padding: 2px 7px; border-radius: 5px; {{r.sStyle}}">{{r.status}}</span></span>
+              <span style="text-align: right; color: var(--muted); font-family: 'JetBrains Mono'; font-size: 12px">{{r.time}}</span>
+            </div>
+          </sc-for>
+        </section>
+      </div>
+
+      <div style="flex: 1 1 300px; max-width: 380px; display: flex; flex-direction: column; gap: 16px">
+        <section class="card" style="padding: 16px 18px">
+          <div class="lbl" style="margin-bottom: 10px">Avtorizatsiya</div>
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 600"><span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--accent-weak); color: var(--accent-text)">Bearer Token</span><span style="font-family: 'JetBrains Mono'; font-weight: 500; font-size: 12px; color: var(--muted)">om_token</span></div>
+          <div style="display: flex; height: 8px; border-radius: 6px; overflow: hidden; margin: 14px 0 8px; background: var(--subtle)"><div style="width: 69%; background: var(--accent)"></div><div style="width: 31%; background: var(--warn)"></div></div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted)"><span>9 ta so'rov meros oladi</span><span>4 tasida o'z auth'i</span></div>
+          <div style="margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-size: 12.5px; line-height: 1.5">4 ta so'rovda papkadagi bilan bir xil token qo'lda yozilgan.</div>
+          <button class="btn" style="width: 100%; justify-content: center; margin-top: 10px">Ularni Meros'ga o'tkazish…</button>
+        </section>
+        <section class="card" style="padding: 16px 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+          <div><div class="lbl">O'zgaruvchilar</div><div style="font-size: 22px; font-weight: 700; margin-top: 4px">3</div></div>
+          <div><div class="lbl">Skriptlar</div><div style="font-size: 13px; margin-top: 8px">Pre-request · Tests</div></div>
+        </section>
+        <section class="card" style="padding: 16px 18px">
+          <div class="lbl" style="margin-bottom: 10px">Oxirgi run</div>
+          <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 22px; font-weight: 700">11</span><span style="color: var(--muted)">/ 13 o'tdi</span><span style="margin-left: auto; font-size: 12px; color: var(--muted)">bugun, 14:52</span></div>
+          <div style="display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 3px; margin-top: 10px">
+            <sc-for list="{{runDots}}" as="d" hint-placeholder-count="13"><span title="{{d.t}}" style="height: 18px; border-radius: 3px; background: {{d.c}}"></span></sc-for>
+          </div>
+          <a href="History.dc.html" style="display: inline-block; margin-top: 10px; font-size: 12.5px">Run tarixi →</a>
+        </section>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isAuth}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; overflow-y: auto; padding: 24px 32px">
+      <div style="max-width: 760px; display: flex; flex-direction: column; gap: 16px">
+        <label style="display: flex; flex-direction: column; gap: 6px; max-width: 320px"><span style="font: 600 12px Inter; color: var(--muted)">Turi</span>
+          <select style="height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); font: 400 13px Inter"><option>Bearer Token</option><option>Meros (collection'dan)</option><option>Auth yo'q</option><option>OAuth 2.0</option><option>API Key</option></select>
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 600 12px Inter; color: var(--muted)">Token</span>
+          <input value="{{tokenVar}}" style="height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--warn); font: 400 13px 'JetBrains Mono'">
+        </label>
+        <p style="margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.6">Bu papkadagi va uning ichki papkalaridagi "Meros" auth'li barcha so'rovlar shu tokenni ishlatadi. So'rovda boshqa auth tanlansa, u ustun turadi.</p>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isOther}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted)">Bu bo'lim asosiy maketda (Main) ko'rsatilgan</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"color","default":"#4F46E5","options":["#4F46E5","#0E7490","#C2410C","#15803D"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tab: 'overview' }; }
+  renderVals() {
+    const dark = !!this.props.dark;
+    const mc = (m) => 'color: var(--m-' + m.toLowerCase() + ')';
+    const defs = [['overview', 'Overview', ''], ['auth', 'Auth', ''], ['vars', 'Variables', '3'], ['scripts', 'Skriptlar', '2'], ['run', 'Run', '']];
+    const tabs = defs.map(([id, label, badge]) => ({ label, badge, hasBadge: !!badge, cls: this.state.tab === id ? 'sub on' : 'sub', pick: () => this.setState({ tab: id }) }));
+    const ok = 'background: var(--ok-bg); color: var(--ok)', err = 'background: var(--err-bg); color: var(--err)', none = 'background: var(--subtle); color: var(--muted)';
+    const inh = 'color: var(--muted)', own = 'color: var(--warn)';
+    const reqs = [
+      ['GET', 'v1/ssp_insert_status', '↑ Meros', inh, '200', ok, '184 ms'],
+      ['GET', 'v2/digital_goverment/micro_projects', '↑ Meros', inh, '200', ok, '331 ms'],
+      ['GET', 'v1/micro_projects/check_workers', 'Bearer (o\'zi)', own, '200', ok, '212 ms'],
+      ['GET', 'v2/yatt/info', 'Bearer (o\'zi)', own, '401', err, '96 ms'],
+      ['PUT', 'v1/auth_users_tokens/disactivate', '↑ Meros', inh, '—', none, '—'],
+      ['GET', 'v1/districts/children_count', '↑ Meros', inh, '200', ok, '145 ms'],
+      ['POST', 'v1/document/financial_support', 'Bearer (o\'zi)', own, '201', ok, '402 ms'],
+      ['GET', 'v1/gcp/pinfl', '↑ Meros', inh, '200', ok, '212 ms'],
+      ['GET', 'v1/fhdyo/by-pinfl', '↑ Meros', inh, '500', err, '1.2 s']
+    ].map(([method, name, auth, authStyle, status, sStyle, time]) => ({ method, name, auth, authStyle, status, sStyle, time, mstyle: mc(method) }));
+    const pattern = [1,1,1,0,1,1,1,1,0,1,1,1,1];
+    const runDots = pattern.map((p, i) => ({ c: p ? 'var(--ok)' : 'var(--err)', t: (i + 1) + '-so\'rov: ' + (p ? 'o\'tdi' : 'xato') }));
+    return {
+      themeClass: dark ? 'th-dark' : 'th-light', accent: this.props.accent ?? '#4F46E5',
+      tabs, isOverview: this.state.tab === 'overview', isAuth: this.state.tab === 'auth', isOther: ['vars', 'scripts', 'run'].indexOf(this.state.tab) >= 0,
+      reqs, runDots, tokenVar: '{{om_token}}'
+    };
+  }
+}
+</script>
+</body>
+</html>
