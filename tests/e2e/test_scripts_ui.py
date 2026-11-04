@@ -115,6 +115,7 @@ def test_autocomplete_offers_pm_api(ui):
     tip = ui.locator(".cm-tooltip-autocomplete")
     expect(tip).to_be_visible()
     expect(tip).to_contain_text("pm.environment.set")
+    ui.wait_for_timeout(250)                                                        # CodeMirror: oyna ochilgach ~75 ms Enter qabul qilinmaydi (interactionDelay)
     ui.keyboard.press("Enter")
     expect(T(ui, "script-pre")).to_contain_text("pm.environment.set")
 
