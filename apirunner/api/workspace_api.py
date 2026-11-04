@@ -5,7 +5,7 @@ from flask import Blueprint, current_app, jsonify, request
 
 from ..core import scripting
 from ..core.scripting.sandbox import Limits
-from ..storage import model, tree_ops
+from ..storage import files, model, tree_ops
 from ..storage.migrate import import_localstorage
 from ..storage.workspace import Conflict, NotFound
 
@@ -382,3 +382,45 @@ def restore_backup_route():
     except (ValueError, FileNotFoundError) as e:
         return jsonify({"error": str(e)}), 400
     return jsonify({"ok": True, "pre_restore": os.path.basename(pre)})
+
+
+# ── yuklangan fayllar (workspace/files/<sha256>) ──
+def _ws_root():
+    return _ws().root
+
+
+@bp.post("/files")
+def upload_file():
+    f = request.files.get("file")
+    if not f:
+        return jsonify({"error": "fayl topilmadi"}), 400
+    return jsonify(files.store(_ws_root(), f.stream, f.filename))
+
+
+@bp.post("/files/status")
+def files_status():
+    """{refs:[...]} -> {ref: {exists,size,name,managed}} — fayl topilmaganini (qizil qator) aniqlash uchun."""
+    refs = (request.get_json(silent=True) or {}).get("refs") or []
+    return jsonify({r: files.info(_ws_root(), r) for r in refs if isinstance(r, str)})
+
+
+@bp.post("/files/adopt")
+def adopt_file():
+    """Eski vaqtinchalik yuklashni (.tmp_uploads) omborga ko'chiradi. Faqat yuklash papkasidagi fayllar."""
+    d = request.get_json(silent=True) or {}
+    raw, _, label = str(d.get("path") or "").partition("::")
+    path = os.path.realpath(raw.strip())
+    root = os.path.realpath(current_app.config["UPLOAD_DIR"])
+    if not (path.startswith(root + os.sep) and os.path.isfile(path)):
+        return jsonify({"error": "Fayl topilmadi yoki ruxsat yo'q"}), 400
+    return jsonify(files.adopt(_ws_root(), path, d.get("name") or label.strip() or None))
+
+
+@bp.get("/files/usage")
+def files_usage():
+    return jsonify(files.usage(_ws_root()))
+
+
+@bp.post("/files/cleanup")
+def files_cleanup():
+    return jsonify(files.cleanup(_ws_root()))

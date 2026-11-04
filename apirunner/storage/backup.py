@@ -20,6 +20,17 @@ def _ignore(_dir, names):
     return [n for n in names if n in SKIP or n.endswith(".tmp")]
 
 
+def _copy_file(src, dst):
+    """Yuklangan fayllar (workspace/files/<sha256>) o'zgarmas — zaxirada qattiq havola (joy tejaladi); bo'lmasa oddiy nusxa."""
+    if os.sep + "files" + os.sep in src:
+        try:
+            os.link(src, dst)
+            return dst
+        except OSError:
+            pass
+    return shutil.copy2(src, dst)
+
+
 def _copy_db(src, dst):
     """SQLite'ni (WAL bilan ham) izchil nusxalaydi — oddiy fayl nusxasi -wal ni o'tkazib yuborishi mumkin."""
     s = sqlite3.connect(src)
@@ -48,7 +59,7 @@ def create_backup(ws_root, saved_file, version, backup_dir, suffix="", keep=KEEP
         if has_saved:
             shutil.copy2(saved_file, os.path.join(part, "saved_requests.json"))
         if os.path.isdir(ws_root):
-            shutil.copytree(ws_root, os.path.join(part, "workspace"), ignore=_ignore)
+            shutil.copytree(ws_root, os.path.join(part, "workspace"), ignore=_ignore, copy_function=_copy_file)
             db = os.path.join(ws_root, DB_NAME)
             if os.path.isfile(db):
                 _copy_db(db, os.path.join(part, "workspace", DB_NAME))

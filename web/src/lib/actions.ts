@@ -7,7 +7,8 @@ import { draftFromItem, eventsFromDraft, extFromDraft, requestFromDraft } from '
 import { applyScriptResult, scriptsFor } from './scripts'
 import { logRequest, logResponse } from './console'
 import { prepareAuth, specFor } from './scope'
-import { showToast } from './ui'
+import { askConfirm, showToast } from './ui'
+import { missingFilesOf } from './files'
 import { confirmWrite } from './envkind'
 import type { RequestItem } from '../types/model'
 
@@ -47,6 +48,8 @@ export function openRequest(cid: string, id: string, permanent = false) {
 export async function sendTab(tab: Tab) {
   if (!tab.draft || !tab.draft.url.trim()) { showToast('URL kiriting!', 'warn'); return }
   if (!(await confirmWrite(tab.draft.method))) return
+  const missing = await missingFilesOf(tab.draft)
+  if (missing.length && !(await askConfirm(`Fayl topilmadi: ${missing.map(m => m.name).join(', ')}. Body'da faylni qayta tanlang. Baribir yuborilsinmi? (xato qaytadi)`, 'Baribir yuborish'))) return
   const hist = useHistory()
   await useTabs().flush()
   tab.response = { loading: true }

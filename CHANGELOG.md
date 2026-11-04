@@ -2,6 +2,21 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.7] — 2026-11-04 — Fayl biriktirish Postman uslubida (D guruhi)
+### Changed
+- **Fayl faqat Body'da yuboriladi**: Body → form-data qatorida **Turi (Text | File)** va ixtiyoriy **Content-Type** ustuni (sukut — fayl turidan), binary rejimi. Headers va urlencoded'da 📎 yo'q. Params'dagi 📎 **tezkor tugma**: fayl Body → form-data'ga yangi File qatori bo'lib qo'shiladi (kalit — Params qatori nomi, bo'sh bo'lsa `file`), Params qatori o'chadi, Body tabi ochiladi, toast "Fayl Body → form-data'ga qo'shildi"; fayl Params jadvaliga sudrab tashlansa ham shunday.
+- **File qatori**: fayl nomi, hajmi, "Almashtirish" va ×; bitta kalitga bir nechta fayl; qatorga (yoki ghost'ga) sudrab tashlash — qator o'zi File'ga o'tadi.
+- **Fayl topilmasa** (yo'l eskirgan yoki tozalangan) qator qizil, "topilmadi, qayta tanlang"; yuborishdan oldin ogohlantirish dialogi; server ham aniq xato qaytaradi (matn sifatida yuborib yubormaydi).
+- **Binary**: drop zona, fayl nomi va hajmi, Content-Type fayl nomidan avtomatik.
+- **Yuklangan fayllar workspace ichida** (`workspace/files/<sha256>`, bir xil mazmun bir marta): saqlangan so'rov keyin ham ishlaydi. Zaxiralar fayllarni qattiq havola bilan oladi (joy ko'paymaydi). **Sozlamalar → Fayllar**: hajm/soni va "Ishlatilmaganlarni tozalash" (kolleksiya, muhit va ochiq tablar havola qilmagan, 1 soatdan eski fayllar; faqat sizning buyrug'ingiz bilan).
+- Code snippet va cURL eksport form-data fayllarini chiqaradi: `-F 'file=@ariza.pdf'`, Python `open(...)`, PHP `CURLFile`, Java/C#/Go.
+### Migration (sxema 2 → 3)
+- Params'da fayl qatori bo'lgan saqlangan so'rovlar (eski UI: `x-apirunner.legacy.params[type=file]` yoki query'da `yo'l::nom`) avtomatik Body → form-data'ga ko'chiriladi; matnli parametrlar query'da qoladi; fayllar `workspace/files`ga nusxalanadi (asl joyida qoladi). **Avval to'liq zaxira**, xatoda rollback, idempotent. Yuboriladigan so'rov avvalgidek (characterization test: eski usul va migratsiyadan keyingi javoblari bir xil). Eski tana `x-apirunner.pre_files_body`da, asl yozuv `legacy`da saqlanadi.
+- Ochiq tablarning eski qoralamalaridagi Params fayl qatorlari ham shu tarzda Body'ga ko'chadi.
+### Added
+- `POST /api/files`, `/api/files/status|adopt|cleanup`, `GET /api/files/usage`; `FileMissingError` (`file_missing`).
+- 14 yangi e2e (`test_file_attach.py`), 12 yangi unit test (`test_files.py`).
+
 ## [2.3.6] — 2026-11-04 — Prod xavfsizligi (B guruhi)
 ### Added
 - **Muhit turi Dev / Test / Prod** (rang va belgi): muhit muharririda "Turi" tugmalari, `kind` va `confirm_writes` muhit bilan birga saqlanadi (server noto'g'ri qiymatni 400 bilan rad etadi). Prod faol bo'lsa headerda aniq **PROD** belgisi.

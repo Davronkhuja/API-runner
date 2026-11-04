@@ -185,13 +185,14 @@ def test_enter_and_tab_move_between_cells_and_rows(ui):
     expect(ghosts(ui, "headers-table")).to_have_count(1)
 
 
-def test_attach_icon_appears_once_the_row_is_a_normal_row(ui, tmp_path):
+def test_file_row_from_ghost_makes_a_new_ghost(ui, tmp_path):
     f = tmp_path / "up.txt"
     f.write_text("x")
     new_tab(ui)
     ui.click("[data-section=body]")
     ui.select_option("[data-testid=body-mode]", "multipart")
     cell(ui, "formdata-table", 0, 0).fill("doc")
+    ui.locator("[data-testid=formdata-table] [data-testid=fd-type]").first.select_option("file")
     ui.locator("[data-testid=formdata-table] input[type=file]").first.set_input_files(str(f))
     expect(T(ui, "formdata-table")).to_contain_text("up.txt")
     expect(rows(ui, "formdata-table")).to_have_count(2)

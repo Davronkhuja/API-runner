@@ -7,6 +7,7 @@
 HTTP kutubxonasi `_send()` ichida ajratilgan (ADR 0003: keyin httpx ga almashtirish mumkin).
 """
 import json
+import mimetypes
 import os
 import ssl
 import time
@@ -24,6 +25,10 @@ MUTATING = ("POST", "PUT", "PATCH", "DELETE")
 
 class FilePolicyError(PermissionError):
     pass
+
+
+class FileMissingError(FilePolicyError):
+    """Biriktirilgan fayl diskda yo'q (yo'l eskirgan yoki vaqtinchalik papka tozalangan)."""
 
 
 @dataclass
@@ -111,19 +116,34 @@ def _build_kwargs(spec, ctx, opened):
         kw["headers"] = {k: x for k, x in headers.items() if k.lower() != "content-type"}
     elif method in MUTATING and spec.get("body_file"):
         # binary body: faylning xom baytlari (fayl siyosati bo'yicha tekshiriladi)
-        with open(_resolve_file(spec["body_file"], ctx), "rb") as fh:
+        bpath = spec["body_file"]
+        bname = spec.get("body_file_name") or os.path.basename(bpath)
+        if not os.path.isfile(bpath):
+            raise FileMissingError("Fayl topilmadi: %s — qayta tanlang" % bname)
+        with open(_resolve_file(bpath, ctx), "rb") as fh:
             kw["data"] = fh.read()
         if not has_ct():
-            headers["Content-Type"] = ctype or "application/octet-stream"
+            headers["Content-Type"] = ctype or mimetypes.guess_type(bname)[0] or "application/octet-stream"
     elif method in MUTATING and (body or body_type == "multipart"):
         if body_type == "multipart":
-            files = {}
+            parts = []                          # ro'yxat: bitta kalitga bir nechta fayl, matn va fayl tartibi saqlanadi
             for fld in spec.get("multipart_fields") or []:
                 fn = replace_variables(fld.get("name", ""), v).strip()
-                if fn:
-                    files[fn] = (None, replace_variables(fld.get("value", ""), v))
-            if files:
-                kw["files"] = files
+                if not fn:
+                    continue
+                if fld.get("type") == "file":
+                    for f in fld.get("files") or []:
+                        path = (f.get("path") or "").strip()
+                        label = f.get("name") or os.path.basename(path) or "file"
+                        if not path or not os.path.isfile(path):
+                            raise FileMissingError("Fayl topilmadi: %s — qayta tanlang" % label)
+                        fh = open(_resolve_file(path, ctx), "rb")
+                        opened.append(fh)
+                        parts.append((fn, (label, fh, fld.get("content_type") or mimetypes.guess_type(label)[0] or "application/octet-stream")))
+                else:
+                    parts.append((fn, (None, replace_variables(fld.get("value", ""), v))))
+            if parts:
+                kw["files"] = parts
             kw["headers"] = {k: x for k, x in headers.items() if k.lower() != "content-type"}
         else:
             if body_type == "json" and not has_ct():
@@ -266,7 +286,7 @@ def execute(spec, ctx=None):
         except FilePolicyError as exc:
             last_elapsed = time.perf_counter() - start
             last_err = str(exc)
-            error_code = "file_policy"
+            error_code = "file_missing" if isinstance(exc, FileMissingError) else "file_policy"
             break                                   # siyosat xatosini qayta urinish bema'ni
         except Exception as exc:                    # noqa: BLE001 — engine hech qachon tashlamaydi
             last_elapsed = time.perf_counter() - start

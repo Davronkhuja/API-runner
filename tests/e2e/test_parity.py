@@ -102,13 +102,14 @@ def test_params_headers_checkbox_disable_row(ui, echo_server):
 
 
 def test_file_param_upload_and_post(ui, echo_server, tmp_path):
+    """Params'dagi 📎 faylni Body → form-data'ga o'tkazadi va u yuboriladi."""
     f = tmp_path / "up.txt"
     f.write_text("fayl-ichi")
     new_req(ui, echo_server + "/echo", "POST")
     ui.click("[data-section=params]")
     ui.locator("[data-testid=params-table] input[type=text]").nth(0).fill("doc")                 # ghost'da 📎 yo'q — qator oddiy bo'lgach paydo bo'ladi
     ui.locator("[data-testid=params-table] input[type=file]").first.set_input_files(str(f))
-    expect(ui.locator("[data-testid=params-table]")).to_contain_text("up.txt")
+    expect(ui.locator("[data-testid=formdata-table]")).to_contain_text("up.txt")
     T(ui, "send").click()
     expect(T(ui, "resp-body")).to_contain_text("fayl-ichi")
 

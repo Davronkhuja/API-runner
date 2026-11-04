@@ -1,6 +1,7 @@
 import type { PmRequest, RequestItem } from '../types/model'
 
-export interface KV { key: string; value: string; enabled: boolean; description?: string; kind?: 'text' | 'file' }
+export interface KV { key: string; value: string; enabled: boolean; description?: string; kind?: 'text' | 'file'; files?: { ref: string; name: string }[]; contentType?: string }
+import { refName } from './files'
 import { cleanSettings, type ReqSettings } from './settings'
 import { emptyScripts, eventsFromText, textFromEvents, type ScriptSet } from './scripts'
 import { authFromPm, authHeader, authToPm, emptyAuth, type AuthDraft, type AuthType } from './auth'
@@ -36,9 +37,9 @@ export function paramsFromUrl(url: string, existing: KV[]): KV[] {
     const e = pair.indexOf('=')
     return { key: dec(e < 0 ? pair : pair.slice(0, e)), value: e < 0 ? '' : dec(pair.slice(e + 1)), enabled: true }
   })
-  // mavjud qatorlarning tavsifi/fayl turini kalit bo'yicha saqlaymiz
+  // mavjud qatorlarning tavsifini kalit bo'yicha saqlaymiz
   const byKey = new Map(existing.filter(x => x.enabled).map(x => [x.key, x]))
-  const merged = fromUrl.map(r => { const o = byKey.get(r.key); return o && (o.kind === 'file' || o.description) && o.value === r.value ? { ...o } : r })
+  const merged = fromUrl.map(r => { const o = byKey.get(r.key); return o && o.description && o.value === r.value ? { ...o } : r })
   return [...merged, ...existing.filter(x => !x.enabled && x.key), emptyKV()]
 }
 
@@ -57,10 +58,12 @@ export function draftFromItem(item: RequestItem): RequestDraft {
   const d = newDraft(item.name)
   d.settings = cleanSettings(item['x-apirunner']?.settings)
   d.scripts = textFromEvents(item)
-  const lg = item['x-apirunner']?.legacy
+  const lg = item['x-apirunner']?.files_migrated ? undefined : item['x-apirunner']?.legacy    // fayllar Body'ga ko'chirilgan so'rov — `request` manba
   if (lg) {
     d.method = lg.method ?? 'GET'
-    d.params = withTrailing((lg.params ?? []).map((p: any) => ({ key: p.name ?? '', value: p.value ?? '', enabled: true, kind: p.type === 'file' ? 'file' : 'text' })))
+    d.params = withTrailing((lg.params ?? []).filter((p: any) => p.type !== 'file').map((p: any) => ({ key: p.name ?? '', value: p.value ?? '', enabled: true })))
+    const lf = (lg.params ?? []).filter((p: any) => p.type === 'file' && p.name)      // eski UI: Params'dagi fayl -> Body → form-data
+    if (lf.length) { d.body.mode = 'multipart'; d.body.fields = withTrailing(lf.map((p: any) => ({ key: p.name, value: '', enabled: true, kind: 'file' as const, files: [{ ref: String(p.value ?? ''), name: refName(String(p.value ?? '')) }] }))) }
     d.url = composeUrl(lg.url ?? '', d.params)
     d.pathVars = syncPathVars(d.url, [])
     d.headers = withTrailing((lg.headers ?? []).map((h: any) => ({ key: h.name ?? '', value: h.value ?? '', enabled: true })))
@@ -72,7 +75,7 @@ export function draftFromItem(item: RequestItem): RequestDraft {
     } else if (a) d.auth = { ...d.auth, type: 'custom', custom: a }
     const bt = lg.body_type ?? 'raw'
     d.body.contentType = lg.content_type ?? ''
-    if (bt === 'multipart') { d.body.mode = 'multipart'; d.body.fields = withTrailing((lg.multipart_fields ?? []).map((f: any) => ({ key: f.name ?? '', value: f.value ?? '', enabled: true }))) }
+    if (bt === 'multipart' && !lf.length) { d.body.mode = 'multipart'; d.body.fields = withTrailing((lg.multipart_fields ?? []).map((f: any) => ({ key: f.name ?? '', value: f.value ?? '', enabled: true }))) }
     else if (lg.body) { d.body.mode = bt === 'json' ? 'json' : bt === 'form' ? 'form' : 'raw'; d.body.raw = lg.body }
     return d
   }
@@ -88,7 +91,9 @@ export function draftFromItem(item: RequestItem): RequestDraft {
   const b = r.body
   if (b?.mode === 'raw') { d.body.mode = b.options?.raw?.language === 'json' ? 'json' : 'raw'; d.body.raw = b.raw ?? '' }
   else if (b?.mode === 'urlencoded') { d.body.mode = 'form'; d.body.fields = withTrailing((b.urlencoded ?? []).map(q => ({ key: q.key, value: q.value, enabled: !q.disabled }))) }
-  else if (b?.mode === 'formdata') d.body.fields = withTrailing((b.formdata ?? []).map(f => ({ key: f.key, value: f.value ?? f.src ?? '', enabled: !f.disabled, kind: f.type })))
+  else if (b?.mode === 'formdata') d.body.fields = withTrailing((b.formdata ?? []).map((f): KV => f.type === 'file'
+    ? { key: f.key, value: '', enabled: !f.disabled, kind: 'file' as const, files: (Array.isArray(f.src) ? f.src : f.src ? [f.src] : []).map(r => ({ ref: r, name: refName(r) })), ...(f.contentType ? { contentType: f.contentType } : {}) }
+    : { key: f.key, value: f.value ?? '', enabled: !f.disabled, ...(f.contentType ? { contentType: f.contentType } : {}) }))
   if (b?.mode === 'formdata') d.body.mode = 'multipart'
   if (b?.mode === 'file') { d.body.mode = 'binary'; d.body.file = { path: b.file?.src ?? '', name: b.file?.name ?? b.file?.src?.split('/').pop() ?? '' } }
   if (b?.mode === 'graphql') { d.body.mode = 'graphql'; d.body.gql = { query: b.graphql?.query ?? '', variables: b.graphql?.variables ?? '' } }
@@ -97,7 +102,7 @@ export function draftFromItem(item: RequestItem): RequestDraft {
 
 /** Qoralama -> Postman so'rovi (saqlash uchun). */
 export function requestFromDraft(d: RequestDraft): PmRequest {
-  const rows = (kv: KV[]) => kv.filter(x => x.key || x.value)
+  const rows = (kv: KV[]) => kv.filter(x => x.key || x.value || (x.kind === 'file' && x.files?.length))
   const query = rows(d.params).map(p => ({ key: p.key, value: p.value, ...(p.enabled ? {} : { disabled: true }), ...(p.description ? { description: p.description } : {}) }))
   const req: PmRequest = {
     method: d.method,
@@ -112,13 +117,25 @@ export function requestFromDraft(d: RequestDraft): PmRequest {
   else if (m === 'form') req.body = { mode: 'urlencoded', urlencoded: rows(d.body.fields).map(f => ({ key: f.key, value: f.value, ...(f.enabled ? {} : { disabled: true }) })) }
   else if (m === 'binary') req.body = { mode: 'file', file: { src: d.body.file.path, name: d.body.file.name } }
   else if (m === 'graphql') req.body = { mode: 'graphql', graphql: { query: d.body.gql.query, variables: d.body.gql.variables } }
-  else if (m === 'multipart') req.body = { mode: 'formdata', formdata: rows(d.body.fields).map(f => ({ key: f.key, value: f.value, type: f.kind === 'file' ? 'file' : 'text', ...(f.enabled ? {} : { disabled: true }) })) }
+  else if (m === 'multipart') req.body = { mode: 'formdata', formdata: rows(d.body.fields).map(f => (f.kind === 'file'
+    ? { key: f.key, type: 'file' as const, src: (f.files ?? []).map(x => x.ref), ...(f.contentType ? { contentType: f.contentType } : {}), ...(f.enabled ? {} : { disabled: true }) }
+    : { key: f.key, value: f.value, type: 'text' as const, ...(f.contentType ? { contentType: f.contentType } : {}), ...(f.enabled ? {} : { disabled: true }) })) }
   return req
+}
+
+/** Eski sessiya: Params'dagi fayl qatorlari (kind='file', qiymat "yo'l::nom") -> Body → form-data; matnli parametrlar query'da qoladi. */
+export function migrateParamFiles(d: any) {
+  const fileRows = (d?.params ?? []).filter((p: any) => p.kind === 'file')
+  if (!fileRows.length) return d
+  const rows = fileRows.map((p: any) => ({ key: p.key || 'file', value: '', enabled: p.enabled !== false, kind: 'file', files: [{ ref: String(p.value ?? ''), name: refName(String(p.value ?? '')) }] }))
+  const keep = (d.body?.fields ?? []).filter((f: any) => f.key || f.value || f.files?.length)
+  return { ...d, params: (d.params ?? []).filter((p: any) => p.kind !== 'file'), body: { ...(d.body ?? {}), mode: 'multipart', fields: [...(d.body?.mode === 'multipart' ? keep : []), ...rows, { key: '', value: '', enabled: true }] } }
 }
 
 /** Eski sessiyadan tiklangan qoralama: keyin qo'shilgan maydonlar (scripts, settings, pathVars …) bo'lmasa to'ldiriladi. */
 export function normalizeDraft(d: any): RequestDraft {
   const base = newDraft(d?.name)
+  d = migrateParamFiles(d)
   return { ...base, ...d, body: { ...base.body, ...(d?.body ?? {}) }, scripts: { ...base.scripts, ...(d?.scripts ?? {}) }, settings: d?.settings ?? {}, pathVars: d?.pathVars ?? [], auth: { ...base.auth, ...(d?.auth ?? {}) } }
 }
 
@@ -133,7 +150,7 @@ export function specFromDraft(d: RequestDraft, vars: Record<string, string> = {}
   const on = (kv: KV[]) => kv.filter(x => x.enabled && x.key.trim())
   const spec: Record<string, any> = {
     method: d.method, url: baseUrl(d.url), authorization: authHeader(d.auth),
-    params: on(d.params).map(p => ({ name: p.key, value: p.value, ...(p.kind === 'file' ? { type: 'file' } : {}) })),
+    params: on(d.params).map(p => ({ name: p.key, value: p.value })),
     headers: on(d.headers).map(h => ({ name: h.key, value: h.value })),
     body: '', content_type: d.body.contentType, body_type: 'raw', env_vars: vars,
     path_variables: d.pathVars.filter(v => v.key).map(v => ({ name: v.key, value: v.value })),
@@ -146,7 +163,7 @@ export function specFromDraft(d: RequestDraft, vars: Record<string, string> = {}
     spec.content_type ||= 'application/x-www-form-urlencoded'
   } else if (m === 'binary') {
     spec.body_file = d.body.file.path
-    spec.content_type ||= 'application/octet-stream'
+    spec.body_file_name = d.body.file.name          // Content-Type fayl nomidan (server) — qo'lda kiritilgan bo'lsa u ustun
   } else if (m === 'graphql') {
     let variables: unknown
     if (d.body.gql.variables.trim()) { try { variables = JSON.parse(d.body.gql.variables) } catch { throw new Error('GraphQL Variables: JSON noto\'g\'ri') } }
@@ -154,7 +171,9 @@ export function specFromDraft(d: RequestDraft, vars: Record<string, string> = {}
     spec.body = JSON.stringify({ query: d.body.gql.query, ...(variables !== undefined ? { variables } : {}) })
   } else if (m === 'multipart') {
     spec.body_type = 'multipart'
-    spec.multipart_fields = on(d.body.fields).map(f => ({ name: f.key, value: f.value }))
+    spec.multipart_fields = on(d.body.fields).map(f => (f.kind === 'file'
+      ? { name: f.key, type: 'file', files: (f.files ?? []).map(x => ({ ref: x.ref, name: x.name })), ...(f.contentType ? { content_type: f.contentType } : {}) }
+      : { name: f.key, value: f.value }))
   }
   return spec
 }

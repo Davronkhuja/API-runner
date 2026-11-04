@@ -119,7 +119,9 @@ def test_save_as_example_persists_lists_and_loads(ui, app, echo_server):
     assert len(ex) == 1 and ex[0]["code"] == 200 and ex[0]["_postman_previewlanguage"] == "json"
     assert json.loads(ex[0]["body"])["args"] == {"z": ["1"]} and any(h["key"].lower() == "content-type" for h in ex[0]["header"])
     assert ex[0]["originalRequest"]["method"] == "GET"
-    T(ui, "send").click()
+    with ui.expect_response(lambda r: r.url.endswith("/run_one")):
+        T(ui, "send").click()
+    expect(T(ui, "send")).to_be_enabled()                                         # javob kelib bo'ldi — keyin namuna yuklanadi
     ui.select_option("[data-testid=examples-select]", index=1)
     expect(T(ui, "rp-example-label")).to_be_visible()
     expect(T(ui, "resp-body")).to_contain_text('"z"')

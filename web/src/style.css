@@ -316,3 +316,18 @@ button.danger:disabled,button.danger:disabled:hover{background:var(--err);color:
 .kind-chips .chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid var(--border);border-radius:13px;background:var(--panel);color:var(--muted);font:500 12px var(--font-ui)}
 .kind-chips .chip.on{font-weight:600}.kind-chips .chip.kind-dev.on{border-color:var(--env-dev);color:var(--env-dev)}.kind-chips .chip.kind-test.on{border-color:var(--env-test);color:var(--env-test)}.kind-chips .chip.kind-prod.on{border-color:var(--env-prod);color:var(--env-prod)}
 .kind-chips .confirm{display:flex;align-items:center;gap:8px;margin-left:12px;padding:6px 12px;border-radius:8px;background:var(--env-prod-bg);color:var(--env-prod);font-weight:500}
+
+/* form-data fayl qatorlari */
+.fd-files{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 10px;min-height:36px}
+.fd-file{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:2px 8px;border:1px solid var(--border);border-radius:7px;background:var(--subtle);font-size:12px}
+.fd-file .fd-name{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono)}
+.fd-file small{color:var(--muted)}
+.fd-file button.ghost{width:20px;height:20px;padding:0}
+.fd-file.missing{border-color:var(--err);background:var(--err-bg);color:var(--err)}
+.fd-miss{font-weight:600}
+.linkbtn{height:22px;padding:0 4px;border:0;background:transparent;color:var(--accent-text);font-size:12px;font-weight:500;cursor:pointer}
+.linkbtn:hover:not(:disabled){background:transparent;text-decoration:underline}
+.kv-wrap table.kv tr.missing td{background:var(--err-bg)}
+.bin-zone{display:flex;align-items:center;gap:10px;padding:14px 16px;border:1.5px dashed var(--border-strong);border-radius:10px;background:var(--subtle)}
+.bin-zone.over{border-color:var(--focus);background:var(--accent-weak)}.bin-zone.missing{border-color:var(--err);background:var(--err-bg)}
+.bin-zone .bin-info{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}.bin-zone b{font-family:var(--font-mono);font-size:12.5px}

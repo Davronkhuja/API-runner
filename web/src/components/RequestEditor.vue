@@ -4,7 +4,7 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { sendTab, saveTab } from '../lib/actions'
-import { showToast } from '../lib/ui'
+import { fmtBytes, showToast } from '../lib/ui'
 import KvTable from './KvTable.vue'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
@@ -15,7 +15,8 @@ import { renameNode, validateName } from '../lib/rename'
 import { saveAsHandler } from '../lib/actions'
 import { useWorkspace as _ws } from '../stores/workspace'
 import BatchPanel from './BatchPanel.vue'
-import { composeUrl, paramsFromUrl, syncPathVars } from '../lib/draft'
+import { composeUrl, emptyKV, paramsFromUrl, syncPathVars } from '../lib/draft'
+import { fileInfo, guessType, isMissing, refreshFileInfo, uploadFile } from '../lib/files'
 import { authSource, effectiveAuth, folderPath, scopedVars } from '../lib/scope'
 import { useTree } from '../stores/tree'
 import Icon from './Icon.vue'
@@ -87,7 +88,7 @@ const usedVars = computed(() => {
     return { name, ok: false, title: 'Aniqlanmagan o\'zgaruvchi' }
   })
 })
-const autoCT = computed(() => ({ json: 'application/json', graphql: 'application/json', binary: 'application/octet-stream', form: 'application/x-www-form-urlencoded', multipart: 'multipart/form-data' } as Record<string, string>)[d.value.body.mode] ?? '')
+const autoCT = computed(() => ({ json: 'application/json', graphql: 'application/json', binary: d.value.body.file.name ? guessType(d.value.body.file.name) : 'application/octet-stream', form: 'application/x-www-form-urlencoded', multipart: 'multipart/form-data' } as Record<string, string>)[d.value.body.mode] ?? '')
 const effectiveCT = computed(() => (d.value.body.mode === 'json' || d.value.body.mode === 'raw') && d.value.body.contentType ? d.value.body.contentType : autoCT.value)
 function onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && curlOpen.value) curlOpen.value = false }
 onMounted(() => window.addEventListener('keydown', onEsc))
@@ -109,14 +110,39 @@ const showHist = ref(false)
 const hideHist = () => { setTimeout(() => (showHist.value = false), 150) }
 const reqEl = ref<HTMLElement>(), respEl = ref<HTMLElement>()
 const binInput = ref<HTMLInputElement>()
+const binOver = ref(false)
+async function setBinary(f: File) {
+  try { const u = await uploadFile(f); d.value.body.file = { path: u.ref, name: u.name }; touch() }
+  catch (e: any) { showToast('Fayl yuklanmadi: ' + (e?.message ?? ''), 'error') }
+}
 async function pickBinary(e: Event) {
-  const f = (e.target as HTMLInputElement).files?.[0]
-  if (!f) return
-  const fd = new FormData(); fd.append('file', f)
+  const el = e.target as HTMLInputElement, f = el.files?.[0]
+  el.value = ''
+  if (f) await setBinary(f)
+}
+function onBinDrop(e: DragEvent) { binOver.value = false; const f = e.dataTransfer?.files?.[0]; if (f) setBinary(f) }
+const binMissing = computed(() => !!d.value.body.file.path && isMissing(d.value.body.file.path))
+const binSize = computed(() => { const i = fileInfo[d.value.body.file.path]; return i ? fmtBytes(i.size) : '' })
+watch(() => d.value.body.mode === 'binary' ? d.value.body.file.path : '', p => { if (p) refreshFileInfo([p]) }, { immediate: true })
+
+/** Params'dagi 📎 / sudrab tashlash: fayl Body → form-data'ga yangi File qatori bo'lib qo'shiladi (kalit — Params qatori nomi, bo'sh bo'lsa "file"). */
+async function attachToBody(i: number, files: File[]) {
+  if (!files.length) return
   try {
-    const r = await fetch('/upload_temp', { method: 'POST', body: fd, headers: { 'X-Session-Token': window.__API_TOKEN__ ?? '' } }).then(x => x.json())
-    d.value.body.file = { path: r.path, name: r.name }; touch()
-  } catch { showToast('Fayl yuklanmadi', 'error') }
+    const row = i >= 0 ? d.value.params[i] : null
+    const key = row?.key?.trim() || 'file'
+    const up = []
+    for (const f of files) up.push(await uploadFile(f))
+    const fields = d.value.body.mode === 'multipart' ? d.value.body.fields.filter(f => f.key || f.value || f.files?.length) : []
+    for (const u of up) fields.push({ key, value: '', enabled: true, kind: 'file', files: [{ ref: u.ref, name: u.name }] })
+    fields.push(emptyKV())
+    d.value.body.fields = fields
+    d.value.body.mode = 'multipart'
+    if (row) d.value.params.splice(i, 1)
+    d.value.url = composeUrl(d.value.url, d.value.params)
+    touch(); section.value = 'body'
+    showToast("Fayl Body → form-data'ga qo'shildi", 'success')
+  } catch (e: any) { showToast('Fayl yuklanmadi: ' + (e?.message ?? ''), 'error') }
 }
 
 // URL ↔ Params ikki tomonlama sinxron
@@ -175,7 +201,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
     </div>
     <div class="editor" :class="{ tall: section === 'scripts' }" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
       <template v-if="section === 'params'">
-        <KvTable :rows="d.params" files testid="params-table" @change="onParamsChange" />
+        <KvTable :rows="d.params" quick-attach testid="params-table" @change="onParamsChange" @attach="attachToBody" />
         <div v-if="d.pathVars.length" data-testid="path-vars" style="margin-top:12px">
           <b>Path variables</b>
           <table class="kv"><tbody><tr v-for="pv in d.pathVars" :key="pv.key"><td style="width:160px"><code>:{{ pv.key }}</code></td><td><input v-model="pv.value" placeholder="Qiymat" data-testid="path-var-val" @input="touch"></td></tr></tbody></table>
@@ -197,17 +223,25 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart' && d.body.mode !== 'graphql'" v-model="d.body.contentType" :placeholder="autoCT || 'Content-Type'" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
         <span v-if="effectiveCT" class="muted" style="margin-left:8px" data-testid="content-type-auto">Content-Type: {{ effectiveCT }}</span>
         <CodeEditor v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :key="d.body.mode" v-model="d.body.raw" :lang="d.body.mode === 'json' ? 'json' : 'raw'" testid="body-raw" placeholder='{ "key": "{{value}}" }' class="body-editor" @update:model-value="touch" @beautify="beautify" />
-        <div v-else-if="d.body.mode === 'binary'" data-testid="binary-panel" style="margin-top:8px">
-          <button @click="binInput?.click()">Fayl tanlash…</button><input ref="binInput" type="file" hidden data-testid="binary-file" @change="pickBinary">
-          <span v-if="d.body.file.name" data-testid="binary-name"> 📎 {{ d.body.file.name }} <button class="ghost" aria-label="Faylni olib tashlash" data-testid="binary-clear" @click="d.body.file = { path: '', name: '' }; touch()">×</button></span>
-          <span v-else class="muted"> Fayl tanlanmagan</span>
+        <div v-else-if="d.body.mode === 'binary'" data-testid="binary-panel" class="bin-zone" :class="{ over: binOver, missing: binMissing }" style="margin-top:8px"
+             @dragover.prevent="binOver = true" @dragleave="binOver = false" @drop.prevent="onBinDrop">
+          <template v-if="d.body.file.path">
+            <Icon name="file" :size="18" />
+            <span class="bin-info"><b data-testid="binary-name">{{ d.body.file.name }}</b>
+              <span v-if="binMissing" class="fd-miss" data-testid="binary-missing" role="alert">topilmadi, qayta tanlang</span>
+              <span v-else class="muted" data-testid="binary-size">{{ binSize }}</span></span>
+            <button class="linkbtn" data-testid="binary-replace" @click="binInput?.click()">Almashtirish</button>
+            <button class="ghost" aria-label="Faylni olib tashlash" data-testid="binary-clear" @click="d.body.file = { path: '', name: '' }; touch()">×</button>
+          </template>
+          <template v-else><span class="muted">Faylni shu yerga tashlang yoki</span><button data-testid="binary-pick" @click="binInput?.click()">Fayl tanlash…</button></template>
+          <input ref="binInput" type="file" hidden data-testid="binary-file" @change="pickBinary">
         </div>
         <div v-else-if="d.body.mode === 'graphql'" data-testid="graphql-panel" style="margin-top:8px">
           <b>Query</b><CodeEditor v-model="d.body.gql.query" lang="raw" testid="gql-query" placeholder="query { users { id name } }" class="body-editor" style="height:160px" @update:model-value="touch" />
           <b>Variables (JSON)</b><CodeEditor v-model="d.body.gql.variables" lang="json" testid="gql-vars" placeholder='{ "id": 1 }' class="body-editor" style="height:90px" @update:model-value="touch" />
         </div>
         <KvTable v-else-if="d.body.mode === 'form'" :rows="d.body.fields" testid="form-table" @change="touch" />
-        <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" files testid="formdata-table" @change="touch" />
+        <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" formdata testid="formdata-table" @change="touch" />
       </div>
     </div>
     <div class="v-resizer" data-testid="resp-resizer" role="separator" aria-orientation="horizontal" aria-label="Javob paneli balandligi" tabindex="0" @pointerdown.prevent="startResize" @keydown.up.prevent="nudge(24)" @keydown.down.prevent="nudge(-24)" />
