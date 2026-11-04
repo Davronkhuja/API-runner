@@ -7,6 +7,8 @@ import sys
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
 MARK = {"curl": "curl -X", "python": "requests.request", "fetch": "await fetch(", "axios": "axios({", "node": ".request(options",
         "go": "http.NewRequest", "php": "curl_init", "java": "OkHttpClient", "csharp": "HttpClient"}
@@ -27,7 +29,7 @@ def setup_post(p, url):
     p.locator("[data-testid=headers-table] input[type=text]").nth(0).fill("X-Trace")
     p.locator("[data-testid=headers-table] input[type=text]").nth(1).fill("it's-1")
     p.click("[data-section=body]")
-    p.select_option("[data-testid=body-mode]", "json")
+    set_body_mode(p, "json")
     p.fill("[data-testid=body-raw]", '{"name":"Ali","q":"a\\"b"}')
 
 

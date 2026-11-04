@@ -41,7 +41,8 @@ export interface Collection {
   variable?: unknown[]
   event?: unknown[]
 }
-export interface EnvValue { key: string; value: string; enabled: boolean; type: 'default' | 'secret' }
+/** value — Boshlang'ich (eksport/zaxiraga tushadi); current — Joriy (shu kompyuterda; skriptlar shuni o'zgartiradi, bor bo'lsa ustun). */
+export interface EnvValue { key: string; value: string; current?: string | null; enabled: boolean; type: 'default' | 'secret' }
 export type EnvKind = 'dev' | 'test' | 'prod'
 export interface Environment { id: string; name: string; values: EnvValue[]; kind?: EnvKind | ''; confirm_writes?: boolean }
 export interface CollectionMeta { id: string; name: string; requests: number }

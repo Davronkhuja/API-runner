@@ -111,7 +111,7 @@ def test_autocomplete_offers_pm_api(ui):
     open_req(ui, "Alpha")
     script_section(ui)
     T(ui, "script-pre").click()
-    ui.keyboard.type("pm.environment.s")
+    ui.keyboard.type("pm.environment.s", delay=40)                                  # tez yozilsa avtoto'ldirish oynasi poyga qiladi (yuklama ostida)
     tip = ui.locator(".cm-tooltip-autocomplete")
     expect(tip).to_be_visible()
     expect(tip).to_contain_text("pm.environment.set")
@@ -200,7 +200,7 @@ def test_script_variables_are_saved_to_active_environment_and_visible_in_ui(ui, 
     script_section(ui)
     write(ui, "test", "pm.environment.set('from_script', pm.response.code)")
     send(ui)
-    eventually(lambda: any(v["key"] == "from_script" and v["value"] == "200" for v in app.api("GET", f"/api/environments/{eid}")["values"]))
+    eventually(lambda: any(v["key"] == "from_script" and v.get("current") == "200" for v in app.api("GET", f"/api/environments/{eid}")["values"]))
     T(ui, "env-vars-btn").click()
     expect(T(ui, "env-tab")).to_be_visible()
     expect(ui.locator("[data-testid=env-key]").nth(-2)).to_have_value("from_script")      # oxirgi qator — ghost

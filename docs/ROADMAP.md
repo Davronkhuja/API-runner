@@ -66,14 +66,23 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [ ] Runner sozlamalari, batch integratsiyasi, real-time SSE, SQLite, eksport (JSON/HTML/JUnit), solishtirish
 - [ ] **Runner (dizayn maketidan qolganlari)**: parallel so'rovlar, "o'zgaruvchi qiymatlarini saqlash", "javoblarni saqlash", natijalar jadvalida **Testlar** ustuni (Bosqich 3 test natijalariga bog'liq), run raqami/tarixi sarlavhasi (`run #14`), "avvalgi run bilan solishtirish" va "Eksport" tugmalari Runner sahifasida
 
+## Qo'lda tekshiruvdan keyingi qo'shimchalar (Bosqich 4 bilan birga, v2.3.5–v2.3.8)
+- [x] A: server/UI versiya ogohlantirishi (`/api/version`), saqlanmagan javob holati, ghost qatorda 📎 yo'q, izchil disabled holat, ⌘K Import/Runner — v2.3.5
+- [x] B: muhit turi Dev/Test/Prod, PROD belgisi, yozuvchi so'rovlar tasdig'i, Runner sukut bo'yicha faqat GET, RunGuard — v2.3.6
+- [x] Fayl biriktirish Postman uslubida (Body → form-data Turi/Content-Type, ko'p fayl, drop, topilmadi, binary, `workspace/files`, sxema 3 migratsiyasi, Sozlamalar → Fayllar) — v2.3.7
+- [x] C: Folder/Collection Overview, Env (Initial/Current, secret, tur), Tarix (kunlar, ×N, filtr, diff), Ko'rinish (yonma-yon/ustma-ust, zich rejim), Body segmentlari (POST/PUT — raw JSON), Batch formasi 2 qatorli grid — v2.3.8
+- [ ] **Batch formasini Runner tabiga ko'chirish** (ko'rib chiqildi: Runner v2 sozlamalari — parallel, kechikish, retry, timeout, data fayl — Batch bilan bir xil, shuning uchun Bosqich 4 da yagona "Run sozlamalari" paneliga birlashtiriladi; so'rov tabidagi "Batch / Runner" esa shu panelni bitta so'rov uchun ochuvchi qisqa yo'l bo'lib qoladi)
+- [ ] Folder Overview: "Hujjat yaratish" va "Eksport" tugmalari (maketda bor; Bosqich 5 — Export bilan birga)
+
 ## Bosqich 4b — Kundalik qulayliklar (Bosqich 4 dan keyin bajariladi)
-- [ ] Muhit o'zgaruvchilarida **Initial / Current** qiymatlar (eksportga faqat Initial ketadi); headerdagi "ko'z" quick-look (faol muhit + global qiymatlarni tez ko'rish va tahrirlash)
+- [x] Muhit o'zgaruvchilarida **Initial / Current** qiymatlar (eksportga faqat Initial ketadi; skriptlar faqat Current'ni o'zgartiradi) — v2.3.8
+- [ ] Headerdagi "ko'z" quick-look (faol muhit + global qiymatlarni tez ko'rish va tahrirlash)
 - [ ] **`{{` avtoto'ldirish** (URL, params, headers, body, auth maydonlarida; scope va qiymat ko'rsatiladi) va belgilangan matndan o'zgaruvchi yaratish ("Set as variable")
 - [ ] **Example'lar ro'yxati** daraxtda so'rov ostida; ochish va tahrirlash (status, header, body)
 - [ ] **Docs paneli**: Markdown tavsif so'rov o'ng tomonida (collection/papka/so'rov)
 - [ ] **Trash**: o'chirilganlarni 30 kun saqlash va tiklash
 - [ ] **Workspace bo'ylab Find & Replace** (oldindan ko'rish va avtomatik zaxira bilan)
-- [ ] **So'rov javoblari tarixi** va ikki javobni solishtirish (diff)
+- [x] **So'rov javoblari tarixi** va ikki javobni solishtirish (diff) — v2.3.8 (javob matni tarixga 100 KB gacha saqlanadi)
 - [ ] **"Send and Download"** (javobni faylga saqlab yuborish)
 - [ ] Auth: **JWT RS\*/ES\*** (`cryptography` bilan), **NTLM**, **Hawk**
 

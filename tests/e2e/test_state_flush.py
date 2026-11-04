@@ -3,6 +3,8 @@ Bu yerda hech qanday qat'iy sleep yo'q."""
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 from tests.e2e.conftest import eventually
 
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
@@ -53,7 +55,7 @@ def test_params_headers_body_edits_survive_immediate_reload(ui):
     ui.locator("[data-testid=headers-table] input[type=text]").nth(0).fill("X-A")
     ui.locator("[data-testid=headers-table] input[type=text]").nth(1).fill("v")
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "raw")
+    set_body_mode(ui, "raw")
     T(ui, "body-raw").fill("son-matn")
     reload(ui)
     expect(T(ui, "url")).to_have_text("http://h/p?q=1")

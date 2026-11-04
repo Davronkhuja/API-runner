@@ -2,6 +2,8 @@
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
 
 
@@ -49,7 +51,7 @@ def test_new_request_tables_start_with_exactly_one_ghost_without_row_controls(ui
         expect(g.locator("input[type=text]").first).to_have_attribute("placeholder", "Kalit")
     ui.click("[data-section=body]")
     for mode, table in (("form", "form-table"), ("multipart", "formdata-table")):
-        ui.select_option("[data-testid=body-mode]", mode)
+        set_body_mode(ui, mode)
         expect(ghosts(ui, table)).to_have_count(1)
     expect(ghosts(ui, "formdata-table").locator("input[type=file]")).to_have_count(0)    # ghost'da 📎 yo'q
 
@@ -190,7 +192,7 @@ def test_file_row_from_ghost_makes_a_new_ghost(ui, tmp_path):
     f.write_text("x")
     new_tab(ui)
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "multipart")
+    set_body_mode(ui, "multipart")
     cell(ui, "formdata-table", 0, 0).fill("doc")
     ui.locator("[data-testid=formdata-table] [data-testid=fd-type]").first.select_option("file")
     ui.locator("[data-testid=formdata-table] input[type=file]").first.set_input_files(str(f))

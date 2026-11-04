@@ -4,6 +4,7 @@ import { get, post } from '../api/client'
 import { askConfirm, fmtBytes, showToast } from '../lib/ui'
 import { useWorkspace } from '../stores/workspace'
 import SettingsForm from './SettingsForm.vue'
+import { dense, layout } from '../lib/view'
 import Icon from './Icon.vue'
 import { exportLegacy, importLocalStorage } from '../lib/migrate'
 import type { ReqSettings } from '../lib/settings'
@@ -57,6 +58,15 @@ onMounted(load)
   <div class="page" data-testid="settings-tab">
     <h3 style="margin-top:0">Sozlamalar</h3>
     <div class="muted" data-testid="settings-status" v-if="status">Versiya {{ status.version }} · sxema {{ status.schemaVersion }}</div>
+    <h4>Ko'rinish</h4>
+    <div class="view-opts" data-testid="view-settings">
+      <div role="radiogroup" aria-label="So'rov va javob joylashuvi" class="view-radio">
+        <span class="lbl">So'rov va javob</span>
+        <label><input v-model="layout" type="radio" value="stack" data-testid="view-stack">Ustma-ust</label>
+        <label><input v-model="layout" type="radio" value="side" data-testid="view-side">Yonma-yon</label>
+      </div>
+      <label class="view-dense"><input v-model="dense" type="checkbox" data-testid="view-dense"><span><b>Zich rejim</b><br><span class="muted">Kichikroq qator balandligi — ekranga ko'proq qator sig'adi.</span></span></label>
+    </div>
     <h4>So'rov sozlamalari (global)</h4>
     <p class="muted">Barcha so'rovlar uchun sukut; har bir so'rov o'z Sozlamalar tabida qayta belgilashi mumkin.</p>
     <SettingsForm :model="gs" prefix="gset" @change="gsDirty = true" />

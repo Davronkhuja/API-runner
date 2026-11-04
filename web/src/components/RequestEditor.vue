@@ -5,6 +5,7 @@ import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { sendTab, saveTab } from '../lib/actions'
 import { fmtBytes, showToast } from '../lib/ui'
+import { layout } from '../lib/view'
 import KvTable from './KvTable.vue'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
@@ -96,12 +97,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
 // Editor / javob ajratgichi (vertikal)
 const respH = ref<number | null>(null)
 function startResize(e: PointerEvent) {
-  const startY = e.clientY, startH = respEl.value?.offsetHeight ?? 200
-  const move = (ev: PointerEvent) => { respH.value = Math.max(80, startH + (startY - ev.clientY)) }
+  const side = layout.value === 'side'
+  const start = side ? e.clientX : e.clientY, startSize = (side ? respEl.value?.offsetWidth : respEl.value?.offsetHeight) ?? 200
+  const move = (ev: PointerEvent) => { respH.value = Math.max(side ? 240 : 80, startSize + (start - (side ? ev.clientX : ev.clientY))) }
   const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
   window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
 }
-function nudge(dy: number) { respH.value = Math.max(80, (respH.value ?? respEl.value?.offsetHeight ?? 200) + dy) }
+function nudge(dy: number) { respH.value = Math.max(80, (respH.value ?? (layout.value === 'side' ? respEl.value?.offsetWidth : respEl.value?.offsetHeight) ?? 200) + dy) }
 function copyCurl() { navigator.clipboard?.writeText(curlText.value); showToast('Nusxalandi', 'success') }
 function beautify() {
   try { d.value.body.raw = JSON.stringify(JSON.parse(d.value.body.raw), null, 2); touch() } catch { showToast('JSON noto\'g\'ri — formatlab bo\'lmadi', 'warn') }
@@ -145,6 +147,24 @@ async function attachToBody(i: number, files: File[]) {
   } catch (e: any) { showToast('Fayl yuklanmadi: ' + (e?.message ?? ''), 'error') }
 }
 
+// Body turi: segmentli tugmalar (maketdagidek). "raw" segmenti JSON/Text formatini alohida select bilan tanlaydi.
+const BODY_SEGS = [{ id: 'none', label: 'none' }, { id: 'multipart', label: 'form-data' }, { id: 'form', label: 'urlencoded' }, { id: 'raw', label: 'raw' }, { id: 'binary', label: 'binary' }, { id: 'graphql', label: 'GraphQL' }] as const
+const segOn = (id: string) => (id === 'raw' ? d.value.body.mode === 'json' || d.value.body.mode === 'raw' : d.value.body.mode === id)
+function setMode(id: (typeof BODY_SEGS)[number]['id']) {
+  d.value.body.mode = id === 'raw' ? (d.value.body.mode === 'raw' ? 'raw' : 'json') : id
+  touch()
+}
+function stepMode(dir: number) {
+  const i = BODY_SEGS.findIndex(m => segOn(m.id))
+  setMode(BODY_SEGS[(i + dir + BODY_SEGS.length) % BODY_SEGS.length].id)
+  nextTick(() => document.querySelector<HTMLElement>('[data-testid=body-mode] [aria-checked=true]')?.focus())
+}
+/** POST/PUT tanlanganda (tana hali tanlanmagan bo'lsa) — raw JSON sukut bo'yicha. */
+function onMethodChange() {
+  if ((d.value.method === 'POST' || d.value.method === 'PUT') && d.value.body.mode === 'none') d.value.body.mode = 'json'
+  touch()
+}
+
 // URL ↔ Params ikki tomonlama sinxron
 function onUrlInput() { d.value.params = paramsFromUrl(d.value.url, d.value.params); d.value.pathVars = syncPathVars(d.value.url, d.value.pathVars); touch() }
 function onParamsChange() { d.value.url = composeUrl(d.value.url, d.value.params); touch() }
@@ -175,7 +195,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
     </div>
     <div class="urlbar" style="position:relative">
       <div class="urlfield">
-        <select v-model="d.method" data-testid="method" aria-label="HTTP metod" :class="'m-' + d.method" @change="touch">
+        <select v-model="d.method" data-testid="method" aria-label="HTTP metod" :class="'m-' + d.method" @change="onMethodChange">
           <option v-for="m in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']" :key="m" :class="'m-' + m">{{ m }}</option>
         </select>
         <div class="urlwrap">
@@ -192,6 +212,8 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
     <div v-if="extraVars.length" class="var-chips" data-testid="var-chips"><span>Boshqa o'zgaruvchilar:</span>
       <span v-for="v in extraVars" :key="v.name" class="var-chip" :class="v.ok ? 'var-ok' : 'var-undef'" data-testid="var-chip" :title="v.title">{{ v.name }}</span>
     </div>
+    <div class="work" :class="{ side: layout === 'side' }" data-testid="work">
+    <div class="req-pane">
     <div class="sections" data-testid="sections" role="tablist" aria-label="So'rov bo'limlari" @keydown="onSectionKey">
       <button v-for="s in SECTIONS" :key="s" role="tab" :aria-selected="section === s" :tabindex="section === s ? 0 : -1" :class="{ on: section === s }" :data-section="s" @click="section = s">
         {{ { params: 'Params', headers: 'Headers', auth: 'Auth', body: 'Body', scripts: 'Scripts', settings: 'Sozlamalar', batch: 'Batch / Runner' }[s] }}<span v-if="counts[s]" class="badge">{{ counts[s] }}</span><span v-if="s === 'scripts' && (d.scripts.pre.trim() || d.scripts.test.trim())" class="dot-mark" aria-label="skript bor" data-testid="scripts-dot" />
@@ -216,8 +238,11 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       </div>
       <BatchPanel v-else-if="section === 'batch'" :tab="tab" />
       <div v-else data-testid="body-panel">
-        <select v-model="d.body.mode" data-testid="body-mode" @change="touch">
-          <option value="none">none</option><option value="json">JSON</option><option value="raw">Raw</option><option value="form">x-www-form-urlencoded</option><option value="multipart">form-data</option><option value="binary">binary</option><option value="graphql">GraphQL</option>
+        <div class="seg-group body-seg" role="radiogroup" aria-label="Body turi" data-testid="body-mode" :data-value="d.body.mode" @keydown.left.prevent="stepMode(-1)" @keydown.right.prevent="stepMode(1)">
+          <button v-for="m in BODY_SEGS" :key="m.id" class="seg" :class="{ on: segOn(m.id) }" role="radio" :aria-checked="segOn(m.id)" :tabindex="segOn(m.id) ? 0 : -1" :data-mode="m.id" @click="setMode(m.id)">{{ m.label }}</button>
+        </div>
+        <select v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :value="d.body.mode" class="body-fmt" aria-label="Body formati" data-testid="body-format" @change="d.body.mode = ($event.target as HTMLSelectElement).value as 'json' | 'raw'; touch()">
+          <option value="json">JSON</option><option value="raw">Text</option>
         </select>
         <button v-if="d.body.mode === 'json'" data-testid="beautify" style="margin-left:8px" @click="beautify" title="Cmd/Ctrl+B">Beautify</button>
         <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart' && d.body.mode !== 'graphql'" v-model="d.body.contentType" :placeholder="autoCT || 'Content-Type'" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
@@ -244,10 +269,12 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" formdata testid="formdata-table" @change="touch" />
       </div>
     </div>
-    <div class="v-resizer" data-testid="resp-resizer" role="separator" aria-orientation="horizontal" aria-label="Javob paneli balandligi" tabindex="0" @pointerdown.prevent="startResize" @keydown.up.prevent="nudge(24)" @keydown.down.prevent="nudge(-24)" />
-    <section class="resp" ref="respEl" data-testid="response" aria-label="Javob" :style="respH ? { flex: 'none', height: respH + 'px' } : {}" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
+    </div>
+    <div class="v-resizer" data-testid="resp-resizer" role="separator" :aria-orientation="layout === 'side' ? 'vertical' : 'horizontal'" aria-label="Javob paneli o'lchami" tabindex="0" @pointerdown.prevent="startResize" @keydown.up.prevent="nudge(24)" @keydown.down.prevent="nudge(-24)" @keydown.left.prevent="nudge(24)" @keydown.right.prevent="nudge(-24)" />
+    <section class="resp" ref="respEl" data-testid="response" aria-label="Javob" :style="respH ? (layout === 'side' ? { flex: 'none', width: respH + 'px' } : { flex: 'none', height: respH + 'px' }) : {}" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
       <ResponsePanel :tab="tab" />
     </section>
+    </div>
   </div>
   <div v-if="curlOpen" class="overlay" @click.self="curlOpen = false"><div class="dialog" role="dialog" aria-modal="true" aria-label="Kod namunasi" style="width:640px" data-testid="curl-drawer">
     <div style="display:flex;gap:8px;align-items:center"><b style="flex:1">Kod</b><select v-model="lang" aria-label="Til" data-testid="snippet-lang"><option v-for="l in LANGS" :key="l[0]" :value="l[0]">{{ l[1] }}</option></select><button data-testid="curl-copy" @click="copyCurl">Nusxa</button><button @click="curlOpen = false">×</button></div>

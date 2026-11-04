@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { kindLabel } from '../lib/envkind'
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { useTree, rowKey, dropPositionFor, type Row } from '../stores/tree'
 import { useTabs } from '../stores/tabs'
@@ -222,8 +223,8 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
         <span class="ico"><Icon name="globe" :size="15" /></span><span class="name"><b style="font-weight:500;display:block">Globals</b><span class="muted" style="font-size:11.5px">{{ ws.globals.length }} ta o'zgaruvchi</span></span>
       </button>
       <div v-for="e in ws.environments" :key="e.id" class="row" :class="{ sel: ws.activeEnvId === e.id }" style="height:44px" data-testid="env-row" role="button" tabindex="0" @click="openEnv(e.id, e.name)" @keydown.enter="openEnv(e.id, e.name)">
-        <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0" :style="{ background: ws.activeEnvId === e.id ? 'var(--ok)' : 'var(--border-strong)' }" aria-hidden="true" />
-        <span class="name"><b style="font-weight:500;display:block">{{ e.name }}</b><span class="muted" style="font-size:11.5px">{{ e.values.length }} ta o'zgaruvchi{{ ws.activeEnvId === e.id ? ' · faol' : '' }}</span></span>
+        <span class="kind-dot" :class="e.kind ? 'kind-' + e.kind : ''" style="flex-shrink:0" :style="e.kind ? {} : { background: ws.activeEnvId === e.id ? 'var(--ok)' : 'var(--border-strong)' }" :data-kind="e.kind || undefined" aria-hidden="true" />
+        <span class="name"><b style="font-weight:500;display:block">{{ e.name }}</b><span class="muted" style="font-size:11.5px">{{ e.values.length }} ta o'zgaruvchi{{ e.kind ? ' · ' + kindLabel(e.kind) : '' }}{{ ws.activeEnvId === e.id ? ' · faol' : '' }}</span></span>
         <button class="ib x" :aria-label="ws.activeEnvId === e.id ? 'Faolsizlantirish' : 'Faollashtirish'" :title="ws.activeEnvId === e.id ? 'Faol ✓' : 'Faollashtirish'" @click.stop="ws.setActive(ws.activeEnvId === e.id ? null : e.id)"><Icon :name="ws.activeEnvId === e.id ? 'check' : 'play'" :size="14" /></button>
         <button class="ib x" aria-label="Muhitni o'chirish" title="O'chirish" @click.stop="delEnv(e.id, e.name)"><Icon name="x" :size="14" /></button>
       </div>

@@ -4,6 +4,8 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 import apirunner
 
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
@@ -63,7 +65,7 @@ def test_response_after_reload_never_shows_an_empty_body(ui):
 def test_ghost_row_has_no_attach_icon_and_bulk_edit_is_one_line(ui):
     T(ui, "new-tab").click()
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "multipart")
+    set_body_mode(ui, "multipart")
     expect(ui.locator("[data-testid=formdata-table] tr[data-ghost] input[type=file]")).to_have_count(0)
     box = T(ui, "kv-bulk").first.bounding_box()
     assert box["height"] <= 26 and box["width"] >= 60

@@ -184,4 +184,4 @@ def test_globals_tab_edit_and_use(ui, app):
     T(ui, "env-val").first.fill("GLOBALVAL")
     T(ui, "env-save").click()
     eventually_globals = app.api("GET", "/api/globals")["values"]
-    assert any(v["key"] == "gv" and v["value"] == "GLOBALVAL" for v in eventually_globals)
+    assert any(v["key"] == "gv" and v.get("current", v["value"]) == "GLOBALVAL" for v in eventually_globals)

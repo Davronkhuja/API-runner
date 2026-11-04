@@ -6,6 +6,8 @@ import time
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
 FD = "[data-testid=formdata-table]"
 
@@ -26,7 +28,7 @@ def new_post(p, url=None):
 
 def to_formdata(p):
     p.click("[data-section=body]")
-    p.select_option("[data-testid=body-mode]", "multipart")
+    set_body_mode(p, "multipart")
 
 
 def fd_rows(p):
@@ -133,7 +135,7 @@ def test_params_attach_moves_file_to_body_formdata_and_removes_the_param_row(ui,
     ui.locator("[data-testid=params-table] tbody tr").nth(1).locator("input[type=file]").set_input_files(f)
     expect(T(ui, "toast")).to_contain_text("Fayl Body → form-data'ga qo'shildi")
     expect(T(ui, "body-panel")).to_be_visible()                                               # Body tabi ochildi
-    expect(T(ui, "body-mode")).to_have_value("multipart")
+    expect(T(ui, "body-mode")).to_have_attribute("data-value", "multipart")
     expect(ui.locator(f"{FD} [data-cell='0:0']")).to_have_value("doc")
     expect(T(ui, "fd-name")).to_have_text("up.txt")
     ui.click("[data-section=params]")
@@ -162,7 +164,7 @@ def test_attach_icon_only_in_params(ui):
     ui.locator("[data-testid=headers-table] [data-cell='0:0']").fill("H")
     expect(ui.locator("[data-testid=headers-table] input[type=file]")).to_have_count(0)
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "form")
+    set_body_mode(ui, "form")
     ui.locator("[data-testid=form-table] [data-cell='0:0']").fill("k")
     expect(ui.locator("[data-testid=form-table] input[type=file]")).to_have_count(0)
 
@@ -248,7 +250,7 @@ def test_choosing_the_file_again_clears_the_red_state(broken, tmp_path):
 def test_binary_drop_zone_name_size_and_auto_content_type(ui, tmp_path):
     new_post(ui)
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "binary")
+    set_body_mode(ui, "binary")
     expect(T(ui, "binary-panel")).to_contain_text("Faylni shu yerga tashlang")
     drop_files(ui, "[data-testid=binary-panel]", [("rasm.png", "PNGDATA")])
     expect(T(ui, "binary-name")).to_have_text("rasm.png")
@@ -297,7 +299,7 @@ def test_old_session_draft_with_params_file_row_moves_to_body(app, page, tmp_pat
     page.click("[data-section=params]")
     assert [i.input_value() for i in page.locator("[data-testid=params-table] [data-cell$=':0']").all()] == ["q", ""]
     page.click("[data-section=body]")
-    expect(T(page, "body-mode")).to_have_value("multipart")
+    expect(T(page, "body-mode")).to_have_attribute("data-value", "multipart")
     expect(T(page, "fd-name")).to_have_text("old.txt")
 
 
@@ -350,7 +352,7 @@ def test_migrated_legacy_request_sends_exactly_what_it_sent_before(tmp_path, pag
         page.click("[data-section=params]")
         assert [i.input_value() for i in page.locator("[data-testid=params-table] [data-cell$=':0']").all()] == ["q", ""]     # matnli parametr query'da qoldi
         page.click("[data-section=body]")
-        expect(T(page, "body-mode")).to_have_value("multipart")
+        expect(T(page, "body-mode")).to_have_attribute("data-value", "multipart")
         expect(T(page, "fd-name")).to_have_text("ariza.pdf")
         new = send(page)
         keep = lambda d: {k: d["response"][k] for k in ("method", "args", "form", "files")}  # noqa: E731

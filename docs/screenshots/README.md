@@ -28,6 +28,13 @@ Yaratish: `SHOT_PHASE=before|after python3 -m pytest tests/e2e/test_screenshots.
 | scripts-editor | — | ![scripts-editor](after/light/scripts-editor.png) |
 | tests-tab | — | ![tests-tab](after/light/tests-tab.png) |
 | console-panel | — | ![console-panel](after/light/console-panel.png) |
+| Papka Overview (so'rovlar jadvali, auth statistikasi, oxirgi run) | — | ![folder-overview](after/light/folder-overview.png) |
+| Muhit: Prod, Boshlang'ich/Joriy, secret | — | ![environment-prod](after/light/environment-prod.png) |
+| Tarix: guruhlash, ×N, javoblar diff'i | — | ![history-compare](after/light/history-compare.png) |
+| So'rov/javob yonma-yon | — | ![layout-side-by-side](after/light/layout-side-by-side.png) |
+| Zich rejim | — | ![dense-mode](after/light/dense-mode.png) |
+| Prod: RunGuard dialogi | — | ![runguard](after/light/runguard.png) |
+| Body → form-data: fayl qatorlari | — | ![form-data-files](after/light/form-data-files.png) |
 
 ## Qorong'i tema
 
@@ -54,3 +61,10 @@ Yaratish: `SHOT_PHASE=before|after python3 -m pytest tests/e2e/test_screenshots.
 | scripts-editor | — | ![scripts-editor](after/dark/scripts-editor.png) |
 | tests-tab | — | ![tests-tab](after/dark/tests-tab.png) |
 | console-panel | — | ![console-panel](after/dark/console-panel.png) |
+| Papka Overview (so'rovlar jadvali, auth statistikasi, oxirgi run) | — | ![folder-overview](after/dark/folder-overview.png) |
+| Muhit: Prod, Boshlang'ich/Joriy, secret | — | ![environment-prod](after/dark/environment-prod.png) |
+| Tarix: guruhlash, ×N, javoblar diff'i | — | ![history-compare](after/dark/history-compare.png) |
+| So'rov/javob yonma-yon | — | ![layout-side-by-side](after/dark/layout-side-by-side.png) |
+| Zich rejim | — | ![dense-mode](after/dark/dense-mode.png) |
+| Prod: RunGuard dialogi | — | ![runguard](after/dark/runguard.png) |
+| Body → form-data: fayl qatorlari | — | ![form-data-files](after/dark/form-data-files.png) |

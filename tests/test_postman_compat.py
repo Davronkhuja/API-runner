@@ -136,7 +136,7 @@ def env(client, name, values):
 
 
 def env_map(client, eid):
-    return {v["key"]: v["value"] for v in client.get(f"/api/environments/{eid}").get_json()["values"]}
+    return {v["key"]: (v["value"] if v.get("current") is None else v["current"]) for v in client.get(f"/api/environments/{eid}").get_json()["values"]}
 
 
 def import_fx(client, name, mutate=None):

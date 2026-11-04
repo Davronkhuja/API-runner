@@ -5,6 +5,8 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 from tests.e2e.conftest import eventually
 
 TREE = [
@@ -271,7 +273,7 @@ def test_headers_rows_reorder_by_dnd(ui):
 def test_form_data_rows_reorder_by_dnd(ui):
     ui.locator("[data-testid=new-tab]").click()
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "multipart")
+    set_body_mode(ui, "multipart")
     _rows_reorder_fields(ui)
 
 

@@ -8,6 +8,7 @@ import { isProd } from '../lib/envkind'
 import { useTree } from '../stores/tree'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
+import { useLastRun } from '../stores/lastrun'
 import { post } from '../api/client'
 import { draftFromItem } from '../lib/draft'
 import { prepareAuth, specFor } from '../lib/scope'
@@ -16,7 +17,7 @@ import DataPreview from './DataPreview.vue'
 import { isFolder, type RequestItem, type TreeItem } from '../types/model'
 
 const props = defineProps<{ tab: Tab }>()
-const tree = useTree(), tabs = useTabs(), ws = useWorkspace()
+const tree = useTree(), tabs = useTabs(), ws = useWorkspace(), last = useLastRun()
 props.tab.state ??= {}
 const st = props.tab.state!      // reaktiv proksi (??= xom obyektni qaytaradi)
 st.order ??= null; st.checked ??= {}; st.data ??= null; st.log ??= []; st.filter ??= 'all'; st.iterations ??= null; st.delay ??= 0; st.stopOnError ??= false
@@ -128,6 +129,7 @@ async function run(onlyGet = false) {
         await applyScriptResult(res.scripts, { ref: ref_ })
       } catch (e: any) { res = { status: 'ERR', time: 0, response: e.message }; pushLog({ level: 'error', text: `${x.name}: ${e.message}` }) }
       st.log.push({ iter: it, id: x.id, method: x.method, name: x.name, status: res.status, time: res.time ?? 0 })
+      last.setResult(ref_, res.status, res.time ?? 0)
       if (st.stopOnError && !(typeof res.status === 'number' && res.status < 400) && res.status !== 'SKIPPED') break outer
       if (st.delay > 0) await sleep(Number(st.delay))
       const sc = res.scripts
@@ -142,6 +144,7 @@ async function run(onlyGet = false) {
     }
   }
   running.value = false
+  last.setRun(props.tab.ref!, st.log.filter((r: any) => r.iter === st.log[0]?.iter).map((r: any) => ({ id: r.id, status: r.status })))
 }
 const stop = () => { stopFlag = true }
 watch([running, done, planned], () => { if (running.value) activity[props.tab.id] = `Runner ${done.value}/${planned.value}`; else delete activity[props.tab.id] }, { immediate: true })

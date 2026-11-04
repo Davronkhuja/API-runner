@@ -2,6 +2,8 @@
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 from tests.e2e.conftest import eventually
 
 TREE = [("f1", "Papka", [("a", "Alfa", None), ("b", "Beta", None)]), ("c", "Gamma", None), ("d", "Delta", None)]
@@ -72,7 +74,7 @@ def test_each_tab_keeps_independent_state_url_params_body_auth_scripts_response_
     ui.select_option("[data-testid=auth-type]", "bearer")
     ui.fill("[data-testid=auth-token]", "TOK-G")
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "raw")
+    set_body_mode(ui, "raw")
     ui.fill("[data-testid=body-raw]", "gamma-body")
     ui.click("[data-testid=send]")
     expect(ui.locator("[data-testid=resp-status]")).to_have_text("200")

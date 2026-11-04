@@ -191,7 +191,7 @@ function openRunnerWithData(name: string, text: string) {
         <button data-testid="dlg-discard" @click="closeDialog.resolve('discard')">Saqlamaslik</button>
         <button class="primary" data-testid="dlg-save" @click="closeDialog.resolve('save')">Saqlash</button>
       </div></div></div>
-    <div v-if="confirmDialog" class="overlay"><div class="dialog" role="dialog" aria-modal="true" data-testid="confirm-dialog">
+    <div v-if="confirmDialog" class="overlay overlay-top"><div class="dialog" role="dialog" aria-modal="true" data-testid="confirm-dialog">
       <p>{{ confirmDialog.msg }}</p>
       <div class="btns"><button @click="confirmDialog.resolve(false)">Bekor qilish</button><button class="primary" data-testid="confirm-ok" @click="confirmDialog.resolve(true)">{{ confirmDialog.ok }}</button></div></div></div>
     <RunGuard />

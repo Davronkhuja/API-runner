@@ -5,6 +5,8 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 from tests.e2e.conftest import eventually
 
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
@@ -48,7 +50,7 @@ def test_curl_paste_fills_everything(ui):
 def test_copy_as_curl_drawer(ui):
     new_req(ui, "https://a.io/p", "POST")
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "json")
+    set_body_mode(ui, "json")
     ui.fill("[data-testid=body-raw]", '{"a":1}')
     T(ui, "curl-btn").click()
     out = T(ui, "curl-output")
@@ -145,7 +147,7 @@ def test_auth_types_send_correct_header(ui, echo_server):
 def test_body_modes_are_sent(ui, echo_server, mode, needle):
     new_req(ui, echo_server + "/echo", "POST")
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", mode)
+    set_body_mode(ui, mode)
     if mode == "form":
         ui.locator("[data-testid=form-table] input[type=text]").nth(0).fill("a")
         ui.locator("[data-testid=form-table] input[type=text]").nth(1).fill("1")
@@ -158,7 +160,7 @@ def test_body_modes_are_sent(ui, echo_server, mode, needle):
 def test_multipart_form_data_is_sent(ui, echo_server):
     new_req(ui, echo_server + "/echo", "POST")
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "multipart")
+    set_body_mode(ui, "multipart")
     ui.locator("[data-testid=formdata-table] input[type=text]").nth(0).fill("fld")
     ui.locator("[data-testid=formdata-table] input[type=text]").nth(1).fill("val")
     T(ui, "send").click()
@@ -168,7 +170,7 @@ def test_multipart_form_data_is_sent(ui, echo_server):
 def test_beautify_json_body(ui):
     T(ui, "new-tab").click()
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "json")
+    set_body_mode(ui, "json")
     ui.fill("[data-testid=body-raw]", '{"a":1,"b":[1,2]}')
     T(ui, "beautify").click()
     eventually(lambda: T(ui, "body-raw").inner_text() == '{\n  "a": 1,\n  "b": [\n    1,\n    2\n  ]\n}')
@@ -506,11 +508,11 @@ def test_response_json_is_highlighted(ui, echo_server):
 def test_content_type_auto_shown(ui):
     T(ui, "new-tab").click()
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "json")
+    set_body_mode(ui, "json")
     expect(T(ui, "content-type-auto")).to_contain_text("application/json")
-    ui.select_option("[data-testid=body-mode]", "multipart")
+    set_body_mode(ui, "multipart")
     expect(T(ui, "content-type-auto")).to_contain_text("multipart/form-data")
-    ui.select_option("[data-testid=body-mode]", "none")
+    set_body_mode(ui, "none")
     expect(T(ui, "content-type-auto")).to_have_count(0)
 
 
@@ -564,10 +566,12 @@ def test_history_drawer_open_load_clear_esc(ui, echo_server):
     expect(T(ui, "history-drawer")).to_have_count(0)
     T(ui, "history-btn").click()
     T(ui, "hd-row").first.click()
+    T(ui, "hd-open").click()                                                      # qator tanlanadi, "Tabda ochish" yuklaydi
     expect(T(ui, "history-drawer")).to_have_count(0)
     expect(T(ui, "url")).to_have_text(re.compile(r"/echo"))
     T(ui, "history-btn").click()
     T(ui, "hd-clear").click()
+    T(ui, "confirm-ok").click()                                                    # "Tozalash…" — tasdiq so'raydi
     expect(T(ui, "hd-empty")).to_be_visible()
     T(ui, "drawer-backdrop").click(position={"x": 5, "y": 5})
     expect(T(ui, "history-drawer")).to_have_count(0)
@@ -592,7 +596,7 @@ def test_result_card_collapse_and_fold_all(ui, echo_server, tmp_path):
 def test_body_editor_tab_key_inserts_indent_and_keeps_focus(ui):
     T(ui, "new-tab").click()
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "raw")
+    set_body_mode(ui, "raw")
     T(ui, "body-raw").click()
     ui.keyboard.type("a")
     ui.keyboard.press("Tab")
@@ -604,7 +608,7 @@ def test_body_editor_tab_key_inserts_indent_and_keeps_focus(ui):
 def test_body_json_is_syntax_highlighted(ui):
     T(ui, "new-tab").click()
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "json")
+    set_body_mode(ui, "json")
     ui.fill("[data-testid=body-raw]", '{"k": "v", "n": 1}')
     expect(ui.locator("[data-testid=body-raw] span").first).to_be_visible()
     colors = ui.evaluate("[...document.querySelectorAll('[data-testid=body-raw] span')].map(s => getComputedStyle(s).color)")
@@ -614,7 +618,7 @@ def test_body_json_is_syntax_highlighted(ui):
 def test_body_editor_value_survives_tab_switch(ui):
     T(ui, "new-tab").click()
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "raw")
+    set_body_mode(ui, "raw")
     ui.fill("[data-testid=body-raw]", "uno")
     T(ui, "new-tab").click()
     ui.locator("[data-testid=tab]").first.click()

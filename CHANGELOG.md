@@ -2,6 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.8] — 2026-11-04 — Yangi ekranlar (C guruhi, docs/design maketlari)
+### Added
+- **Folder / Collection Overview** (Folder.dc): papka/collection tabida so'rovlar jadvali (metod, nom, auth manbai — "↑ Meros" yoki "Bearer Token (o'zi)", oxirgi status, vaqt; filtr; qator bosilsa so'rov ochiladi), auth meros statistikasi (progress, "N ta so'rov meros oladi") va papka tokeni bilan bir xil qo'lda yozilganlari haqida ogohlantirish + "Ularni Meros'ga o'tkazish…", o'zgaruvchilar va skriptlar soni, **oxirgi run** (har so'rov uchun nuqta) va "Papkani ishga tushirish" tugmasi. Oxirgi natijalar brauzerda saqlanadi (Bosqich 4 SQLite saqlashiga o'tkaziladi).
+- **Muhit muharriri** (Env.dc): **Boshlang'ich / Joriy qiymat** ustunlari. Boshlang'ich eksport va zaxiraga tushadi; Joriy faqat shu kompyuterda ishlatiladi va bor bo'lsa ustun; **skriptlar (`pm.environment.set`) faqat Joriy'ni o'zgartiradi**. Secret qiymatlar maskalanadi ("ko'z" bilan ko'rsatiladi), "Joriy → boshlang'ich (hammasi)", "Joriy qiymatlarni tiklash", Dublikat, Eksport (Postman, faqat boshlang'ich), FAOL belgisi, "Bu muhitni N ta so'rov ishlatadi"; yon paneldagi muhit qatorlarida tur rangi.
+- **Tarix** (History.dc): kunlar bo'yicha guruhlash (Bugun/Kecha), host va path alohida, status va vaqt, ketma-ket bir xil so'rovlar "×N" bo'lib birlashadi (ochib alohida yozuvlarni tanlash mumkin), status filtrlari (2xx/4xx/5xx/Xato) va qidiruv, **ikki yozuv javobining diff'i** (A — eskirog'i, B — yangirog'i; "+N/−M qator", sarlavhalar farqi, vaqt va ID maydonlarini e'tiborsiz qoldirish opsiyasi), "Tabda ochish", "Collection'ga saqlash". Javob matni tarixga 100 KB gacha saqlanadi.
+- **Sozlamalar → Ko'rinish** (Split.dc): so'rov va javob **yonma-yon / ustma-ust** (headerdagi almashtirgich ham) va **Zich rejim**; tanlov brauzerda saqlanadi.
+- **Body turi segmentli tugmalar** (none | form-data | urlencoded | raw | binary | GraphQL; raw uchun JSON/Text formati; ←/→ klavishlari). **POST/PUT tanlanganda (tana tanlanmagan bo'lsa) raw JSON sukut bo'yicha.**
+### Changed
+- **Batch formasi** 2 qatorli grid, yorliqlar kesilmaydi. Tasdiq dialoglari tarix panelidan yuqorida ko'rinadi.
+- Tarix paneli: qator bosilsa tanlanadi (ochish — "Tabda ochish" tugmasi).
+- 18 yangi e2e (`test_screens.py`), diff uchun vitest; yangi ekranlar skrinshotlari (light/dark) `docs/screenshots/after/`.
+
 ## [2.3.7] — 2026-11-04 — Fayl biriktirish Postman uslubida (D guruhi)
 ### Changed
 - **Fayl faqat Body'da yuboriladi**: Body → form-data qatorida **Turi (Text | File)** va ixtiyoriy **Content-Type** ustuni (sukut — fayl turidan), binary rejimi. Headers va urlencoded'da 📎 yo'q. Params'dagi 📎 **tezkor tugma**: fayl Body → form-data'ga yangi File qatori bo'lib qo'shiladi (kalit — Params qatori nomi, bo'sh bo'lsa `file`), Params qatori o'chadi, Body tabi ochiladi, toast "Fayl Body → form-data'ga qo'shildi"; fayl Params jadvaliga sudrab tashlansa ham shunday.

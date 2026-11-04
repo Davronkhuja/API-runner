@@ -10,11 +10,12 @@ import { mergeSettings } from './settings'
 export interface VarInfo { value: string; scope: string; secret: boolean }
 export type VarMap = Record<string, VarInfo>
 
-type Raw = { key?: string; value?: any; disabled?: boolean; enabled?: boolean; type?: string }
+type Raw = { key?: string; value?: any; current?: any; disabled?: boolean; enabled?: boolean; type?: string }
 export function layer(out: VarMap, rows: Raw[] | undefined, scope: string) {
   for (const v of rows ?? []) {
     if (!v?.key || v.disabled || v.enabled === false) continue
-    out[v.key] = { value: v.value == null ? '' : String(v.value), scope, secret: v.type === 'secret' }
+    const val = v.current != null ? v.current : v.value        // muhit/globals: Joriy qiymat Boshlang'ichdan ustun
+    out[v.key] = { value: val == null ? '' : String(val), scope, secret: v.type === 'secret' }
   }
 }
 

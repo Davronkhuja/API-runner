@@ -102,3 +102,11 @@ def eventually(fn, timeout=8.0, interval=0.05):
             last = e
         time.sleep(interval)
     raise AssertionError(f"shart {timeout}s ichida bajarilmadi" + (f": {last}" if last else ""))
+
+
+def set_body_mode(page, mode):
+    """Body turi segmentli tugmalar: json/raw -> "raw" segmenti + format select; qolganlari — o'z segmenti."""
+    seg = "raw" if mode in ("json", "raw") else mode
+    page.click(f"[data-testid=body-mode] [data-mode={seg}]")
+    if mode in ("json", "raw"):
+        page.select_option("[data-testid=body-format]", mode)
