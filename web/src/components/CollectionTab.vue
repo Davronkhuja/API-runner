@@ -15,7 +15,7 @@ import { isFolder as isFolderNode } from '../types/model'
 import Icon from './Icon.vue'
 import ScriptsPanel from './ScriptsPanel.vue'
 import InlineName from './InlineName.vue'
-import { renameNode, validateName } from '../lib/rename'
+import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
 import AuthEditor from './AuthEditor.vue'
 import VarsTable from './VarsTable.vue'
 import BulkAuthDialog, { type Candidate } from './BulkAuthDialog.vue'
@@ -115,7 +115,7 @@ async function save() {
       <span style="flex:1" />
       <span class="badge" data-testid="node-kind">{{ isFolder ? 'Papka' : 'Collection' }}</span></div>
     <div style="display:flex;gap:10px;align-items:center">
-      <h3 style="flex:1;margin:0" data-testid="node-title"><InlineName v-model:editing="renamingTitle" testid="node-rename" :value="name" :validate="v => validateName(cid, isFolder ? fid : null, v)" :commit="v => renameNode(cid, isFolder ? fid : null, v)" :label="isFolder ? 'Papka nomi' : 'Collection nomi'" /></h3>
+      <h3 style="flex:1;margin:0" data-testid="node-title"><InlineName v-model:editing="renamingTitle" testid="node-rename" :value="name" :warn="v => nameWarning(cid, isFolder ? fid : null, v)" :suggest="suggestName" :validate="v => validateName(cid, isFolder ? fid : null, v)" :commit="v => renameNode(cid, isFolder ? fid : null, v)" :label="isFolder ? 'Papka nomi' : 'Collection nomi'" /></h3>
       <button data-testid="scope-run-header" :disabled="!reqs.length" @click="tabs.open('runner', props.tab.ref!, 'Runner: ' + name, { permanent: true })"><Icon name="play" :size="14" />{{ isFolder ? 'Papkani' : "Collection'ni" }} ishga tushirish</button>
       <button class="primary" data-testid="scope-save" :disabled="!tab.dirty" @click="save">Saqlash</button>
     </div>

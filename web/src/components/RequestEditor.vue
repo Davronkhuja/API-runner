@@ -12,11 +12,11 @@ import ResponsePanel from './ResponsePanel.vue'
 import SettingsForm from './SettingsForm.vue'
 import ScriptsPanel from './ScriptsPanel.vue'
 import InlineName from './InlineName.vue'
-import { renameNode, validateName } from '../lib/rename'
+import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
 import { saveAsHandler } from '../lib/actions'
 import { useWorkspace as _ws } from '../stores/workspace'
 import BatchPanel from './BatchPanel.vue'
-import { composeUrl, emptyKV, paramsFromUrl, syncPathVars } from '../lib/draft'
+import { composeUrl, emptyKV, RAW_CT, paramsFromUrl, syncPathVars } from '../lib/draft'
 import { fileInfo, guessType, isMissing, refreshFileInfo, uploadFile } from '../lib/files'
 import { authSource, effectiveAuth, folderPath, scopedVars } from '../lib/scope'
 import { useTree } from '../stores/tree'
@@ -89,7 +89,7 @@ const usedVars = computed(() => {
     return { name, ok: false, title: 'Aniqlanmagan o\'zgaruvchi' }
   })
 })
-const autoCT = computed(() => ({ json: 'application/json', graphql: 'application/json', binary: d.value.body.file.name ? guessType(d.value.body.file.name) : 'application/octet-stream', form: 'application/x-www-form-urlencoded', multipart: 'multipart/form-data' } as Record<string, string>)[d.value.body.mode] ?? '')
+const autoCT = computed(() => (d.value.body.mode === 'raw' && RAW_CT[d.value.body.rawLang ?? 'text']) || (({ json: 'application/json', graphql: 'application/json', binary: d.value.body.file.name ? guessType(d.value.body.file.name) : 'application/octet-stream', form: 'application/x-www-form-urlencoded', multipart: 'multipart/form-data' } as Record<string, string>)[d.value.body.mode] ?? ''))
 const effectiveCT = computed(() => (d.value.body.mode === 'json' || d.value.body.mode === 'raw') && d.value.body.contentType ? d.value.body.contentType : autoCT.value)
 function onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && curlOpen.value) curlOpen.value = false }
 onMounted(() => window.addEventListener('keydown', onEsc))
@@ -154,6 +154,12 @@ function setMode(id: (typeof BODY_SEGS)[number]['id']) {
   d.value.body.mode = id === 'raw' ? (d.value.body.mode === 'raw' ? 'raw' : 'json') : id
   touch()
 }
+const fmt = computed(() => (d.value.body.mode === 'json' ? 'json' : (d.value.body.rawLang ?? 'text') === 'text' ? 'raw' : d.value.body.rawLang!))
+function setFormat(v: string) {
+  if (v === 'json') d.value.body.mode = 'json'
+  else { d.value.body.mode = 'raw'; d.value.body.rawLang = v === 'raw' ? 'text' : (v as 'html' | 'javascript') }
+  touch()
+}
 function stepMode(dir: number) {
   const i = BODY_SEGS.findIndex(m => segOn(m.id))
   setMode(BODY_SEGS[(i + dir + BODY_SEGS.length) % BODY_SEGS.length].id)
@@ -187,7 +193,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
   <div style="display:flex;flex-direction:column;flex:1;min-height:0" data-testid="request-editor">
     <div class="crumbs" data-testid="crumbs">
       <template v-for="(c, i) in crumbs" :key="i"><span v-if="i">/</span>
-        <InlineName v-if="i === crumbs.length - 1" v-model:editing="renamingCrumb" class="cur" testid="crumb-rename" :value="c" :unsaved="!tab.ref" :validate="v => validateName(refCid, refId ?? null, v)" :commit="v => renameNode(refCid, refId ?? null, v)" label="So'rov nomi" @unsaved="askSave" />
+        <InlineName v-if="i === crumbs.length - 1" v-model:editing="renamingCrumb" class="cur" testid="crumb-rename" :value="c" :unsaved="!tab.ref" :warn="v => nameWarning(refCid, refId ?? null, v)" :suggest="suggestName" :validate="v => validateName(refCid, refId ?? null, v)" :commit="v => renameNode(refCid, refId ?? null, v)" label="So'rov nomi" @unsaved="askSave" />
         <span v-else>{{ c }}</span></template>
       <div style="flex:1" />
       <button class="sm" data-testid="save" :disabled="!tab.dirty && !!tab.ref" aria-keyshortcuts="Control+S Meta+S" @click="saveTab(tab)"><Icon name="save" :size="14" />Saqlash <span class="muted" style="font-size:11px">⌘S</span></button>
@@ -241,13 +247,13 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <div class="seg-group body-seg" role="radiogroup" aria-label="Body turi" data-testid="body-mode" :data-value="d.body.mode" @keydown.left.prevent="stepMode(-1)" @keydown.right.prevent="stepMode(1)">
           <button v-for="m in BODY_SEGS" :key="m.id" class="seg" :class="{ on: segOn(m.id) }" role="radio" :aria-checked="segOn(m.id)" :tabindex="segOn(m.id) ? 0 : -1" :data-mode="m.id" @click="setMode(m.id)">{{ m.label }}</button>
         </div>
-        <select v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :value="d.body.mode" class="body-fmt" aria-label="Body formati" data-testid="body-format" @change="d.body.mode = ($event.target as HTMLSelectElement).value as 'json' | 'raw'; touch()">
-          <option value="json">JSON</option><option value="raw">Text</option>
+        <select v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :value="fmt" class="body-fmt" aria-label="Body formati" data-testid="body-format" @change="setFormat(($event.target as HTMLSelectElement).value)">
+          <option value="json">JSON</option><option value="raw">Text</option><option value="html">HTML</option><option value="javascript">JavaScript</option>
         </select>
         <button v-if="d.body.mode === 'json'" data-testid="beautify" style="margin-left:8px" @click="beautify" title="Cmd/Ctrl+B">Beautify</button>
         <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart' && d.body.mode !== 'graphql'" v-model="d.body.contentType" :placeholder="autoCT || 'Content-Type'" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
         <span v-if="effectiveCT" class="muted" style="margin-left:8px" data-testid="content-type-auto">Content-Type: {{ effectiveCT }}</span>
-        <CodeEditor v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :key="d.body.mode" v-model="d.body.raw" :lang="d.body.mode === 'json' ? 'json' : 'raw'" testid="body-raw" placeholder='{ "key": "{{value}}" }' class="body-editor" @update:model-value="touch" @beautify="beautify" />
+        <CodeEditor v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :key="fmt" v-model="d.body.raw" :lang="fmt === 'json' ? 'json' : fmt === 'html' ? 'html' : fmt === 'javascript' ? 'javascript' : 'raw'" testid="body-raw" placeholder='{ "key": "{{value}}" }' class="body-editor" @update:model-value="touch" @beautify="beautify" />
         <div v-else-if="d.body.mode === 'binary'" data-testid="binary-panel" class="bin-zone" :class="{ over: binOver, missing: binMissing }" style="margin-top:8px"
              @dragover.prevent="binOver = true" @dragleave="binOver = false" @drop.prevent="onBinDrop">
           <template v-if="d.body.file.path">

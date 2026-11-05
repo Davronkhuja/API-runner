@@ -21,3 +21,6 @@ export async function confirmWrite(method: string): Promise<boolean> {
   if (!env || !isWrite(method) || !needsWriteConfirm(env)) return true
   return askConfirm(writeConfirmText(env, method), 'Yuborish')
 }
+
+/** Runner'da "faqat GET'ni belgilash": muhitda aniq belgilanmagan bo'lsa Prod uchun yoqiq, Dev/Test uchun o'chiq. */
+export const runnerGetOnly = (env: Environment | null | undefined) => (env ? (env.runner_get_only ?? env.kind === 'prod') : false)

@@ -4,7 +4,7 @@ import Icon from './Icon.vue'
 import { applyScriptResult, scriptsFor } from '../lib/scripts'
 import { logRequest, logResponse, push as pushLog } from '../lib/console'
 import { activity, askRunGuard, fmtMs } from '../lib/ui'
-import { isProd } from '../lib/envkind'
+import { isProd, runnerGetOnly } from '../lib/envkind'
 import { useTree } from '../stores/tree'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
@@ -36,8 +36,12 @@ const items = computed(() => {
   const known = order.filter(id => byId.has(id)).map(id => byId.get(id)!)
   return [...known, ...base.value.filter(x => !order.includes(x.id))]
 })
-// Sukut: faqat GET belgilangan (qo'lda belgilangani saqlanadi)
-const isOn = (id: string) => st.checked[id] ?? items.value.find(x => x.id === id)?.method === 'GET'
+// Belgilash: oxirgi tanlov (shu collection/papka uchun eslab qolinadi) → bo'lmasa muhit sozlamasi (Prod: faqat GET; Dev/Test: hammasi)
+const SEL_KEY = 'apirunner.runner.sel.v1'
+const loadSel = (): Record<string, boolean> => { try { return JSON.parse(localStorage.getItem(SEL_KEY) ?? '{}')[props.tab.ref!] ?? {} } catch { return {} } }
+const saveSel = () => { try { const all = JSON.parse(localStorage.getItem(SEL_KEY) ?? '{}'); all[props.tab.ref!] = { ...loadSel(), ...st.checked }; localStorage.setItem(SEL_KEY, JSON.stringify(all)) } catch { /* bloklangan */ } }
+const remembered = loadSel()
+const isOn = (id: string) => st.checked[id] ?? remembered[id] ?? (runnerGetOnly(ws.activeEnv) ? items.value.find(x => x.id === id)?.method === 'GET' : true)
 
 const dragId = ref<string | null>(null)
 const overIdx = ref<number | null>(null)
@@ -166,7 +170,7 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
           <div v-for="(x, i) in items" :key="x.id" class="req" data-testid="runner-item" role="listitem" draggable="true" :class="{ 'drop-before': overIdx === i }"
                @dragstart="dragId = x.id" @dragover.prevent="overIdx = i" @dragleave="overIdx = null" @drop.prevent="drop(i)" @dragend="dragId = overIdx = null">
             <span class="grip" aria-hidden="true"><Icon name="grip" :size="14" /></span>
-            <input type="checkbox" :checked="isOn(x.id)" :aria-label="`${x.name} — Runner'ga qo'shish`" @change="st.checked[x.id] = ($event.target as HTMLInputElement).checked">
+            <input type="checkbox" :checked="isOn(x.id)" :aria-label="`${x.name} — Runner'ga qo'shish`" @change="st.checked[x.id] = ($event.target as HTMLInputElement).checked; saveSel()">
             <span class="m" :class="'m-' + x.method" style="width:46px;font:700 10.5px var(--font-mono)">{{ x.method }}</span>
             <span class="name" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span class="muted">{{ x.path }}</span>{{ x.name }}</span>
           </div>

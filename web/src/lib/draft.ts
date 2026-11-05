@@ -16,8 +16,11 @@ export interface RequestDraft {
   pathVars: { key: string; value: string }[]
   settings: ReqSettings
   scripts: ScriptSet
-  body: { mode: 'none' | 'raw' | 'json' | 'form' | 'multipart' | 'binary' | 'graphql'; raw: string; contentType: string; fields: KV[]; file: { path: string; name: string }; gql: { query: string; variables: string } }
+  body: { mode: 'none' | 'raw' | 'json' | 'form' | 'multipart' | 'binary' | 'graphql'; rawLang?: 'text' | 'html' | 'javascript'; raw: string; contentType: string; fields: KV[]; file: { path: string; name: string }; gql: { query: string; variables: string } }
 }
+
+/** Raw formatiga mos sukut Content-Type (Text — hech narsa). */
+export const RAW_CT: Record<string, string> = { html: 'text/html', javascript: 'application/javascript' }
 
 export const emptyKV = (): KV => ({ key: '', value: '', enabled: true })
 
@@ -89,7 +92,7 @@ export function draftFromItem(item: RequestItem): RequestDraft {
   d.auth = authFromPm(r.auth)
 
   const b = r.body
-  if (b?.mode === 'raw') { d.body.mode = b.options?.raw?.language === 'json' ? 'json' : 'raw'; d.body.raw = b.raw ?? '' }
+  if (b?.mode === 'raw') { const l = b.options?.raw?.language; d.body.mode = l === 'json' ? 'json' : 'raw'; d.body.rawLang = l === 'html' || l === 'javascript' ? l : 'text'; d.body.raw = b.raw ?? '' }
   else if (b?.mode === 'urlencoded') { d.body.mode = 'form'; d.body.fields = withTrailing((b.urlencoded ?? []).map(q => ({ key: q.key, value: q.value, enabled: !q.disabled }))) }
   else if (b?.mode === 'formdata') d.body.fields = withTrailing((b.formdata ?? []).map((f): KV => f.type === 'file'
     ? { key: f.key, value: '', enabled: !f.disabled, kind: 'file' as const, files: (Array.isArray(f.src) ? f.src : f.src ? [f.src] : []).map(r => ({ ref: r, name: refName(r) })), ...(f.contentType ? { contentType: f.contentType } : {}) }
@@ -113,7 +116,7 @@ export function requestFromDraft(d: RequestDraft): PmRequest {
   if (pmAuth) req.auth = pmAuth
   if (d.pathVars.length) req.url.variable = d.pathVars.map(v => ({ key: v.key, value: v.value }))
   const m = d.body.mode
-  if (m === 'raw' || m === 'json') req.body = { mode: 'raw', raw: d.body.raw, options: { raw: { language: m === 'json' ? 'json' : 'text' } } }
+  if (m === 'raw' || m === 'json') req.body = { mode: 'raw', raw: d.body.raw, options: { raw: { language: m === 'json' ? 'json' : (d.body.rawLang ?? 'text') } } }
   else if (m === 'form') req.body = { mode: 'urlencoded', urlencoded: rows(d.body.fields).map(f => ({ key: f.key, value: f.value, ...(f.enabled ? {} : { disabled: true }) })) }
   else if (m === 'binary') req.body = { mode: 'file', file: { src: d.body.file.path, name: d.body.file.name } }
   else if (m === 'graphql') req.body = { mode: 'graphql', graphql: { query: d.body.gql.query, variables: d.body.gql.variables } }
@@ -156,7 +159,10 @@ export function specFromDraft(d: RequestDraft, vars: Record<string, string> = {}
     path_variables: d.pathVars.filter(v => v.key).map(v => ({ name: v.key, value: v.value })),
   }
   const m = d.body.mode
-  if (m === 'raw' || m === 'json') { spec.body = d.body.raw; spec.body_type = m === 'json' ? 'json' : 'raw' }
+  if (m === 'raw' || m === 'json') {
+    spec.body = d.body.raw; spec.body_type = m === 'json' ? 'json' : 'raw'
+    if (m === 'raw' && !spec.content_type) spec.content_type = RAW_CT[d.body.rawLang ?? 'text'] ?? ''      // HTML/JavaScript — mos Content-Type
+  }
   else if (m === 'form') {
     spec.body_type = 'form'
     spec.body = on(d.body.fields).map(f => `${encodeURIComponent(f.key)}=${encodeURIComponent(f.value)}`).join('&')

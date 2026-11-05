@@ -10,7 +10,7 @@ import { openRequest } from '../lib/actions'
 import { askConfirm, showToast, sidePanel } from '../lib/ui'
 import Icon from './Icon.vue'
 import { authName, hasRealAuth, openNodeTab } from '../lib/nodes'
-import { renameNode, validateName } from '../lib/rename'
+import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
 import { isFolder, type DropPosition, type RequestItem, type TreeItem } from '../types/model'
 import { draftFromItem } from '../lib/draft'
 
@@ -123,7 +123,8 @@ async function duplicate(r: Row) {
 }
 let renameDone = false                    // Enter/Esc dan keyin kelgan blur ikkinchi marta ishlamasin
 const vFocusSelect = { mounted(el: HTMLInputElement) { nextTick(() => { el.focus(); el.select() }) } }   // dinamik elementda autofocus ishonchsiz
-function startRename(r: Row) { renameDone = false; renaming.value = keyOf(r); renameVal.value = r.name }
+function startRename(r: Row) { renameDone = false; renaming.value = keyOf(r); renameVal.value = suggestName(r.name) }
+const renameWarn = (r: Row) => nameWarning(r.collectionId, r.isCollection ? null : r.id, renameVal.value)
 async function commitRename(r: Row, mode: 'enter' | 'blur' = 'enter') {
   if (renameDone) return
   const id = r.isCollection ? null : r.id
@@ -211,6 +212,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
           <span v-else class="m" :class="'m-' + (r.item as any).request.method">{{ (r.item as any).request.method }}</span>
           <input v-if="renaming === rowKey(r.collectionId, r.id)" v-model="renameVal" v-focus-select aria-label="Yangi nom" style="flex:1;height:24px;padding:0 6px" data-testid="rename-input"
                  @click.stop @keydown.stop @keydown.enter.prevent="commitRename(r, 'enter')" @keydown.esc.prevent="cancelRename" @blur="commitRename(r, 'blur')">
+          <small v-if="renaming === rowKey(r.collectionId, r.id) && renameWarn(r)" class="name-warn name-warn-abs" data-testid="name-warn" role="status">{{ renameWarn(r) }}</small>
           <span v-else class="name" :style="{ fontWeight: r.folder ? 500 : 400 }">{{ r.name }}</span>
           <span v-if="ownAuth(r)" class="lock" data-testid="auth-lock" role="img" :aria-label="`O'z auth'i bor: ${authName(ownAuth(r))}`" :title="`Auth: ${authName(ownAuth(r))} (o'z auth'i)`"><Icon name="lock" :size="12" /></span>
           <span v-if="r.folder && !r.isCollection" class="cnt">{{ reqCount(r.item) }}</span>

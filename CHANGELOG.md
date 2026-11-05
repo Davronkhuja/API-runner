@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.9] — 2026-11-05 — Nom qoidalari, Runner tanlovi, Body formatlari
+### Fixed
+- **Rename'dagi takror nom tekshiruvi olib tashlandi**: Postman kabi bir papkada (va collection/papka darajasida) bir xil nomli elementlar ruxsat, ular ID bo'yicha ajraladi — `v1/hm/projects` GET va POST uchun "allaqachon bor" xatosi endi chiqmaydi. Faqat **bo'sh nom** rad etiladi. Nom va metod ikkalasi bir xil bo'lsa (papkalar uchun — bir xil nom) bloklanmaydi: input ostida kulrang yumshoq ogohlantirish, saqlash baribir ishlaydi.
+- Nomi to'liq URL bo'lib qolgan so'rov (yoki `{{base}}/...`): qayta nomlashda input host'siz path bilan to'ldiriladi (`v1/hm/projects/item`); nom berilmagan so'rovni saqlashda ham dialog URL'dan shu qisqa nomni taklif qiladi.
+### Added
+- **Runner: "faqat GET'ni belgilash"** muhit sozlamasi (`runner_get_only`): Prod uchun sukut bo'yicha yoqiq, Dev/Test uchun o'chiq (Muhit tabida o'zgartiriladi). Oxirgi tanlov har collection/papka uchun eslab qolinadi (brauzerda).
+- **Body formati**: HTML va JavaScript (sintaksis ranglash, mos Content-Type: `text/html`, `application/javascript`; Postman `language` bilan saqlanadi).
+- 12 yangi e2e (`test_rename_rules.py`, `test_prod_safety.py` yangilandi).
+
 ## [2.3.8] — 2026-11-04 — Yangi ekranlar (C guruhi, docs/design maketlari)
 ### Added
 - **Folder / Collection Overview** (Folder.dc): papka/collection tabida so'rovlar jadvali (metod, nom, auth manbai — "↑ Meros" yoki "Bearer Token (o'zi)", oxirgi status, vaqt; filtr; qator bosilsa so'rov ochiladi), auth meros statistikasi (progress, "N ta so'rov meros oladi") va papka tokeni bilan bir xil qo'lda yozilganlari haqida ogohlantirish + "Ularni Meros'ga o'tkazish…", o'zgaruvchilar va skriptlar soni, **oxirgi run** (har so'rov uchun nuqta) va "Papkani ishga tushirish" tugmasi. Oxirgi natijalar brauzerda saqlanadi (Bosqich 4 SQLite saqlashiga o'tkaziladi).

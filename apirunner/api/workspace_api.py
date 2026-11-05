@@ -89,8 +89,9 @@ def _env_extras_error(d):
     """Muhit turi (Dev/Test/Prod) va Prod tasdig'i: noto'g'ri qiymat 400."""
     if "kind" in d and d["kind"] not in ENV_KINDS:
         return "Muhit turi dev, test yoki prod bo'lishi kerak"
-    if "confirm_writes" in d and not isinstance(d["confirm_writes"], bool):
-        return "confirm_writes true/false bo'lishi kerak"
+    for k in ("confirm_writes", "runner_get_only"):
+        if k in d and not isinstance(d[k], bool):
+            return f"{k} true/false bo'lishi kerak"
     return None
 
 
@@ -103,7 +104,7 @@ def create_environment():
     if bad:
         return jsonify({"error": bad}), 400
     env = model.new_environment(d["name"].strip(), values=d.get("values") or [])
-    for k in ("kind", "confirm_writes"):
+    for k in ("kind", "confirm_writes", "runner_get_only"):
         if k in d:
             env[k] = d[k]
     return jsonify({"ok": True, "id": _ws().save_environment(env)})

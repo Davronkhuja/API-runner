@@ -420,3 +420,5 @@ button.danger:disabled,button.danger:disabled:hover{background:var(--err);color:
 .overlay-top{z-index:90}
 .hx-sub{padding-left:26px;font-size:12px}.hx-expand{display:block;margin:0 0 2px 26px;height:20px}
 .ov-authline{justify-content:flex-start;width:fit-content}
+.inline-name-wrap{display:inline-flex;flex-direction:column;gap:2px;vertical-align:top}.name-warn{color:var(--muted);font:400 11.5px var(--font-ui);font-weight:400}.name-warn-abs{position:absolute;left:34px;top:100%;z-index:5;background:var(--panel);padding:1px 4px;border-radius:4px}
+.env-opt{display:flex;align-items:center;gap:8px;margin:4px 0 8px;font-size:12.5px}

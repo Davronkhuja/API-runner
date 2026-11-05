@@ -6,6 +6,7 @@ import { useWorkspace } from './stores/workspace'
 import { useHistory } from './stores/history'
 import { put, get, keepalivePut } from './api/client'
 import { askClose, closeDialog, confirmDialog, toast } from './lib/ui'
+import { suggestName } from './lib/rename'
 import { createRequestIn, saveAsHandler, saveTab, sendTab, openRequest } from './lib/actions'
 import Sidebar from './components/Sidebar.vue'
 import TabBar from './components/TabBar.vue'
@@ -70,7 +71,9 @@ const saveTargets = computed(() => tree.rows.filter(r => r.isCollection || r.fol
 
 saveAsHandler.fn = tab => new Promise(resolve => {
   const first = saveTargets.value[0]?.key ?? ''
-  saveAs.value = { tab, name: tab.draft!.name, target: first, resolve }
+  const d = tab.draft!, urlLike = /^(https?:\/\/|\{\{)/i.test(d.name.trim())
+  const guess = d.url.trim() ? suggestName(d.url) : d.name           // nomi berilmagan/URL bo'lsa — host'siz path
+  saveAs.value = { tab, name: urlLike || d.name === "Yangi so'rov" ? guess : d.name, target: first, resolve }
 })
 async function confirmSaveAs() {
   const s = saveAs.value!; saveAs.value = null

@@ -4,18 +4,31 @@ import { useTree } from '../stores/tree'
 import { isFolder, type TreeItem } from '../types/model'
 import { showToast } from './ui'
 
-/** `id` null — collection. Xabar qaytaradi yoki null (yaroqli). */
-export function validateName(cid: string, id: string | null, raw: string): string | null {
+/** Faqat bo'sh nom rad etiladi: Postman kabi bir papkada bir xil nomli elementlar ruxsat (ID bo'yicha ajraladi). */
+export function validateName(_cid: string, _id: string | null, raw: string): string | null {
+  return raw.trim() ? null : "Nom bo'sh bo'lishi mumkin emas"
+}
+
+/** Yumshoq ogohlantirish (bloklamaydi): so'rovlar — nom VA metod bir xil bo'lsa; papkalar — bir xil nomli papka bo'lsa. */
+export function nameWarning(cid: string, id: string | null, raw: string): string | null {
   const tree = useTree()
-  const name = raw.trim()
-  if (!name) return "Nom bo'sh bo'lishi mumkin emas"
-  if (id === null) {
-    const dup = tree.metas.some(m => m.id !== cid && m.name.trim().toLowerCase() === name.toLowerCase())
-    return dup ? `«${name}» nomli collection allaqachon bor` : null
-  }
-  const sib = tree.siblings(cid, id)
-  if (sib.some(s => s.id !== id && s.name.trim().toLowerCase() === name.toLowerCase())) return `«${name}» nomli element bu papkada allaqachon bor`
-  return null
+  const name = raw.trim().toLowerCase()
+  if (!name || id === null) return null
+  const me = tree.findItem(cid, id) as any
+  if (!me) return null
+  const same = tree.siblings(cid, id).filter(s => s.id !== id && s.name.trim().toLowerCase() === name)
+  if (isFolder(me)) return same.some(s => isFolder(s)) ? 'Bu papkada shu nomli papka allaqachon bor (ruxsat etiladi)' : null
+  const m = (me.request?.method ?? '').toUpperCase()
+  return same.some(s => !isFolder(s) && ((s as any).request?.method ?? '').toUpperCase() === m) ? `Bu papkada nomi va metodi (${m}) bir xil so'rov bor (ruxsat etiladi)` : null
+}
+
+/** Nomi to'liq URL bo'lib qolgan so'rov uchun qisqa taklif: host'siz path ("https://h/v1/a?x=1" -> "v1/a"). URL bo'lmasa — o'zi. */
+export function suggestName(name: string): string {
+  const t = name.trim()
+  const m = /^(?:https?:\/\/[^/?#\s]+|\{\{[^}]+\}\})(\/[^?#\s]*)?/i.exec(t)
+  if (!m) return name
+  const path = (m[1] ?? '').replace(/^\/+|\/+$/g, '')
+  return path || name
 }
 
 export async function renameNode(cid: string, id: string | null, raw: string): Promise<boolean> {

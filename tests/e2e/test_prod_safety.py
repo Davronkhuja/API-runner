@@ -137,14 +137,72 @@ def test_dev_env_with_confirm_enabled_asks_and_no_env_never_asks(app, world, pag
 
 
 # ── Runner ──
-def test_runner_opens_with_only_get_checked(app, world, page):
-    make_env(app, "Dev", kind="dev")
+def checked_methods(p):
+    return sorted({r.locator(".m").inner_text().strip() for r in p.locator("[data-testid=runner-item]").all() if r.locator("input[type=checkbox]").is_checked()})
+
+
+def test_runner_get_only_default_is_on_for_prod_off_for_dev_and_configurable(app, world, page):
+    make_env(app, "Prod", kind="prod")
     start(app, page)
     open_runner(page)
     expect(T(page, "runner-selcount")).to_have_text("2 / 4 tanlangan")
-    for row in page.locator("[data-testid=runner-item]").all():
-        on = row.locator("input[type=checkbox]").is_checked()
-        assert on == ("GET" in row.inner_text())
+    assert checked_methods(page) == ["GET"]
+
+
+def test_runner_dev_selects_everything_by_default(app, world, page):
+    make_env(app, "Dev", kind="dev")
+    start(app, page)
+    open_runner(page)
+    expect(T(page, "runner-selcount")).to_have_text("4 / 4 tanlangan")
+
+
+def test_env_setting_overrides_the_default_both_ways(app, world, page):
+    make_env(app, "Dev strict", kind="dev", active=True)
+    eid = app.api("GET", "/api/workspace")["environments"][0]["id"]
+    e = app.api("GET", f"/api/environments/{eid}")
+    app.api("PUT", f"/api/environments/{eid}", {**e, "runner_get_only": True})
+    start(app, page)
+    open_runner(page)
+    expect(T(page, "runner-selcount")).to_have_text("2 / 4 tanlangan")
+    app.api("PUT", f"/api/environments/{eid}", {**app.api("GET", f"/api/environments/{eid}"), "kind": "prod", "runner_get_only": False})
+    page.reload()
+    page.wait_for_selector("[data-testid=app]")
+    page.locator("[data-name='Col']").click(button="right")
+    page.click("[data-act=runner]")
+    expect(T(page, "runner-selcount")).to_have_text("4 / 4 tanlangan")                # Prod, lekin aniq o'chirilgan
+
+
+def test_env_tab_checkbox_saves_runner_get_only(app, world, page):
+    eid = make_env(app, "E1", kind="dev", active=False)
+    start(app, page)
+    T(page, "sb-environments").click()
+    page.locator("[data-testid=env-row]", has_text="E1").first.dblclick()
+    expect(T(page, "env-runner-get-only")).not_to_be_checked()
+    T(page, "env-runner-get-only").check()
+    T(page, "env-save").click()
+    expect(T(page, "dirty-dot")).to_have_count(0)
+    assert app.api("GET", f"/api/environments/{eid}")["runner_get_only"] is True
+    r = requests.put(app.url + f"/api/environments/{eid}", json={**app.api("GET", f"/api/environments/{eid}"), "runner_get_only": "ha"}, headers={"X-Session-Token": E2E_TOKEN})
+    assert r.status_code == 400
+
+
+def test_runner_remembers_last_selection_per_scope(app, world, page):
+    make_env(app, "Dev", kind="dev")
+    cid2 = app.api("POST", "/api/collections", {"name": "Other"})["id"]
+    c2 = app.api("GET", f"/api/collections/{cid2}")
+    c2["item"] = [req("x1", "XGet", "GET", "http://x/a"), req("x2", "XPost", "POST", "http://x/b")]
+    app.api("PUT", f"/api/collections/{cid2}", c2)
+    start(app, page)
+    open_runner(page)
+    page.locator("[data-testid=runner-item]", has_text="Post1").locator("input[type=checkbox]").uncheck()
+    expect(T(page, "runner-selcount")).to_have_text("3 / 4 tanlangan")
+    page.reload()
+    page.wait_for_selector("[data-testid=app]")
+    open_runner(page)
+    expect(T(page, "runner-selcount")).to_have_text("3 / 4 tanlangan")                 # eslab qolindi
+    page.locator("[data-name='Other']").click(button="right")
+    page.click("[data-act=runner]")
+    expect(T(page, "runner-selcount")).to_have_text("2 / 2 tanlangan")                 # boshqa collection — o'z holati
 
 
 def test_runner_on_non_prod_runs_without_guard(app, world, page):
@@ -152,7 +210,7 @@ def test_runner_on_non_prod_runs_without_guard(app, world, page):
     start(app, page)
     open_runner(page)
     T(page, "runner-run").click()
-    expect(T(page, "runner-row")).to_have_count(2)
+    expect(T(page, "runner-row")).to_have_count(4)
     expect(T(page, "runguard")).to_have_count(0)
 
 
