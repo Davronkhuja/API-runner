@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.10] — 2026-11-05 — Fix: javob paneli, sidebar va Console o'lchamini o'zgartirish
+### Fixed
+- **Javob paneli o'lchami o'zgarmasdi**: sudralganda `.resp` kattalashar, lekin `.req-pane` kontent o'lchamidan qisqarmay, panel pastga, ko'rinmas joyga o'sardi. Endi `.req-pane` va `.resp` — `min-height/min-width: 0`, ichki kontent scroll bo'ladi; o'lcham **foizda** (javob ulushi) saqlanadi va konteynerga clamp qilinadi: har ikki qism kamida 120px (yonma-yon rejimda kenglik uchun ham). Oyna o'lchami o'zgarganda clamp qayta hisoblanadi (ResizeObserver).
+- Sudrash: `setPointerCapture` (kursor panel tashqarisiga chiqsa ham davom etadi), sudrash paytida matn belgilanmaydi va butun sahifada `row-resize`/`col-resize` kursori; ushlash zonasi 12px (chiziq ingichka), hover'da accent rang; ikki marta bosish — 50/50 (sidebar 284px, Console 240px); klaviatura (↑↓ / ←→).
+- O'lcham **layout bo'yicha** (ustma-ust va yonma-yon alohida) saqlanadi va sahifa yangilanganda tiklanadi.
+- Xuddi shu tuzatish **sidebar kengligi** (180…min(420, oyna/2), tor oynada qayta clamp) va **Console balandligi** (≥100px, ish maydoni siqilib ketmaydi; endi saqlanadi) uchun.
+### Added
+- **Javobni maksimal qilish** tugmasi (ajratgichda): so'rov panelini yig'ib, javobni to'liq ochadi / qaytaradi.
+- 12 yangi e2e (`test_resizers.py`): `boundingClientRect.top` va panel o'lchamlari haqiqatan o'zgarishi, clamp, dblclick, reload, klaviatura, oyna o'lchami, maksimal qilish.
+
 ## [2.3.9] — 2026-11-05 — Nom qoidalari, Runner tanlovi, Body formatlari
 ### Fixed
 - **Rename'dagi takror nom tekshiruvi olib tashlandi**: Postman kabi bir papkada (va collection/papka darajasida) bir xil nomli elementlar ruxsat, ular ID bo'yicha ajraladi — `v1/hm/projects` GET va POST uchun "allaqachon bor" xatosi endi chiqmaydi. Faqat **bo'sh nom** rad etiladi. Nom va metod ikkalasi bir xil bo'lsa (papkalar uchun — bir xil nom) bloklanmaydi: input ostida kulrang yumshoq ogohlantirish, saqlash baribir ishlaydi.

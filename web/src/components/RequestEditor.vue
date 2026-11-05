@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { sendTab, saveTab } from '../lib/actions'
 import { fmtBytes, showToast } from '../lib/ui'
 import { layout } from '../lib/view'
+import { clampPane, drag, HANDLE, loadJSON, saveJSON } from '../lib/resize'
 import KvTable from './KvTable.vue'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
@@ -94,16 +95,26 @@ const effectiveCT = computed(() => (d.value.body.mode === 'json' || d.value.body
 function onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && curlOpen.value) curlOpen.value = false }
 onMounted(() => window.addEventListener('keydown', onEsc))
 onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
-// Editor / javob ajratgichi (vertikal)
-const respH = ref<number | null>(null)
+// So'rov / javob ajratgichi: javob ulushi (foiz) har joylashuv uchun alohida saqlanadi; har ikki qism kamida 120px
+const SPLIT_KEY = 'apirunner.split.v1'
+const ratios = reactive(loadJSON(SPLIT_KEY, { stack: 0.5, side: 0.5 }))
+const workEl = ref<HTMLElement>(), workSize = ref(0), respMax = ref(false)
+const avail = computed(() => Math.max(0, workSize.value - HANDLE))
+const respPx = computed(() => clampPane(avail.value, ratios[layout.value] * avail.value))
+const respStyle = computed(() => (respMax.value ? {} : layout.value === 'side' ? { flex: 'none', width: respPx.value + 'px' } : { flex: 'none', height: respPx.value + 'px' }))
+let ro: ResizeObserver | undefined
+const measure = () => { const w = workEl.value; if (w) workSize.value = layout.value === 'side' ? w.clientWidth : w.clientHeight }
+onMounted(() => { measure(); ro = new ResizeObserver(measure); if (workEl.value) ro.observe(workEl.value) })
+onBeforeUnmount(() => ro?.disconnect())
+watch(layout, () => nextTick(measure))
+const setResp = (px: number) => { ratios[layout.value] = avail.value ? clampPane(avail.value, px) / avail.value : 0.5 }
 function startResize(e: PointerEvent) {
-  const side = layout.value === 'side'
-  const start = side ? e.clientX : e.clientY, startSize = (side ? respEl.value?.offsetWidth : respEl.value?.offsetHeight) ?? 200
-  const move = (ev: PointerEvent) => { respH.value = Math.max(side ? 240 : 80, startSize + (start - (side ? ev.clientX : ev.clientY))) }
-  const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
-  window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
+  const start = respPx.value
+  respMax.value = false
+  drag(e, layout.value === 'side' ? 'x' : 'y', d => setResp(start - d), () => saveJSON(SPLIT_KEY, ratios))
 }
-function nudge(dy: number) { respH.value = Math.max(80, (respH.value ?? (layout.value === 'side' ? respEl.value?.offsetWidth : respEl.value?.offsetHeight) ?? 200) + dy) }
+function nudge(delta: number) { respMax.value = false; setResp(respPx.value + delta); saveJSON(SPLIT_KEY, ratios) }
+function resetSplit() { respMax.value = false; ratios[layout.value] = 0.5; saveJSON(SPLIT_KEY, ratios) }
 function copyCurl() { navigator.clipboard?.writeText(curlText.value); showToast('Nusxalandi', 'success') }
 function beautify() {
   try { d.value.body.raw = JSON.stringify(JSON.parse(d.value.body.raw), null, 2); touch() } catch { showToast('JSON noto\'g\'ri — formatlab bo\'lmadi', 'warn') }
@@ -218,7 +229,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
     <div v-if="extraVars.length" class="var-chips" data-testid="var-chips"><span>Boshqa o'zgaruvchilar:</span>
       <span v-for="v in extraVars" :key="v.name" class="var-chip" :class="v.ok ? 'var-ok' : 'var-undef'" data-testid="var-chip" :title="v.title">{{ v.name }}</span>
     </div>
-    <div class="work" :class="{ side: layout === 'side' }" data-testid="work">
+    <div ref="workEl" class="work" :class="{ side: layout === 'side', maxed: respMax }" data-testid="work">
     <div class="req-pane">
     <div class="sections" data-testid="sections" role="tablist" aria-label="So'rov bo'limlari" @keydown="onSectionKey">
       <button v-for="s in SECTIONS" :key="s" role="tab" :aria-selected="section === s" :tabindex="section === s ? 0 : -1" :class="{ on: section === s }" :data-section="s" @click="section = s">
@@ -276,8 +287,10 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       </div>
     </div>
     </div>
-    <div class="v-resizer" data-testid="resp-resizer" role="separator" :aria-orientation="layout === 'side' ? 'vertical' : 'horizontal'" aria-label="Javob paneli o'lchami" tabindex="0" @pointerdown.prevent="startResize" @keydown.up.prevent="nudge(24)" @keydown.down.prevent="nudge(-24)" @keydown.left.prevent="nudge(24)" @keydown.right.prevent="nudge(-24)" />
-    <section class="resp" ref="respEl" data-testid="response" aria-label="Javob" :style="respH ? (layout === 'side' ? { flex: 'none', width: respH + 'px' } : { flex: 'none', height: respH + 'px' }) : {}" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
+    <div class="v-resizer" data-testid="resp-resizer" role="separator" :aria-orientation="layout === 'side' ? 'vertical' : 'horizontal'" :aria-valuenow="Math.round(ratios[layout] * 100)" aria-valuemin="0" aria-valuemax="100" aria-label="Javob paneli o'lchami (ikki marta bosish — 50/50)" tabindex="0" @pointerdown="startResize" @dblclick="resetSplit" @keydown.up.prevent="nudge(24)" @keydown.down.prevent="nudge(-24)" @keydown.left.prevent="nudge(24)" @keydown.right.prevent="nudge(-24)">
+      <button class="resize-max" data-testid="resp-maximize" :aria-pressed="respMax" :title="respMax ? 'So\'rov panelini qaytarish' : 'Javobni to\'liq ochish'" :aria-label="respMax ? 'So\'rov panelini qaytarish' : 'Javobni to\'liq ochish'" @pointerdown.stop @dblclick.stop @click="respMax = !respMax"><Icon :name="respMax ? 'chevron-down' : 'chevron-up'" :size="13" /></button>
+    </div>
+    <section class="resp" ref="respEl" data-testid="response" aria-label="Javob" :style="respStyle" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
       <ResponsePanel :tab="tab" />
     </section>
     </div>

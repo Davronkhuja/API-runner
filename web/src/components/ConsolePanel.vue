@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /** Console paneli (status bardan ochiladi): so'rov/javob loglari, skriptdagi console.* va skript xatolari. */
-import { computed, nextTick, ref, watch } from 'vue'
-import { clear, consoleHeight, consoleOpen, entries, filters, visible, type Entry } from '../lib/console'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { drag } from '../lib/resize'
+import { clampConsole, CONSOLE_DEFAULT, clear, consoleHeight, saveConsoleHeight, consoleOpen, entries, filters, visible, type Entry } from '../lib/console'
 import { openScriptAt } from '../lib/scripts'
 import { useTabs } from '../stores/tabs'
 import Icon from './Icon.vue'
@@ -24,17 +25,17 @@ watch(() => entries.value.length, async () => {
   const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40
   await nextTick(); if (atBottom) el.scrollTop = el.scrollHeight
 })
-function startResize(e: PointerEvent) {
-  const y0 = e.clientY, h0 = consoleHeight.value
-  const move = (ev: PointerEvent) => { consoleHeight.value = Math.max(100, Math.min(window.innerHeight - 200, h0 + y0 - ev.clientY)) }
-  const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
-  window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
-}
+function startResize(e: PointerEvent) { const h0 = consoleHeight.value; drag(e, 'y', d => { consoleHeight.value = clampConsole(h0 - d) }, saveConsoleHeight) }
+const nudgeConsole = (d: number) => { consoleHeight.value = clampConsole(consoleHeight.value + d); saveConsoleHeight() }
+const resetConsole = () => { consoleHeight.value = clampConsole(CONSOLE_DEFAULT); saveConsoleHeight() }
+const onWinResize = () => { consoleHeight.value = clampConsole(consoleHeight.value) }
+onMounted(() => { onWinResize(); window.addEventListener('resize', onWinResize) })
+onBeforeUnmount(() => window.removeEventListener('resize', onWinResize))
 </script>
 
 <template>
   <section v-if="consoleOpen" class="console" :style="{ height: consoleHeight + 'px' }" aria-label="Console" data-testid="console">
-    <div class="v-resizer" role="separator" aria-orientation="horizontal" aria-label="Console balandligi" tabindex="0" data-testid="console-resizer" @pointerdown.prevent="startResize" @keydown.up.prevent="consoleHeight += 24" @keydown.down.prevent="consoleHeight = Math.max(100, consoleHeight - 24)" />
+    <div class="v-resizer" role="separator" aria-orientation="horizontal" aria-label="Console balandligi" tabindex="0" data-testid="console-resizer" @pointerdown="startResize" @dblclick="resetConsole" @keydown.up.prevent="nudgeConsole(24)" @keydown.down.prevent="nudgeConsole(-24)" />
     <div class="console-bar">
       <b>Console</b><span class="muted" data-testid="console-count">{{ shown.length }} / {{ entries.length }}</span>
       <div class="seg-group" role="group" aria-label="Filtr">

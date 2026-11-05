@@ -9,7 +9,13 @@ const MAX = 1000
 let seq = 0
 export const entries = ref<Entry[]>([])
 export const consoleOpen = ref(false)
-export const consoleHeight = ref(240)
+const CH_KEY = 'apirunner.console.h'
+export const CONSOLE_DEFAULT = 240
+const loadCH = () => { try { return Number(localStorage.getItem(CH_KEY)) || CONSOLE_DEFAULT } catch { return CONSOLE_DEFAULT } }
+export const consoleHeight = ref(loadCH())
+/** Console balandligi: kamida 100px; yuqoridagi ish maydoni (tablar, URL, so'rov va javob kamida 120px dan) sig'ishi uchun oyna balandligidan 420px zaxira qoladi. */
+export const clampConsole = (h: number) => Math.max(100, Math.min(window.innerHeight - 420, Math.round(h)))
+export const saveConsoleHeight = () => { try { localStorage.setItem(CH_KEY, String(consoleHeight.value)) } catch { /* bloklangan */ } }
 export const unreadErrors = ref(0)
 export const filters = reactive<Record<string, boolean>>({ log: true, info: true, warn: true, error: true, debug: true, request: true, response: true })
 
