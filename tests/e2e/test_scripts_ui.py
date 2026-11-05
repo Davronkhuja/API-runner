@@ -203,6 +203,8 @@ def test_script_variables_are_saved_to_active_environment_and_visible_in_ui(ui, 
     send(ui)
     eventually(lambda: any(v["key"] == "from_script" and v.get("current") == "200" for v in app.api("GET", f"/api/environments/{eid}")["values"]))
     T(ui, "env-vars-btn").click()
+    expect(T(ui, "env-quicklook")).to_contain_text("from_script")                      # popover: joriy qiymat joyida ko'rinadi
+    T(ui, "ql-open-all").click()
     expect(T(ui, "env-tab")).to_be_visible()
     expect(ui.locator("[data-testid=env-key]").nth(-2)).to_have_value("from_script")      # oxirgi qator — ghost
 
@@ -266,7 +268,7 @@ def test_settings_script_limits_save_apply_and_reset(ui, app):
     T(ui, "script-limit-timeout").fill("150")
     T(ui, "script-limit-memory").fill("32")
     T(ui, "script-limit-requests").fill("1")
-    T(ui, "script-limits-save").click()
+    expect(T(ui, "limits-saved")).to_contain_text("Saqlandi")                          # avtosaqlash
     eventually(lambda: app.api("GET", "/api/workspace")["meta"].get("script_limits") == {"timeout_ms": 150, "memory_mb": 32, "max_requests": 1})
     open_req(ui, "Alpha")
     script_section(ui)
@@ -278,7 +280,7 @@ def test_settings_script_limits_save_apply_and_reset(ui, app):
     ui.locator("[data-testid=tab]").filter(has_text="Sozlamalar").click()
     T(ui, "script-limits-reset").click()
     expect(T(ui, "script-limit-timeout")).to_have_value("10000")
-    T(ui, "script-limits-save").click()
+    expect(T(ui, "limits-saved")).to_contain_text("Saqlandi")
     eventually(lambda: app.api("GET", "/api/workspace")["meta"]["script_limits"] == {"timeout_ms": 10000, "memory_mb": 64, "max_requests": 10})
 
 

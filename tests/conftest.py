@@ -36,6 +36,11 @@ def _build_echo_app():
             "files_ct": {k: request.files.getlist(k)[0].mimetype for k in request.files},
         })
 
+    @app.route("/postman.json")
+    def postman_json():
+        return jsonify({"info": {"name": "Uzoqdagi collection", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"},
+                        "item": [{"name": "Papka", "item": [{"name": "A", "request": {"method": "GET", "url": {"raw": "http://x/a"}}}, {"name": "B", "request": {"method": "POST", "url": {"raw": "http://x/b"}}}]}]})
+
     @app.route("/bigtext")
     def bigtext():
         n = int(request.args.get("mb", "6"))

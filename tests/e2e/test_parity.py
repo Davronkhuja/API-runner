@@ -270,7 +270,7 @@ def test_result_fullscreen_viewer_and_esc(ui, echo_server):
     expect(T(ui, "result-card")).to_have_count(1)
     T(ui, "open-full").click()
     expect(T(ui, "full-body")).to_contain_text('"q"')
-    T(ui, "full-close").click()
+    ui.locator("[data-testid=result-full] [data-testid=dlg-close]").click()
     expect(T(ui, "result-full")).to_have_count(0)
 
 
@@ -420,7 +420,7 @@ def test_history_list_load_delete_clear(ui, echo_server):
     T(ui, "history-row").click()
     expect(T(ui, "url")).to_have_text(re.compile("/echo"))
     ui.click("[data-testid=sb-history]")
-    T(ui, "history-row").locator("button").click()
+    T(ui, "history-row").locator("[data-testid=sh-remove]").click()
     expect(T(ui, "history-row")).to_have_count(0)
 
 
@@ -549,9 +549,9 @@ def test_response_resizer_changes_height(ui):
     bb = T(ui, "resp-resizer").bounding_box()
     ui.mouse.move(bb["x"] + 20, bb["y"] + 2)
     ui.mouse.down()
-    ui.mouse.move(bb["x"] + 20, bb["y"] + 80, steps=5)                                   # pastga: javob kichrayadi (yuqoriga imkon oz — so'rov paneli ≥240px)
+    ui.mouse.move(bb["x"] + 20, bb["y"] - 60, steps=5)
     ui.mouse.up()
-    assert T(ui, "response").bounding_box()["height"] < h0 - 40
+    assert T(ui, "response").bounding_box()["height"] > h0 + 40
 
 
 # ── v2.1.10: History drawer, karta yig'ish ──

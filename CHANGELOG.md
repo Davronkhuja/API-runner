@@ -2,6 +2,27 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.4.0] — 2026-11-05 — UI audit: tizimli tuzatishlar va himoya
+Audit hisoboti: `docs/ui-audit.md` (har qator commit va oldin/keyin skrinshot bilan).
+### Added
+- **Yagona `Dialog` komponenti**: sarlavha va pastki tugmalar doim ko'rinadi, faqat tana scroll bo'ladi (`max-height: viewport − 64px`); Esc, tashqariga bosish, fokus tuzog'i, ochilganda birinchi elementga va yopilganda trigger'ga fokus qaytishi. Barcha dialoglar unga o'tkazildi (Kod, Saqlash, Ko'chirish, BulkAuth, RunGuard, tasdiqlar, Batch natija/solishtirish, Import, Nomlarni tozalash).
+- **Kod dialogi**: kengligi `min(960px, 92vw)`, CodeMirror read-only (qator raqamlari, cURL/JS ranglash), "Nusxa" toast.
+- **Import dialogi**: fayl/papka sudrab tashlash yoki tanlash, matn (cURL, Postman JSON, OpenAPI), URL'dan import, oldindan ko'rish ("1 papka, 3 so'rov") va tasdiq (`/api/import` `dry_run`, `/api/import/fetch`).
+- **Muhit "ko'z" popover'i**: faol muhit va Globals joriy qiymatlari bilan, joyida tahrirlash, secret maskasi, "Hammasini ochish".
+- **Muharrirlar**: qator raqamlari, fold, qavs moslashtirish, ⌘F qidiruv (body, skript, kod); JSON xatosi qizil chiziq + xato qatori (`{{var}}` xato emas), Beautify xabarida qator/ustun; javob matnida qator raqamlari.
+- **Javob Headers tabi**: qidiruv, bitta/hammasini nusxalash, o'zgarmas kalit ustuni, uzun qiymatlar o'raladi; Body/Headers/Cookies/Testlar bir xil toolbar qatori.
+- **Sozlamalar**: chap navigatsiya, matn ustuni ≤720px, avtosaqlash ("✓ Saqlandi") — alohida Saqlash tugmalari yo'q.
+- **Tarix**: Sidebar va Tarix oynasi bitta `HistoryList` komponentidan foydalanadi (kunlar, host/path, status, vaqt, ×N, filtr).
+- **Nomlarni tozalash**: URL bo'lib qolgan so'rov nomlari uchun bir martalik taklif (oldindan ko'rish + avtomatik zaxira).
+- Dizayn tokenlari: boshqaruv o'lchamlari, radius, 4/8 bo'shliq, shrift shkalasi; yagona holat naqshlari (`state-empty/error/loading`).
+- **Himoya**: vizual regressiya (15 ekran × light/dark, `docs/screenshots/baseline/`), layout testlari (dialog viewport, kesilgan matn, ≥24px nishon, muharrir to'ldirishi), axe (serious/critical = 0), `tools/check_fixed_heights.py` lint, `tools/ui_audit.py` audit asbobi, CI workflow.
+### Changed
+- Resizer: hover'da 3px accent chiziq; javob hali yo'q tabda javob paneli ixcham (160px), so'rov muharriri ko'proq joy oladi.
+- Tab: `role=tab` elementi yopish tugmasidan ajratildi (nested-interactive yo'q); faol tab doim ko'rinadigan joyga scroll qilinadi; yon panel Tarix qatorlari va muhit qatorlari ichidagi tugmalar to'g'ri semantikada.
+- Interaktiv elementlar ≥24px (status bar, tab ×, Bulk Edit …).
+### Accepted (axe)
+- `.tabs-scroll` (tablist + yopish tugmasi): axe `aria-required-children` — ataylab istisno (tugma tabindex=-1, Delete klavishi muqobil).
+
 ## [2.3.13] — 2026-11-05 — QA: real ssenariylar, skrinshotlar, layout tuzatishlari
 ### Fixed
 - Qisqa javob ostida bo'sh oq maydon qolardi — javob qutisi endi panelni to'ldiradi (uzun javobda panel scroll qiladi).

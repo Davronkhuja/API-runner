@@ -220,13 +220,13 @@ def test_history_groups_by_day_splits_host_and_path_and_merges_repeats(hist, ech
 def test_history_status_filters_and_search(hist):
     expect(T(hist, "hd-row").first).to_be_visible()
     all_rows = T(hist, "hd-row").count()
-    hist.click("[data-filter='5xx']")
+    hist.click("[data-testid=history-drawer] [data-filter='5xx']")
     expect(T(hist, "hd-row")).to_have_count(1)
-    hist.click("[data-filter='4xx']")
+    hist.click("[data-testid=history-drawer] [data-filter='4xx']")
     expect(T(hist, "hd-row")).to_have_count(1)
-    hist.click("[data-filter='2xx']")
+    hist.click("[data-testid=history-drawer] [data-filter='2xx']")
     assert T(hist, "hd-row").count() == all_rows - 2
-    hist.click("[data-filter=all]")
+    hist.click("[data-testid=history-drawer] [data-filter=all]")
     T(hist, "hd-search").fill("old")
     expect(T(hist, "hd-row")).to_have_count(1)                                                  # ikki bir xil /old — bitta ×2 qator
     T(hist, "hd-search").fill("POST")
@@ -361,11 +361,15 @@ def test_body_segments_keyboard_arrows(ui):
 
 
 # ── Batch formasi ──
-def test_batch_form_is_two_rows_and_labels_are_not_clipped(ui):
+def test_batch_form_is_compact_actions_on_one_line_at_the_left_and_labels_not_clipped(ui):
     ui.locator("[data-name='InheritOne']").dblclick()
     ui.click("[data-section=batch]")
     cells = ui.locator("[data-testid=batch-grid] .bf").all()
-    ys = sorted({round(c.bounding_box()["y"]) for c in cells})
-    assert len(cells) == 6 and len(ys) == 2                                                    # 2 qatorli grid
+    assert len(cells) == 6
+    for c in cells:
+        assert c.bounding_box()["width"] <= 250                                                 # maydonlar mazmuniga mos, 1/3 kenglikka cho'zilmaydi
+    run, stop = T(ui, "batch-run").bounding_box(), T(ui, "batch-stop").bounding_box()
+    form = ui.locator("[data-testid=batch-settings]").bounding_box()
+    assert abs(run["y"] - stop["y"]) < 4 and run["x"] <= form["x"] + 8                          # amallar bitta qatorda, chapda
     for lab in ui.locator("[data-testid=batch-grid] .bl").all():
         assert lab.evaluate("e => e.scrollWidth <= e.clientWidth + 1"), lab.inner_text()      # yorliq kesilmagan

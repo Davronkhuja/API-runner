@@ -86,7 +86,7 @@ def test_size_is_stored_as_percent_per_layout_and_restored_after_reload(ui):
     r2, _, _ = sizes(ui)
     assert abs(r2["height"] - r1["height"]) <= 2
     saved = ui.evaluate("JSON.parse(localStorage.getItem('apirunner.split.v1'))")
-    assert 0.5 < saved["stack"] < 1 and saved["side"] == 0.5                                      # foiz; yonma-yon alohida
+    assert 0.5 < saved["stack"] < 1 and saved["side"] is None                                      # foiz; yonma-yon alohida (tegilmagan)
 
 
 def test_keyboard_arrows_resize_by_24px(ui):

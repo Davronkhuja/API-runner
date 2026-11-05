@@ -61,7 +61,9 @@ def test_header_controls(ui):
     T(ui, "settings-btn").click()
     expect(T(ui, "settings-tab")).to_be_visible()
     T(ui, "env-vars-btn").click()
-    expect(T(ui, "env-tab")).to_be_visible()                                   # faol muhit yo'q → Globals
+    expect(T(ui, "env-quicklook")).to_be_visible()                             # faol muhit yo'q → popover (Globals)
+    T(ui, "ql-open-all").click()
+    expect(T(ui, "env-tab")).to_be_visible()
 
 
 def test_statusbar_server_console_cookies_version(ui, app):
@@ -203,9 +205,9 @@ def test_resizer_by_mouse_and_keyboard(ui):
     open_req(ui, "Main")
     h0 = T(ui, "response").bounding_box()["height"]
     T(ui, "resp-resizer").focus()
-    ui.keyboard.press("ArrowDown")
-    ui.keyboard.press("ArrowDown")
-    assert T(ui, "response").bounding_box()["height"] < h0 - 30
+    ui.keyboard.press("ArrowUp")
+    ui.keyboard.press("ArrowUp")
+    assert T(ui, "response").bounding_box()["height"] > h0 + 30
 
 
 # ── bosh sahifa ──
@@ -302,7 +304,7 @@ def test_tree_keyboard_navigation_and_open(ui):
 def test_tabs_and_sections_arrow_keys(ui):
     open_req(ui, "Main")
     open_req(ui, "Create")
-    ui.locator("[data-testid=tab].active").focus()
+    ui.locator("[data-testid=tab].active [role=tab]").focus()
     ui.keyboard.press("ArrowLeft")
     expect(ui.locator("[data-testid=tab].active")).to_contain_text("Main")
     ui.locator("[data-section=params]").focus()
@@ -351,6 +353,7 @@ def test_every_control_has_an_accessible_name(ui, screen):
         T(ui, "settings-btn").click()
     elif screen == "env":
         T(ui, "env-vars-btn").click()
+        T(ui, "ql-open-all").click()
     elif screen == "cookies":
         T(ui, "cookies-btn").click()
     elif screen == "history-panel":
@@ -436,8 +439,9 @@ def test_import_and_runner_are_cmdk_commands(ui):
     ui.keyboard.press("Control+k")
     ui.keyboard.type("import")
     expect(T(ui, "cmdk-row")).to_contain_text("Import")
-    with ui.expect_file_chooser():
-        ui.keyboard.press("Enter")
+    ui.keyboard.press("Enter")
+    expect(T(ui, "import-dialog")).to_be_visible()                                 # Import endi dialog ochadi
+    ui.keyboard.press("Escape")
     ui.keyboard.press("Control+k")
     ui.keyboard.type("runner")
     ui.keyboard.press("Enter")

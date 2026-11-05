@@ -74,6 +74,9 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [ ] **Batch formasini Runner tabiga ko'chirish** (ko'rib chiqildi: Runner v2 sozlamalari — parallel, kechikish, retry, timeout, data fayl — Batch bilan bir xil, shuning uchun Bosqich 4 da yagona "Run sozlamalari" paneliga birlashtiriladi; so'rov tabidagi "Batch / Runner" esa shu panelni bitta so'rov uchun ochuvchi qisqa yo'l bo'lib qoladi)
 - [ ] Folder Overview: "Hujjat yaratish" va "Eksport" tugmalari (maketda bor; Bosqich 5 — Export bilan birga)
 
+- [x] **UI audit va tuzatishlar** (v2.4.0): `docs/ui-audit.md`; yagona Dialog, Import dialogi, muhit popover, muharrirlar (qator raqami/fold/qidiruv/JSON xatosi), Headers tabi, Sozlamalar avtosaqlash, umumiy Tarix komponenti, nomlarni tozalash, dizayn tokenlari; himoya: vizual regressiya, layout, axe, fixed-height lint
+- [ ] UI audit qoldiqlari: javob ko'rinishida fold (hozir qator raqami va ⌘F-siz qidiruv paneli), `.tabs-scroll` axe istisnosi
+
 ## Bosqich 4b — Kundalik qulayliklar (Bosqich 4 dan keyin bajariladi)
 - [x] Muhit o'zgaruvchilarida **Initial / Current** qiymatlar (eksportga faqat Initial ketadi; skriptlar faqat Current'ni o'zgartiradi) — v2.3.8
 - [ ] Headerdagi "ko'z" quick-look (faol muhit + global qiymatlarni tez ko'rish va tahrirlash)

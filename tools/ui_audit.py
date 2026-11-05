@@ -24,6 +24,7 @@ from werkzeug.serving import make_server  # noqa: E402
 from apirunner.app import create_app  # noqa: E402
 
 TOKEN = "audit-token"
+AXE_EXCLUDE = "{ exclude: [['.tabs-scroll']] }"   # tablist + yopish tugmasi: qabul qilingan istisno (docs/ui-audit.md)
 AXE = (ROOT / "web" / "node_modules" / "axe-core" / "axe.min.js")
 LONG_NAME = "https://api.online-mahalla.uz/api/v1/hm/projects/item/with/a/very/long/path/that/keeps/going/and/going/for/more/than/one/hundred/characters"
 VIEWPORTS = [("1280x800", 1280, 800), ("1440x900", 1440, 900), ("1920x1080", 1920, 1080), ("1440x900@80%", 1800, 1125), ("1440x900@125%", 1152, 720)]
@@ -104,6 +105,7 @@ def new_tab_req(page, echo, path, method="GET"):
     page.click("[data-testid=new-tab]")
     page.select_option("[data-testid=method]", method)
     page.fill("[data-testid=url]", echo + path)
+    page.keyboard.press("Escape")                                    # URL tarixi ro'yxati yopilsin (u bo'limlar qatorini qoplaydi)
 
 
 def scenes(base, echo):
@@ -247,7 +249,7 @@ def main():
                         findings.append({"screen": name, "viewport": vname, "theme": theme, "shot": str(shot.relative_to(out)), **f})
                     if AXE.exists():
                         page.add_script_tag(path=str(AXE))
-                        res = page.evaluate("() => axe.run(document, { resultTypes: ['violations'] }).then(r => r.violations.filter(v => ['serious','critical'].includes(v.impact)).map(v => ({ id: v.id, impact: v.impact, n: v.nodes.length, sample: v.nodes[0].target.join(' ') })))")
+                        res = page.evaluate("() => axe.run({ exclude: [['.tabs-scroll']] }, { resultTypes: ['violations'] }).then(r => r.violations.filter(v => ['serious','critical'].includes(v.impact)).map(v => ({ id: v.id, impact: v.impact, n: v.nodes.length, sample: v.nodes[0].target.join(' ') })))")
                         for v in res:
                             findings.append({"screen": name, "viewport": vname, "theme": theme, "shot": str(shot.relative_to(out)), "kind": f"axe-{v['id']}", "detail": f"{v['impact']} ×{v['n']} {v['sample']}"})
                 ctx.close()
