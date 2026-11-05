@@ -13,6 +13,7 @@ import { authSource, folderPath } from '../lib/scope'
 import { authName, hasRealAuth, openNodeTab, overridableRequests, requestsIn, sameAuth, type Section } from '../lib/nodes'
 import { isFolder as isFolderNode } from '../types/model'
 import Icon from './Icon.vue'
+import DocsPanel from './DocsPanel.vue'
 import ScriptsPanel from './ScriptsPanel.vue'
 import InlineName from './InlineName.vue'
 import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
@@ -145,8 +146,7 @@ async function save() {
       <div v-if="section === 'overview'" class="ov" data-testid="node-overview">
         <div class="ov-main">
           <section class="ov-card">
-            <label class="lbl" for="node-desc">Tavsif (Markdown)</label>
-            <textarea id="node-desc" v-model="form.description" data-testid="scope-desc" placeholder="Bu collection/papka nima uchun…" rows="3" @input="touch" />
+            <DocsPanel v-model="form.description" tid="scope-docs" text-tid="scope-desc" title="Tavsif" start-editing placeholder="Bu collection/papka nima uchun… (Markdown)" @change="touch" />
           </section>
           <section class="ov-card" style="padding:0;overflow:hidden" data-testid="ov-table">
             <div class="ov-head"><span class="lbl" style="flex:1">So'rovlar · <span data-testid="ov-requests">{{ reqs.length }}</span><template v-if="folderCount"> · papkalar <span data-testid="ov-folders">{{ folderCount }}</span></template></span>

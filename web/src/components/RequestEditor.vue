@@ -8,6 +8,7 @@ import { fmtBytes, showToast } from '../lib/ui'
 import { layout } from '../lib/view'
 import { clampPane, drag, HANDLE, loadJSON, MIN_PANE, MIN_REQ, MIN_REQ_SIDE, MIN_RESP_SIDE, saveJSON } from '../lib/resize'
 import KvTable from './KvTable.vue'
+import DocsPanel from './DocsPanel.vue'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
 import SettingsForm from './SettingsForm.vue'
@@ -37,6 +38,7 @@ const d = computed(() => props.tab.draft!)
 const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
 const touch = () => tabs.touch(props.tab.id)
 const curlOpen = ref(false)
+const docsOpen = computed({ get: () => !!props.tab.state?.docsOpen, set: v => { (props.tab.state ??= {}).docsOpen = v; tabs.persistSoon() } })
 const sendMenu = ref(false)
 const sendSplit = ref<HTMLElement>()
 function onDocDown(e: Event) { if (!sendSplit.value?.contains(e.target as Node)) sendMenu.value = false }
@@ -226,6 +228,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <span v-else>{{ c }}</span></template>
       <div style="flex:1" />
       <button class="sm" data-testid="save" :disabled="!tab.dirty && !!tab.ref" aria-keyshortcuts="Control+S Meta+S" @click="saveTab(tab)"><Icon name="save" :size="14" />Saqlash <span class="muted" style="font-size:var(--fs-xs)">⌘S</span></button>
+      <button class="sm" data-testid="docs-btn" :aria-pressed="docsOpen" title="Markdown tavsif (Docs)" @click="docsOpen = !docsOpen">Docs<span v-if="d.description?.trim()" class="dot-on" aria-label="tavsif bor" /></button>
       <button class="sm" data-testid="curl-btn" title="Kod namunasi (cURL, Python, JS, Go, ...)" @click="curlOpen = true">&lt;/&gt; Kod</button>
     </div>
     <div class="urlbar" style="position:relative">
@@ -251,6 +254,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
     <div v-if="extraVars.length" class="var-chips" data-testid="var-chips"><span>Boshqa o'zgaruvchilar:</span>
       <span v-for="v in extraVars" :key="v.name" class="var-chip" :class="v.ok ? 'var-ok' : 'var-undef'" data-testid="var-chip" :title="v.title">{{ v.name }}</span>
     </div>
+    <div class="work-row">
     <div ref="workEl" class="work" :class="{ side: layout === 'side', maxed: respMax }" data-testid="work">
     <div class="req-pane">
     <div class="sections" data-testid="sections">
@@ -323,6 +327,8 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
     <section class="resp" ref="respEl" data-testid="response" aria-label="Javob" :style="respStyle" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
       <ResponsePanel :tab="tab" />
     </section>
+    </div>
+    <aside v-if="docsOpen" class="docs-side" data-testid="docs-side"><DocsPanel v-model="d.description" tid="req-docs" title="Docs" @change="touch" /></aside>
     </div>
   </div>
   <Dialog v-if="curlOpen" title="Kod namunasi" testid="curl-drawer" width="min(960px,92vw)" @close="curlOpen = false">

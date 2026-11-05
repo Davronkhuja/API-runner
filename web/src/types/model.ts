@@ -3,6 +3,7 @@ export interface PmHeader { key: string; value: string; disabled?: boolean; desc
 export interface PmQuery { key: string; value: string; disabled?: boolean; description?: string }
 export interface PmRequest {
   method: string
+  description?: string | { content?: string; type?: string }
   header: PmHeader[]
   url: { raw: string; query?: PmQuery[]; variable?: { key: string; value: string }[] }
   body?: {
