@@ -15,6 +15,7 @@ import { askConfirm, showToast, sidePanel } from '../lib/ui'
 import Icon from './Icon.vue'
 import { authName, hasRealAuth, openNodeTab } from '../lib/nodes'
 import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
+import TrashDialog from './TrashDialog.vue'
 import { exId, ensureExampleIds, openExample } from '../lib/examples'
 import { isFolder, type DropPosition, type RequestItem, type TreeItem } from '../types/model'
 import { draftFromItem } from '../lib/draft'
@@ -135,7 +136,7 @@ async function menuAct(a: string) {
   else if (a === 'dup') await duplicate(r)
   else if (a === 'delete') {
     const keys = tree.selection.includes(keyOf(r)) ? [...tree.selection] : [keyOf(r)]
-    if (!(await askConfirm(`${keys.length} ta element o'chirilsinmi?`, 'O\'chirish'))) return
+    if (!(await askConfirm(`${keys.length} ta element Savatga o'tkazilsinmi? (30 kun ichida tiklash mumkin)`, 'O\'chirish'))) return
     for (const k of keys) { const [c, i] = k.split(':'); await tree.removeItem(c, i); tabs.dropRef(k) }
     tree.clearSelection()
   }
@@ -198,8 +199,9 @@ async function newCollection() { await tree.createCollection('Yangi collection')
 // ── Environments / History ──
 const loadHistory = openFromHistory
 const openEnv = (id: string, name: string) => tabs.open('environment', id, name, { permanent: true })
-async function delEnv(id: string, name: string) { if (await askConfirm(`'${name}' o'chirilsinmi?`, "O'chirish")) await ws.deleteEnv(id) }
+async function delEnv(id: string, name: string) { if (await askConfirm(`'${name}' Savatga o'tkazilsinmi? (30 kun ichida tiklash mumkin)`, "O'chirish")) await ws.deleteEnv(id) }
 const cleanOpen = ref(false)
+const trashOpen = ref(false)
 const cleanCount = computed(() => urlNamedItems().length)
 async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(id, 'Yangi muhit') }
 </script>
@@ -212,6 +214,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
         <template v-if="panel === 'collections'">
           <button class="ib" aria-label="Yangi so'rov" title="Yangi so'rov" data-testid="sb-new-request" @click="tabs.openNew()"><Icon name="plus" :size="16" /></button>
           <button class="ib" aria-label="Yangi collection" title="Yangi collection" data-testid="new-collection" @click="newCollection"><Icon name="folder-plus" :size="16" /></button>
+          <button class="ib" aria-label="Savat (o'chirilganlar)" title="Savat — 30 kun saqlanadi" data-testid="trash-open" @click="trashOpen = true"><Icon name="trash" :size="16" /></button>
         </template>
         <template v-else-if="panel === 'environments'"><button class="ib" aria-label="Yangi muhit" title="Yangi muhit" data-testid="new-env" @click="newEnv"><Icon name="plus" :size="16" /></button></template>
         <template v-else-if="panel === 'history'">
@@ -227,6 +230,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
       <button class="ib nc-x" aria-label="Taklifni yopish" title="Yopish" data-testid="nameclean-close" @click="dismissOffer()">×</button>
     </div>
     <NameCleanDialog v-if="cleanOpen" @close="cleanOpen = false" />
+    <TrashDialog v-if="trashOpen" @close="trashOpen = false" />
 
     <template v-if="panel === 'collections'">
       <div class="sb-search"><input v-model="tree.filter" placeholder="Filtr…" aria-label="Kolleksiyalarda qidirish" data-testid="sb-search"></div>

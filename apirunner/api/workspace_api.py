@@ -7,9 +7,14 @@ from ..core import scripting
 from ..core.scripting.sandbox import Limits
 from ..storage import files, model, tree_ops
 from ..storage.migrate import import_localstorage
+from ..storage.trash import TrashError
 from ..storage.workspace import Conflict, NotFound
 
 bp = Blueprint("workspace_api", __name__, url_prefix="/api")
+
+
+def _trash():
+    return current_app.extensions["trash"]
 
 
 def _ws():
@@ -78,8 +83,11 @@ def put_collection(cid):
 
 @bp.delete("/collections/<cid>")
 def delete_collection(cid):
-    _ws().delete_collection(cid)
-    return jsonify({"ok": True})
+    ws = _ws()
+    with ws.lock:
+        tid = _trash().add_collection(ws.get_collection(cid))          # avval savatga, keyin o'chirish
+        ws.delete_collection(cid)
+    return jsonify({"ok": True, "trash_id": tid})
 
 
 # environments
@@ -131,8 +139,11 @@ def put_environment(eid):
 
 @bp.delete("/environments/<eid>")
 def delete_environment(eid):
-    _ws().delete_environment(eid)
-    return jsonify({"ok": True})
+    ws = _ws()
+    with ws.lock:
+        tid = _trash().add_environment(ws.get_environment(eid))
+        ws.delete_environment(eid)
+    return jsonify({"ok": True, "trash_id": tid})
 
 
 # globals
@@ -233,9 +244,38 @@ def delete_item(cid, iid):
     ws = _ws()
     with ws.lock:
         col = ws.get_collection(cid)
+        tid = _trash().add_item(col, iid)
         tree_ops.delete_item(col, iid)
         ws.save_collection(col)
+    return jsonify({"ok": True, "trash_id": tid})
+
+
+# ── Savat (30 kun) ──
+@bp.get("/trash")
+def trash_list():
+    return jsonify(_trash().list())
+
+
+@bp.post("/trash/<tid>/restore")
+def trash_restore(tid):
+    try:
+        return jsonify({"ok": True, **_trash().restore(tid)})
+    except TrashError as e:
+        return jsonify({"error": str(e)}), 404
+
+
+@bp.delete("/trash/<tid>")
+def trash_delete(tid):
+    try:
+        _trash().delete(tid)
+    except TrashError as e:
+        return jsonify({"error": str(e)}), 404
     return jsonify({"ok": True})
+
+
+@bp.delete("/trash")
+def trash_empty():
+    return jsonify({"ok": True, "deleted": _trash().empty()})
 
 
 @bp.post("/items/move")
