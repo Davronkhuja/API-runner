@@ -1,10 +1,11 @@
 /** Auth qoralamasi va Postman (`auth` obyekti) o'rtasida o'tkazish; meros (inherit) mantiqi. */
-export type AuthType = 'inherit' | 'none' | 'bearer' | 'basic' | 'custom' | 'apikey' | 'digest' | 'oauth2' | 'awsv4' | 'jwt'
-/** `cfg` — apikey/digest/oauth2/awsv4/jwt maydonlari (Postman kalit nomlari: oauth2 uchun accessTokenUrl, clientId...). */
+export type AuthType = 'inherit' | 'none' | 'bearer' | 'basic' | 'custom' | 'apikey' | 'digest' | 'oauth2' | 'awsv4' | 'jwt' | 'hawk' | 'ntlm'
+/** `cfg` — apikey/digest/oauth2/awsv4/jwt/hawk/ntlm maydonlari (Postman kalit nomlari: oauth2 uchun accessTokenUrl, clientId...). */
 export interface AuthDraft { type: AuthType; token: string; user: string; pass: string; custom: string; cfg: Record<string, string> }
-export const CFG_TYPES = ['apikey', 'digest', 'oauth2', 'awsv4', 'jwt'] as const
+export const CFG_TYPES = ['apikey', 'digest', 'oauth2', 'awsv4', 'jwt', 'hawk', 'ntlm'] as const
 export const defaultCfg = (t: AuthType): Record<string, string> => ({
   apikey: { in: 'header' }, digest: {}, awsv4: { region: 'us-east-1', service: 'execute-api' },
+  hawk: { algorithm: 'sha256', includePayloadHash: 'false' }, ntlm: {},
   jwt: { algorithm: 'HS256', addTo: 'header', headerPrefix: 'Bearer', payload: '{}' },
   oauth2: { grant_type: 'client_credentials', client_authentication: 'header', addTokenTo: 'header', headerPrefix: 'Bearer', tokenName: 'Token' },
 } as Record<string, Record<string, string>>)[t] ?? {}

@@ -88,7 +88,7 @@ export function specFor(d: RequestDraft, ref: string | null, extraVars: Record<s
   Object.assign(spec, mergeSettings(useWorkspace().settings, d.settings))
   const a = effectiveAuth(d.auth, ref)
   spec.authorization = authHeader(a)
-  if (a.type === 'apikey' || a.type === 'digest' || a.type === 'awsv4' || a.type === 'jwt') spec.auth_config = { type: a.type, ...a.cfg }
+  if (a.type === 'apikey' || a.type === 'digest' || a.type === 'awsv4' || a.type === 'jwt' || a.type === 'hawk' || a.type === 'ntlm') spec.auth_config = { type: a.type, ...a.cfg }
   else if (a.type === 'oauth2') {
     const t = tokenFor(a)
     if (t) {
