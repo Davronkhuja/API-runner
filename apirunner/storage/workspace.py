@@ -16,7 +16,7 @@ from . import model
 from .atomic import atomic_write_json
 from .lock import WorkspaceLock
 
-CURRENT_SCHEMA = 2
+CURRENT_SCHEMA = 3
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
 

@@ -10,11 +10,12 @@ import { mergeSettings } from './settings'
 export interface VarInfo { value: string; scope: string; secret: boolean }
 export type VarMap = Record<string, VarInfo>
 
-type Raw = { key?: string; value?: any; disabled?: boolean; enabled?: boolean; type?: string }
+type Raw = { key?: string; value?: any; current?: any; disabled?: boolean; enabled?: boolean; type?: string }
 export function layer(out: VarMap, rows: Raw[] | undefined, scope: string) {
   for (const v of rows ?? []) {
     if (!v?.key || v.disabled || v.enabled === false) continue
-    out[v.key] = { value: v.value == null ? '' : String(v.value), scope, secret: v.type === 'secret' }
+    const val = v.current != null ? v.current : v.value        // muhit/globals: Joriy qiymat Boshlang'ichdan ustun
+    out[v.key] = { value: val == null ? '' : String(val), scope, secret: v.type === 'secret' }
   }
 }
 
@@ -56,6 +57,21 @@ export function authChain(ref: string | null, includeSelfFolder = false): PmAuth
   const path = folderPath(col, id || null)
   if (includeSelfFolder && id) { const self = useTree().findItem(cid, id); if (self && isFolder(self)) path.push(self) }
   return [...path.reverse().map(f => (f as any).auth as PmAuth), col.auth as PmAuth]
+}
+
+/** "Meros" qaysi tugundan kelayotgani: eng yaqin ota-papka / collection. `null` — hech birida auth yo'q. */
+export interface AuthSource { scope: 'collection' | 'folder'; name: string; id: string; cid: string; type: string; pm: any }
+export function authSource(ref: string | null): AuthSource | null {
+  const tree = useTree()
+  const [cid, id] = (ref ?? '').split(':')
+  const col = cid ? tree.cols[cid] : undefined
+  if (!col) return null
+  for (const f of folderPath(col, id || null).reverse()) {
+    const a = (f as any).auth
+    if (a && a.type) return { scope: 'folder', name: f.name, id: f.id, cid, type: a.type, pm: a }
+  }
+  const a = col.auth as any
+  return a && a.type ? { scope: 'collection', name: col.info.name, id: '', cid, type: a.type, pm: a } : null
 }
 
 export const effectiveAuth = (a: AuthDraft, ref: string | null) => resolveAuth(a, authChain(ref))

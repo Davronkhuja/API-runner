@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { get, post } from '../api/client'
-import { askConfirm, showToast } from '../lib/ui'
+import { askConfirm, fmtBytes, showToast } from '../lib/ui'
 import { useWorkspace } from '../stores/workspace'
 import SettingsForm from './SettingsForm.vue'
+import { dense, layout } from '../lib/view'
 import Icon from './Icon.vue'
 import { exportLegacy, importLocalStorage } from '../lib/migrate'
 import type { ReqSettings } from '../lib/settings'
@@ -13,7 +14,16 @@ const backups = ref<Backup[]>([])
 const status = ref<any>(null)
 const busy = ref(false)
 
+const fstat = ref<{ count: number; size: number; unused_count: number; unused_size: number } | null>(null)
+async function loadFiles() { try { fstat.value = await get('/api/files/usage') } catch { fstat.value = null } }
+async function cleanFiles() {
+  const u = fstat.value
+  if (!u?.unused_count || !(await askConfirm(`${u.unused_count} ta ishlatilmayotgan fayl (${fmtBytes(u.unused_size)}) o'chiriladi. Hech bir so'rov, muhit yoki ochiq tab ularga havola qilmaydi. Davom etilsinmi?`, "Tozalash"))) return
+  try { const r = await post('/api/files/cleanup'); showToast(`${r.removed} ta fayl o'chirildi (${fmtBytes(r.freed)})`, 'success'); await loadFiles() }
+  catch (e: any) { showToast(e.message, 'error') }
+}
 async function load() {
+  loadFiles()
   backups.value = await get('/api/backups')
   status.value = await get('/api/status')
 }
@@ -48,6 +58,15 @@ onMounted(load)
   <div class="page" data-testid="settings-tab">
     <h3 style="margin-top:0">Sozlamalar</h3>
     <div class="muted" data-testid="settings-status" v-if="status">Versiya {{ status.version }} · sxema {{ status.schemaVersion }}</div>
+    <h4>Ko'rinish</h4>
+    <div class="view-opts" data-testid="view-settings">
+      <div role="radiogroup" aria-label="So'rov va javob joylashuvi" class="view-radio">
+        <span class="lbl">So'rov va javob</span>
+        <label><input v-model="layout" type="radio" value="stack" data-testid="view-stack">Ustma-ust</label>
+        <label><input v-model="layout" type="radio" value="side" data-testid="view-side">Yonma-yon</label>
+      </div>
+      <label class="view-dense"><input v-model="dense" type="checkbox" data-testid="view-dense"><span><b>Zich rejim</b><br><span class="muted">Kichikroq qator balandligi — ekranga ko'proq qator sig'adi.</span></span></label>
+    </div>
     <h4>So'rov sozlamalari (global)</h4>
     <p class="muted">Barcha so'rovlar uchun sukut; har bir so'rov o'z Sozlamalar tabida qayta belgilashi mumkin.</p>
     <SettingsForm :model="gs" prefix="gset" @change="gsDirty = true" />
@@ -63,6 +82,10 @@ onMounted(load)
     </tbody></table>
     <p class="muted" style="font-size:12px">Chegaradan oshgan skript to'xtatiladi, xato Testlar tabida va Console'da ko'rinadi; so'rov baribir yuboriladi. Sukut: {{ ws.scripts.defaults.timeout_ms }} ms · {{ ws.scripts.defaults.memory_mb }} MB · {{ ws.scripts.defaults.max_requests }} so'rov.</p>
     <p style="display:flex;gap:8px"><button class="primary" data-testid="script-limits-save" :disabled="!limDirty" @click="saveLimits">Saqlash</button><button data-testid="script-limits-reset" @click="resetLimits">Sukutga qaytarish</button></p>
+    <h4>Fayllar</h4>
+    <p class="muted">So'rovlarga biriktirilgan fayllar workspace ichida (<code>workspace/files</code>) saqlanadi — saqlangan so'rov keyin ham ishlaydi. Hech narsa havola qilmayotgan fayllarni shu yerda tozalash mumkin (yangi yuklanganlar 1 soat tegilmaydi).</p>
+    <p data-testid="files-usage" v-if="fstat">Jami: <b data-testid="files-count">{{ fstat.count }}</b> ta, {{ fmtBytes(fstat.size) }} · ishlatilmayotgani: <b data-testid="files-unused">{{ fstat.unused_count }}</b> ta ({{ fmtBytes(fstat.unused_size) }})
+      <button data-testid="files-cleanup" :disabled="!fstat.unused_count" @click="cleanFiles">Ishlatilmaganlarni tozalash</button></p>
     <h4>Ma'lumotlar</h4>
     <p class="muted">Eski brauzer (localStorage) ma'lumotlarini serverga ko'chirish yoki <code>saved_requests.json</code> formatiga eksport (orqaga qaytish uchun).</p>
     <p style="display:flex;gap:8px"><button data-testid="ls-import" @click="importLocalStorage"><Icon name="upload" :size="14" />Brauzerdan ko'chirish</button><button data-testid="export-legacy" @click="exportLegacy"><Icon name="download" :size="14" />saved_requests.json eksport</button></p>

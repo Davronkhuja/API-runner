@@ -52,9 +52,11 @@ Repoda `ecosystem.config.js` bor: u `api-runner` nomli ilovani loyiha ichidagi `
 ./run.command                       # bir marta: .venv va kutubxonalar tayyor bo'ladi (yoki qo'lda yuqoridagi buyruqlar)
 pm2 start ecosystem.config.js       # ishga tushirish
 pm2 save                            # qayta yuklashdan keyin tiklanishi uchun
-pm2 restart api-runner              # yangi kod/versiyadan keyin
+pm2 restart api-runner              # yangi kod/versiyadan keyin (git pull / yangilashdan keyin MAJBURIY)
 pm2 logs api-runner                 # jurnal
 ```
+
+**Yangilashdan keyin restart qiling.** UI statik fayllari diskdan darhol yangilanadi, lekin Python serveri xotirada eski kodda qoladi. Status bar'da UI va server versiyalari farq qilsa "Server eski — pm2 restart api-runner" ogohlantirishi chiqadi.
 
 Portni o'zgartirish: `ecosystem.config.js` dagi `APIRUNNER_PORT` ni tahrirlang, so'ng `pm2 restart api-runner --update-env`.
 

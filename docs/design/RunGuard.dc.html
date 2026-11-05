@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>Runner xavfsizlik tasdig'i</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.opt{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid #E2E5EA;border-radius:10px;cursor:pointer}
+.opt.on{border-color:#4F46E5;background:#F5F5FF}
+.btn{height:38px;padding:0 16px;border:1px solid #D3D7DE;border-radius:9px;background:#fff;color:#151821;font:500 13px Inter,sans-serif;cursor:pointer}
+.btn:hover{background:#F1F3F6}
+.pri{height:38px;padding:0 18px;border:0;border-radius:9px;background:#4F46E5;color:#fff;font:600 13px Inter,sans-serif;cursor:pointer}
+.danger{height:38px;padding:0 18px;border:0;border-radius:9px;background:#B91C1C;color:#fff;font:600 13px Inter,sans-serif;cursor:pointer}
+.danger:disabled{background:#E9B8B8;cursor:not-allowed}
+</style>
+</helmet>
+<div style="width: 640px; height: 560px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: rgba(15, 17, 23, 0.55); font-family: Inter, system-ui, sans-serif; color: #151821">
+  <div role="dialog" aria-labelledby="rg-title" style="width: 560px; box-sizing: border-box; padding: 24px; border-radius: 16px; background: #fff; box-shadow: 0 24px 60px rgba(0,0,0,.25); display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; gap: 14px">
+      <span style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; background: #FFF4E5; color: #9A4A00; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg></span>
+      <div>
+        <h2 id="rg-title" style="margin: 0; font-size: 17px; font-weight: 700">Prod muhitida 32 ta so'rov ishga tushadi</h2>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #596170; line-height: 1.5">«Online Mahalla — prod» faol. Ma'lumotni o'zgartiradigan so'rovlar ham bor.</p>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+      <div style="padding: 10px; border-radius: 9px; background: #E8F6EE"><div style="font: 700 11px 'JetBrains Mono'; color: #157A3A">GET</div><div style="font-size: 20px; font-weight: 700; margin-top: 2px">18</div></div>
+      <div style="padding: 10px; border-radius: 9px; background: #FFF4E5"><div style="font: 700 11px 'JetBrains Mono'; color: #AD4F08">POST</div><div style="font-size: 20px; font-weight: 700; margin-top: 2px">9</div></div>
+      <div style="padding: 10px; border-radius: 9px; background: #EAF0FF"><div style="font: 700 11px 'JetBrains Mono'; color: #1D4ED8">PUT</div><div style="font-size: 20px; font-weight: 700; margin-top: 2px">2</div></div>
+      <div style="padding: 10px; border-radius: 9px; background: #FDECEC"><div style="font: 700 11px 'JetBrains Mono'; color: #B91C1C">DELETE</div><div style="font-size: 20px; font-weight: 700; margin-top: 2px">3</div></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label class="{{optGet}}" onClick="{{pickGet}}">
+        <input type="radio" name="rg" checked="{{isGet}}" aria-label="Faqat GET" style="margin-top: 2px; accent-color: #4F46E5">
+        <span><span style="display: block; font-weight: 600">Faqat GET so'rovlarni ishga tushirish <span style="font-size: 11px; color: #157A3A; font-weight: 600">tavsiya</span></span><span style="display: block; font-size: 12.5px; color: #596170; margin-top: 2px">18 ta so'rov · hech narsa o'zgarmaydi</span></span>
+      </label>
+      <label class="{{optAll}}" onClick="{{pickAll}}">
+        <input type="radio" name="rg" checked="{{isAll}}" aria-label="Hammasi" style="margin-top: 2px; accent-color: #4F46E5">
+        <span><span style="display: block; font-weight: 600">Hammasini ishga tushirish</span><span style="display: block; font-size: 12.5px; color: #596170; margin-top: 2px">DELETE: v1/uzasbo_send_split_payment va yana 2 ta</span></span>
+      </label>
+    </div>
+
+    <sc-if value="{{isAll}}" hint-placeholder-val="{{ false }}">
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: #596170">Tasdiqlash uchun muhit nomini yozing: <b style="color: #151821; font-family: 'JetBrains Mono'">prod</b>
+        <input value="{{typed}}" onInput="{{onType}}" aria-label="Muhit nomi" style="height: 36px; padding: 0 10px; border: 1px solid #D3D7DE; border-radius: 8px; font: 400 13px 'JetBrains Mono'; color: #151821">
+      </label>
+    </sc-if>
+
+    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">
+      <button class="btn">Bekor qilish</button>
+      <sc-if value="{{isGet}}" hint-placeholder-val="{{ true }}"><button class="pri">18 ta GET'ni ishga tushirish</button></sc-if>
+      <sc-if value="{{isAll}}" hint-placeholder-val="{{ false }}"><button class="danger" disabled="{{locked}}">32 tasini ishga tushirish</button></sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":640,"height":560}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { mode: 'get', typed: '' }; }
+  renderVals() {
+    const s = this.state;
+    return {
+      isGet: s.mode === 'get', isAll: s.mode === 'all',
+      optGet: s.mode === 'get' ? 'opt on' : 'opt', optAll: s.mode === 'all' ? 'opt on' : 'opt',
+      pickGet: () => this.setState({ mode: 'get' }), pickAll: () => this.setState({ mode: 'all' }),
+      typed: s.typed, onType: (e) => this.setState({ typed: e.target.value }), locked: s.typed.trim() !== 'prod'
+    };
+  }
+}
+</script>
+</body>
+</html>

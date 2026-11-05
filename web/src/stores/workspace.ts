@@ -27,8 +27,8 @@ export const useWorkspace = defineStore('workspace', () => {
   /** Faol env'ning yoqilgan o'zgaruvchilari (globals ustiga). */
   const activeVars = computed<Record<string, string>>(() => {
     const out: Record<string, string> = {}
-    for (const v of globals.value) if (v.enabled && v.key) out[v.key] = v.value
-    for (const v of activeEnv.value?.values ?? []) if (v.enabled && v.key) out[v.key] = v.value
+    for (const v of globals.value) if (v.enabled && v.key) out[v.key] = v.current ?? v.value
+    for (const v of activeEnv.value?.values ?? []) if (v.enabled && v.key) out[v.key] = v.current ?? v.value
     return out
   })
   async function setActive(id: string | null) { activeEnvId.value = id; await put('/api/workspace/meta', { active_environment_id: id }) }

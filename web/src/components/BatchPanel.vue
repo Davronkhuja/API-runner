@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { confirmWrite } from '../lib/envkind'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
@@ -44,6 +45,7 @@ function onEsc(e: KeyboardEvent) { if (e.key === 'Escape') { if (full.value) ful
 onMounted(() => window.addEventListener('keydown', onEsc))
 onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
 async function run() {
+  if (!(await confirmWrite(props.tab.draft!.method))) return
   await tabs.flush()
   await startBatch(props.tab, {}, async done => {
     try { await hist.add('run', { ts: Date.now(), label: props.tab.draft!.url, count: done.results.length, results: done.results.map(r => ({ index: r.index, status: r.status, time: r.time, size: r.size, url: r.url })) }) } catch { /* tarix yozilmasa ham natija ko'rinadi */ }
@@ -65,22 +67,26 @@ void tabs
 
 <template>
   <div data-testid="batch-panel">
-    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end" data-testid="batch-settings">
-      <label>Data fayl (CSV/JSON)<br>
-        <button data-testid="batch-file-btn" @click="fileInput?.click()">Tanlash…</button>
-        <input ref="fileInput" type="file" accept=".csv,.json" hidden data-testid="batch-file" @change="onFile">
-      </label>
-      <span class="muted" data-testid="batch-data-info">{{ b.data ? `${b.data.name}: ${b.data.rows.length} qator` : 'faylsiz — 1 ta so\'rov' }}</span>
-      <button v-if="b.data" class="ghost" data-testid="batch-file-clear" @click="b.data = null">× tozalash</button>
-      <label>Qatorlar<br><select v-model="b.settings.rowsMode" data-testid="batch-rows-mode"><option value="all">Hammasi</option><option value="custom">Soni</option></select></label>
-      <label v-if="b.settings.rowsMode === 'custom'">Soni<br><input type="number" min="1" v-model.number="b.settings.count" style="width:70px" data-testid="batch-count"></label>
-      <label>Kechikish (s)<br><input type="number" min="0" step="0.1" v-model.number="b.settings.delay" style="width:70px" data-testid="batch-delay"></label>
-      <label>Timeout (s)<br><input type="number" min="1" max="600" v-model.number="b.settings.timeout" style="width:70px" data-testid="batch-timeout"></label>
-      <label>Parallel<br><input type="number" min="1" max="10" v-model.number="b.settings.concurrency" style="width:60px" data-testid="batch-concurrency"></label>
-      <label>Retry<br><input type="number" min="0" max="5" v-model.number="b.settings.retry" style="width:60px" data-testid="batch-retry"></label>
-      <label><input type="checkbox" v-model="b.settings.ssl" data-testid="batch-ssl"> SSL tekshirish</label>
-      <button class="primary" data-testid="batch-run" :disabled="b.status === 'running'" @click="run">▶ RUN</button>
-      <button data-testid="batch-stop" :disabled="b.status !== 'running'" @click="stopBatch(tab)">■ STOP</button>
+    <div class="batch-form" data-testid="batch-settings">
+      <div class="batch-grid" data-testid="batch-grid">
+        <div class="bf"><span class="bl">Data fayl (CSV/JSON)</span>
+          <span class="bf-row"><button data-testid="batch-file-btn" @click="fileInput?.click()">Tanlash…</button>
+            <button v-if="b.data" class="ghost" data-testid="batch-file-clear" @click="b.data = null">× tozalash</button></span>
+          <input ref="fileInput" type="file" accept=".csv,.json" hidden data-testid="batch-file" @change="onFile">
+          <span class="muted bf-info" data-testid="batch-data-info">{{ b.data ? `${b.data.name}: ${b.data.rows.length} qator` : 'faylsiz — 1 ta so\'rov' }}</span></div>
+        <label class="bf"><span class="bl">Qatorlar</span><span class="bf-row"><select v-model="b.settings.rowsMode" data-testid="batch-rows-mode"><option value="all">Hammasi</option><option value="custom">Soni</option></select>
+          <input v-if="b.settings.rowsMode === 'custom'" type="number" min="1" v-model.number="b.settings.count" style="width:80px" aria-label="Qatorlar soni" data-testid="batch-count"></span></label>
+        <label class="bf"><span class="bl">Kechikish (s)</span><input type="number" min="0" step="0.1" v-model.number="b.settings.delay" data-testid="batch-delay"></label>
+        <label class="bf"><span class="bl">Timeout (s)</span><input type="number" min="1" max="600" v-model.number="b.settings.timeout" data-testid="batch-timeout"></label>
+        <label class="bf"><span class="bl">Parallel</span><input type="number" min="1" max="10" v-model.number="b.settings.concurrency" data-testid="batch-concurrency"></label>
+        <label class="bf"><span class="bl">Retry</span><input type="number" min="0" max="5" v-model.number="b.settings.retry" data-testid="batch-retry"></label>
+      </div>
+      <div class="batch-actions">
+        <label class="bf-check"><input type="checkbox" v-model="b.settings.ssl" data-testid="batch-ssl"> SSL tekshirish</label>
+        <span style="flex:1" />
+        <button class="primary" data-testid="batch-run" :disabled="b.status === 'running'" @click="run">▶ RUN</button>
+        <button data-testid="batch-stop" :disabled="b.status !== 'running'" @click="stopBatch(tab)">■ STOP</button>
+      </div>
     </div>
 
     <div class="drop-zone" :class="{ over: zone }" data-testid="batch-dropzone" @dragover.prevent="zone = true" @dragleave="zone = false" @drop="onZoneDrop">CSV/JSON faylni shu yerga tashlang</div>

@@ -5,6 +5,8 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 from tests.e2e.conftest import eventually
 
 TREE = [
@@ -271,7 +273,7 @@ def test_headers_rows_reorder_by_dnd(ui):
 def test_form_data_rows_reorder_by_dnd(ui):
     ui.locator("[data-testid=new-tab]").click()
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "multipart")
+    set_body_mode(ui, "multipart")
     _rows_reorder_fields(ui)
 
 
@@ -333,7 +335,7 @@ def test_drop_csv_file_imports(ui):
 
 def test_drop_curl_text_imports(ui):
     drop_text(ui, "curl -X POST 'https://api.test/x?y=1' -H 'X-Foo: bar' -d '{\"k\":1}'")
-    expect(ui.locator("[data-testid=url]")).to_have_value("https://api.test/x?y=1")
+    expect(ui.locator("[data-testid=url]")).to_have_text("https://api.test/x?y=1")
     expect(ui.locator("[data-testid=method]")).to_have_value("POST")
 
 

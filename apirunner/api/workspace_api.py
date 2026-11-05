@@ -5,7 +5,7 @@ from flask import Blueprint, current_app, jsonify, request
 
 from ..core import scripting
 from ..core.scripting.sandbox import Limits
-from ..storage import model, tree_ops
+from ..storage import files, model, tree_ops
 from ..storage.migrate import import_localstorage
 from ..storage.workspace import Conflict, NotFound
 
@@ -82,12 +82,31 @@ def delete_collection(cid):
 
 
 # environments
+ENV_KINDS = ("", "dev", "test", "prod")
+
+
+def _env_extras_error(d):
+    """Muhit turi (Dev/Test/Prod) va Prod tasdig'i: noto'g'ri qiymat 400."""
+    if "kind" in d and d["kind"] not in ENV_KINDS:
+        return "Muhit turi dev, test yoki prod bo'lishi kerak"
+    for k in ("confirm_writes", "runner_get_only"):
+        if k in d and not isinstance(d[k], bool):
+            return f"{k} true/false bo'lishi kerak"
+    return None
+
+
 @bp.post("/environments")
 def create_environment():
     d = request.get_json(silent=True) or {}
     if not d.get("name", "").strip():
         return jsonify({"error": "Nom kiritilmagan"}), 400
+    bad = _env_extras_error(d)
+    if bad:
+        return jsonify({"error": bad}), 400
     env = model.new_environment(d["name"].strip(), values=d.get("values") or [])
+    for k in ("kind", "confirm_writes", "runner_get_only"):
+        if k in d:
+            env[k] = d[k]
     return jsonify({"ok": True, "id": _ws().save_environment(env)})
 
 
@@ -101,6 +120,9 @@ def put_environment(eid):
     env = request.get_json(silent=True) or {}
     if env.get("id") != eid or not isinstance(env.get("values"), list):
         return jsonify({"error": "Environment tuzilmasi noto'g'ri"}), 400
+    bad = _env_extras_error(env)
+    if bad:
+        return jsonify({"error": bad}), 400
     _ws().get_environment(eid)
     _ws().save_environment(env, expected_rev=env.get("rev"))
     return jsonify({"ok": True})
@@ -320,6 +342,33 @@ def create_backup_route():
     return jsonify({"ok": True, "name": os.path.basename(path)})
 
 
+@bp.post("/collections/<cid>/inherit-auth")
+def inherit_auth(cid):
+    """So'rovlarning o'z auth'ini olib tashlaydi (ya'ni "Meros"). Ommaviy o'zgarishdan OLDIN zaxira olinadi; bitta atomik yozuv."""
+    from .. import __version__
+    from ..storage import backup as bk
+    d = request.get_json(silent=True) or {}
+    ids = d.get("ids")
+    if not isinstance(ids, list) or not ids:
+        return jsonify({"error": "ids (ro'yxat) kerak"}), 400
+    ws = _ws()
+    with ws.lock:
+        col = ws.get_collection(cid)
+        targets = []
+        for iid in ids:
+            hit = tree_ops.find(col["item"], iid)
+            if not hit or "item" in hit[0]:
+                return jsonify({"error": "So'rov topilmadi: %s" % iid}), 404
+            targets.append(hit[0])
+        path = bk.create_backup(ws.root, current_app.extensions["saved_file"], __version__, current_app.extensions["backup_dir"], suffix="pre-bulk-auth")
+        changed = 0
+        for item in targets:
+            if (item.get("request") or {}).pop("auth", None) is not None:
+                changed += 1
+        ws.save_collection(col)
+    return jsonify({"ok": True, "changed": changed, "backup": os.path.basename(path)})
+
+
 @bp.post("/backups/restore")
 def restore_backup_route():
     from .. import __version__
@@ -334,3 +383,45 @@ def restore_backup_route():
     except (ValueError, FileNotFoundError) as e:
         return jsonify({"error": str(e)}), 400
     return jsonify({"ok": True, "pre_restore": os.path.basename(pre)})
+
+
+# ── yuklangan fayllar (workspace/files/<sha256>) ──
+def _ws_root():
+    return _ws().root
+
+
+@bp.post("/files")
+def upload_file():
+    f = request.files.get("file")
+    if not f:
+        return jsonify({"error": "fayl topilmadi"}), 400
+    return jsonify(files.store(_ws_root(), f.stream, f.filename))
+
+
+@bp.post("/files/status")
+def files_status():
+    """{refs:[...]} -> {ref: {exists,size,name,managed}} — fayl topilmaganini (qizil qator) aniqlash uchun."""
+    refs = (request.get_json(silent=True) or {}).get("refs") or []
+    return jsonify({r: files.info(_ws_root(), r) for r in refs if isinstance(r, str)})
+
+
+@bp.post("/files/adopt")
+def adopt_file():
+    """Eski vaqtinchalik yuklashni (.tmp_uploads) omborga ko'chiradi. Faqat yuklash papkasidagi fayllar."""
+    d = request.get_json(silent=True) or {}
+    raw, _, label = str(d.get("path") or "").partition("::")
+    path = os.path.realpath(raw.strip())
+    root = os.path.realpath(current_app.config["UPLOAD_DIR"])
+    if not (path.startswith(root + os.sep) and os.path.isfile(path)):
+        return jsonify({"error": "Fayl topilmadi yoki ruxsat yo'q"}), 400
+    return jsonify(files.adopt(_ws_root(), path, d.get("name") or label.strip() or None))
+
+
+@bp.get("/files/usage")
+def files_usage():
+    return jsonify(files.usage(_ws_root()))
+
+
+@bp.post("/files/cleanup")
+def files_cleanup():
+    return jsonify(files.cleanup(_ws_root()))

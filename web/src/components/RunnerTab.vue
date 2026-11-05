@@ -3,10 +3,12 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import Icon from './Icon.vue'
 import { applyScriptResult, scriptsFor } from '../lib/scripts'
 import { logRequest, logResponse, push as pushLog } from '../lib/console'
-import { activity, fmtMs } from '../lib/ui'
+import { activity, askRunGuard, fmtMs } from '../lib/ui'
+import { isProd, runnerGetOnly } from '../lib/envkind'
 import { useTree } from '../stores/tree'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
+import { useLastRun } from '../stores/lastrun'
 import { post } from '../api/client'
 import { draftFromItem } from '../lib/draft'
 import { prepareAuth, specFor } from '../lib/scope'
@@ -15,16 +17,18 @@ import DataPreview from './DataPreview.vue'
 import { isFolder, type RequestItem, type TreeItem } from '../types/model'
 
 const props = defineProps<{ tab: Tab }>()
-const tree = useTree(), tabs = useTabs(), ws = useWorkspace()
+const tree = useTree(), tabs = useTabs(), ws = useWorkspace(), last = useLastRun()
 props.tab.state ??= {}
 const st = props.tab.state!      // reaktiv proksi (??= xom obyektni qaytaradi)
 st.order ??= null; st.checked ??= {}; st.data ??= null; st.log ??= []; st.filter ??= 'all'; st.iterations ??= null; st.delay ??= 0; st.stopOnError ??= false
-const cid = props.tab.ref!
+const [cid, fid] = props.tab.ref!.split(':')          // collection yoki papka (cid:fid) doirasi
+const scopeNode = computed<any>(() => (fid ? tree.findItem(cid, fid) : tree.cols[cid]))
+const scopeName = computed(() => scopeNode.value?.name ?? scopeNode.value?.info?.name ?? '')
 
 function flat(items: TreeItem[], path = ''): { id: string; name: string; method: string; path: string; item: RequestItem }[] {
   return items.flatMap(i => isFolder(i) ? flat(i.item, path + i.name + ' / ') : [{ id: i.id, name: i.name, method: i.request.method, path, item: i }])
 }
-const base = computed(() => flat(tree.cols[cid]?.item ?? []))
+const base = computed(() => flat((fid ? (scopeNode.value?.item ?? []) : (tree.cols[cid]?.item ?? []))))
 const items = computed(() => {
   const order: string[] | null = st.order
   if (!order) return base.value
@@ -32,7 +36,12 @@ const items = computed(() => {
   const known = order.filter(id => byId.has(id)).map(id => byId.get(id)!)
   return [...known, ...base.value.filter(x => !order.includes(x.id))]
 })
-const isOn = (id: string) => st.checked[id] !== false
+// Belgilash: oxirgi tanlov (shu collection/papka uchun eslab qolinadi) → bo'lmasa muhit sozlamasi (Prod: faqat GET; Dev/Test: hammasi)
+const SEL_KEY = 'apirunner.runner.sel.v1'
+const loadSel = (): Record<string, boolean> => { try { return JSON.parse(localStorage.getItem(SEL_KEY) ?? '{}')[props.tab.ref!] ?? {} } catch { return {} } }
+const saveSel = () => { try { const all = JSON.parse(localStorage.getItem(SEL_KEY) ?? '{}'); all[props.tab.ref!] = { ...loadSel(), ...st.checked }; localStorage.setItem(SEL_KEY, JSON.stringify(all)) } catch { /* bloklangan */ } }
+const remembered = loadSel()
+const isOn = (id: string) => st.checked[id] ?? remembered[id] ?? (runnerGetOnly(ws.activeEnv) ? items.value.find(x => x.id === id)?.method === 'GET' : true)
 
 const dragId = ref<string | null>(null)
 const overIdx = ref<number | null>(null)
@@ -69,7 +78,8 @@ let stopFlag = false
 const enabled = computed(() => items.value.filter(x => isOn(x.id)))
 const rowsCount = computed(() => st.data?.rows?.length ?? 0)
 const iterations = computed(() => Math.max(1, Number(st.iterations) || rowsCount.value || 1))
-const planned = computed(() => iterations.value * enabled.value.length)
+const getOnlyRun = ref(false)          // RunGuard: Prod'da faqat GET
+const planned = computed(() => iterations.value * (getOnlyRun.value ? enabled.value.filter(x => x.method === 'GET').length : enabled.value.length))
 const log = computed<any[]>(() => st.log)
 const done = computed(() => log.value.length)
 const okCount = computed(() => log.value.filter(r => typeof r.status === 'number' && r.status < 400).length)
@@ -82,9 +92,21 @@ const stat = (s: any) => (typeof s === 'number' && s < 400 ? 'ok' : s === 'SKIPP
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 const strRow = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row ?? {}).map(([k, v]) => [k, v == null ? '' : String(v)]))
 
-async function run() {
-  running.value = true; stopFlag = false; st.log = []
-  const list = enabled.value
+/** Prod faol bo'lsa avval RunGuard; keyin run(). */
+async function start() {
+  let onlyGet = false
+  if (isProd(ws.activeEnv)) {
+    const counts: Record<string, number> = {}
+    for (const x of enabled.value) counts[x.method] = (counts[x.method] ?? 0) + iterations.value
+    const a = await askRunGuard(ws.activeEnv!.name, counts)
+    if (!a) return
+    onlyGet = a === 'get'
+  }
+  await run(onlyGet)
+}
+async function run(onlyGet = false) {
+  running.value = true; stopFlag = false; st.log = []; getOnlyRun.value = onlyGet
+  const list = onlyGet ? enabled.value.filter(x => x.method === 'GET') : enabled.value
   const names = new Map<string, number>()
   list.forEach((x, i) => { if (!names.has(x.name)) names.set(x.name, i) })        // setNextRequest: shu nomli birinchi so'rov
   const total = iterations.value
@@ -111,6 +133,7 @@ async function run() {
         await applyScriptResult(res.scripts, { ref: ref_ })
       } catch (e: any) { res = { status: 'ERR', time: 0, response: e.message }; pushLog({ level: 'error', text: `${x.name}: ${e.message}` }) }
       st.log.push({ iter: it, id: x.id, method: x.method, name: x.name, status: res.status, time: res.time ?? 0 })
+      last.setResult(ref_, res.status, res.time ?? 0)
       if (st.stopOnError && !(typeof res.status === 'number' && res.status < 400) && res.status !== 'SKIPPED') break outer
       if (st.delay > 0) await sleep(Number(st.delay))
       const sc = res.scripts
@@ -125,6 +148,7 @@ async function run() {
     }
   }
   running.value = false
+  last.setRun(props.tab.ref!, st.log.filter((r: any) => r.iter === st.log[0]?.iter).map((r: any) => ({ id: r.id, status: r.status })))
 }
 const stop = () => { stopFlag = true }
 watch([running, done, planned], () => { if (running.value) activity[props.tab.id] = `Runner ${done.value}/${planned.value}`; else delete activity[props.tab.id] }, { immediate: true })
@@ -137,7 +161,7 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
     <aside class="cfg scroll" aria-label="Runner sozlamalari">
       <div style="display:flex;flex-direction:column;gap:6px">
         <span class="lbl">Collection</span>
-        <div class="panel-box" style="padding:8px 12px;font-weight:500" data-testid="runner-collection">{{ tree.cols[cid]?.info.name }}</div>
+        <div class="panel-box" style="padding:8px 12px;font-weight:500" data-testid="runner-collection">{{ scopeName }}</div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px">
@@ -146,7 +170,7 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
           <div v-for="(x, i) in items" :key="x.id" class="req" data-testid="runner-item" role="listitem" draggable="true" :class="{ 'drop-before': overIdx === i }"
                @dragstart="dragId = x.id" @dragover.prevent="overIdx = i" @dragleave="overIdx = null" @drop.prevent="drop(i)" @dragend="dragId = overIdx = null">
             <span class="grip" aria-hidden="true"><Icon name="grip" :size="14" /></span>
-            <input type="checkbox" :checked="isOn(x.id)" :aria-label="`${x.name} — Runner'ga qo'shish`" @change="st.checked[x.id] = ($event.target as HTMLInputElement).checked">
+            <input type="checkbox" :checked="isOn(x.id)" :aria-label="`${x.name} — Runner'ga qo'shish`" @change="st.checked[x.id] = ($event.target as HTMLInputElement).checked; saveSel()">
             <span class="m" :class="'m-' + x.method" style="width:46px;font:700 10.5px var(--font-mono)">{{ x.method }}</span>
             <span class="name" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span class="muted">{{ x.path }}</span>{{ x.name }}</span>
           </div>
@@ -177,13 +201,13 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
 
       <div style="margin-top:auto">
         <button v-if="running" class="stop" data-testid="runner-stop" @click="stop">To'xtatish</button>
-        <button v-else class="go" data-testid="runner-run" :disabled="!planned" @click="run"><Icon name="play" :size="15" />Ishga tushirish · {{ planned }} so'rov</button>
+        <button v-else class="go" data-testid="runner-run" :disabled="!planned" @click="start"><Icon name="play" :size="15" />Ishga tushirish · {{ planned }} so'rov</button>
       </div>
     </aside>
 
     <section class="out" aria-label="Natijalar">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div><h1 style="margin:0;font-size:18px;font-weight:700">{{ tree.cols[cid]?.info.name }} — Runner</h1><p class="muted" style="margin:2px 0 0;font-size:12.5px">{{ log.length ? `Bugun, ${when} · ${iterations} iteratsiya` : 'Hali ishga tushirilmagan' }}</p></div>
+        <div><h1 style="margin:0;font-size:18px;font-weight:700">{{ scopeName }} — Runner</h1><p class="muted" style="margin:2px 0 0;font-size:12.5px">{{ log.length ? `Bugun, ${when} · ${iterations} iteratsiya` : 'Hali ishga tushirilmagan' }}</p></div>
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span data-testid="runner-progress-label">{{ running ? 'Bajarilmoqda…' : (log.length ? 'Tugadi' : 'Tayyor') }} · {{ done }} / {{ planned }}</span><span>{{ pct }}%</span></div>

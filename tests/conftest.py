@@ -32,6 +32,8 @@ def _build_echo_app():
             "form": request.form.to_dict(flat=False),
             "files": {k: {"filename": f.filename, "content": f.read().decode("utf-8", "replace")}
                       for k, f in request.files.items()},
+            "files_all": {k: [f.filename for f in request.files.getlist(k)] for k in request.files},
+            "files_ct": {k: request.files.getlist(k)[0].mimetype for k in request.files},
         })
 
     @app.route("/status/<int:code>")

@@ -6,12 +6,15 @@ import { useWorkspace } from './stores/workspace'
 import { useHistory } from './stores/history'
 import { put, get, keepalivePut } from './api/client'
 import { askClose, closeDialog, confirmDialog, toast } from './lib/ui'
+import { suggestName } from './lib/rename'
+import { clamp, drag } from './lib/resize'
 import { createRequestIn, saveAsHandler, saveTab, sendTab, openRequest } from './lib/actions'
 import Sidebar from './components/Sidebar.vue'
 import TabBar from './components/TabBar.vue'
 import RequestEditor from './components/RequestEditor.vue'
 import EnvTab from './components/EnvTab.vue'
 import RunnerTab from './components/RunnerTab.vue'
+import RunGuard from './components/RunGuard.vue'
 import CollectionTab from './components/CollectionTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
 import CookiesTab from './components/CookiesTab.vue'
@@ -59,17 +62,23 @@ async function startupChecks() {
   await defaultNotice()
 }
 function toggleSidebar() { sbHidden.value = !sbHidden.value; try { localStorage.setItem('apiRunnerSbHidden', sbHidden.value ? '1' : '0') } catch { /* ixtiyoriy */ } }
-function startResize(e: MouseEvent) {
-  const x0 = e.clientX, w0 = sbWidth.value
-  const move = (ev: MouseEvent) => { sbWidth.value = Math.max(180, Math.min(420, w0 + ev.clientX - x0)) }
-  const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); try { localStorage.setItem('apiRunnerSbWidth', String(sbWidth.value)) } catch { /* ixtiyoriy */ } }
-  window.addEventListener('mousemove', move); window.addEventListener('mouseup', up)
-}
+// Yon panel kengligi: 180..min(420, oyna yarmi); oyna o'zgarganda clamp qayta hisoblanadi
+const sbMax = () => Math.max(180, Math.min(420, Math.floor(window.innerWidth / 2)))
+const sbClamp = (w: number) => clamp(w, 180, sbMax())
+const saveSb = () => { try { localStorage.setItem('apiRunnerSbWidth', String(sbWidth.value)) } catch { /* ixtiyoriy */ } }
+function startResize(e: PointerEvent) { const w0 = sbWidth.value; drag(e, 'x', d => { sbWidth.value = sbClamp(w0 + d) }, saveSb) }
+function sbNudge(d: number) { sbWidth.value = sbClamp(sbWidth.value + d); saveSb() }
+function sbReset() { sbWidth.value = sbClamp(284); saveSb() }
+const onWinResize = () => { sbWidth.value = sbClamp(sbWidth.value) }
+onMounted(() => { onWinResize(); window.addEventListener('resize', onWinResize) })
+onBeforeUnmount(() => window.removeEventListener('resize', onWinResize))
 const saveTargets = computed(() => tree.rows.filter(r => r.isCollection || r.folder).map(r => ({ key: `${r.collectionId}:${r.id}`, label: '　'.repeat(r.depth) + r.name })))
 
 saveAsHandler.fn = tab => new Promise(resolve => {
   const first = saveTargets.value[0]?.key ?? ''
-  saveAs.value = { tab, name: tab.draft!.name, target: first, resolve }
+  const d = tab.draft!, urlLike = /^(https?:\/\/|\{\{)/i.test(d.name.trim())
+  const guess = d.url.trim() ? suggestName(d.url) : d.name           // nomi berilmagan/URL bo'lsa — host'siz path
+  saveAs.value = { tab, name: urlLike || d.name === "Yangi so'rov" ? guess : d.name, target: first, resolve }
 })
 async function confirmSaveAs() {
   const s = saveAs.value!; saveAs.value = null
@@ -163,7 +172,7 @@ function openRunnerWithData(name: string, text: string) {
     <AppHeader />
     <div class="shell">
       <IconRail />
-      <div v-show="!sbHidden" class="sb-wrap" :style="{ width: sbWidth + 'px' }" data-testid="sb-wrap"><Sidebar @open-history="openHist" /><div class="sb-resizer" data-testid="sb-resizer" role="separator" aria-orientation="vertical" aria-label="Panel kengligi" tabindex="0" @mousedown="startResize" @keydown.left.prevent="sbWidth = Math.max(180, sbWidth - 16)" @keydown.right.prevent="sbWidth = Math.min(420, sbWidth + 16)" /></div>
+      <div v-show="!sbHidden" class="sb-wrap" :style="{ width: sbWidth + 'px' }" data-testid="sb-wrap"><Sidebar @open-history="openHist" /><div class="sb-resizer" data-testid="sb-resizer" role="separator" aria-orientation="vertical" aria-label="Panel kengligi" tabindex="0" :aria-valuenow="sbWidth" @pointerdown="startResize" @dblclick="sbReset" @keydown.left.prevent="sbNudge(-16)" @keydown.right.prevent="sbNudge(16)" /></div>
       <div class="main">
         <div style="display:flex;align-items:stretch">
           <button class="ib" aria-label="Yon panelni yashirish/ko'rsatish" :aria-pressed="!sbHidden" title="Yon panel" data-testid="sb-toggle" style="margin:3px 4px;flex-shrink:0" @click="toggleSidebar"><Icon name="sidebar" :size="16" /></button>
@@ -190,9 +199,10 @@ function openRunnerWithData(name: string, text: string) {
         <button data-testid="dlg-discard" @click="closeDialog.resolve('discard')">Saqlamaslik</button>
         <button class="primary" data-testid="dlg-save" @click="closeDialog.resolve('save')">Saqlash</button>
       </div></div></div>
-    <div v-if="confirmDialog" class="overlay"><div class="dialog" role="dialog" aria-modal="true" data-testid="confirm-dialog">
+    <div v-if="confirmDialog" class="overlay overlay-top"><div class="dialog" role="dialog" aria-modal="true" data-testid="confirm-dialog">
       <p>{{ confirmDialog.msg }}</p>
       <div class="btns"><button @click="confirmDialog.resolve(false)">Bekor qilish</button><button class="primary" data-testid="confirm-ok" @click="confirmDialog.resolve(true)">{{ confirmDialog.ok }}</button></div></div></div>
+    <RunGuard />
     <div v-if="saveAs" class="overlay"><div class="dialog" role="dialog" aria-modal="true" data-testid="saveas-dialog">
       <b>So'rovni saqlash</b>
       <p><input v-model="saveAs.name" style="width:100%" data-testid="saveas-name" @keydown.enter="confirmSaveAs"></p>

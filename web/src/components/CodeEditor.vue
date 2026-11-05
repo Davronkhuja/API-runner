@@ -5,9 +5,11 @@ import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/vi
 import { defaultKeymap, history, historyKeymap, indentLess } from '@codemirror/commands'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { json } from '@codemirror/lang-json'
+import { html } from '@codemirror/lang-html'
+import { javascript } from '@codemirror/lang-javascript'
 import { tags as t } from '@lezer/highlight'
 
-const props = defineProps<{ modelValue: string; lang: 'json' | 'raw'; testid?: string; placeholder?: string }>()
+const props = defineProps<{ modelValue: string; lang: 'json' | 'raw' | 'html' | 'javascript'; testid?: string; placeholder?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [string]; beautify: [] }>()
 const host = ref<HTMLElement>()
 let view: EditorView | undefined
@@ -19,6 +21,11 @@ const style = HighlightStyle.define([
   { tag: [t.number], color: 'var(--j-num)' },
   { tag: [t.bool, t.null], color: 'var(--j-bool)' },
   { tag: [t.keyword, t.atom], color: 'var(--j-bool)' },
+  { tag: [t.tagName, t.angleBracket], color: 'var(--j-key)' },
+  { tag: t.attributeName, color: 'var(--j-num)' },
+  { tag: t.attributeValue, color: 'var(--j-str)' },
+  { tag: [t.comment, t.docComment], color: 'var(--muted)' },
+  { tag: [t.function(t.variableName), t.definition(t.variableName)], color: 'var(--j-key)' },
 ])
 const theme = EditorView.theme({
   '&': { backgroundColor: 'var(--code)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '9px', height: '100%' },
@@ -35,7 +42,7 @@ onMounted(() => {
       doc: props.modelValue,
       extensions: [
         history(), theme, EditorView.lineWrapping, syntaxHighlighting(style),
-        ...(props.lang === 'json' ? [json()] : []),
+        ...(props.lang === 'json' ? [json()] : props.lang === 'html' ? [html()] : props.lang === 'javascript' ? [javascript()] : []),
         ...(props.placeholder ? [cmPlaceholder(props.placeholder)] : []),
         EditorView.contentAttributes.of({ 'data-testid': props.testid ?? 'code-editor' }),
         // Mod-b (Cmd) va Ctrl-b: eski UI ikkalasini qo'llagan

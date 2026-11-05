@@ -23,5 +23,12 @@ export const askClose = (title: string) => new Promise<CloseAnswer>(res => { clo
 export const confirmDialog = ref<{ msg: string; ok: string; resolve: (b: boolean) => void } | null>(null)
 export const askConfirm = (msg: string, ok = 'Ha') => new Promise<boolean>(res => { confirmDialog.value = { msg, ok, resolve: b => { confirmDialog.value = null; res(b) } } })
 
+/** Prod'da Runner ishga tushirishdan oldingi dialog (RunGuard): 'get' — faqat GET, 'all' — hammasi, null — bekor. */
+export type GuardAnswer = 'get' | 'all' | null
+export const runGuard = ref<{ envName: string; counts: Record<string, number>; total: number; resolve: (a: GuardAnswer) => void } | null>(null)
+export const askRunGuard = (envName: string, counts: Record<string, number>) => new Promise<GuardAnswer>(res => {
+  runGuard.value = { envName, counts, total: Object.values(counts).reduce((a, b) => a + b, 0), resolve: a => { runGuard.value = null; res(a) } }
+})
+
 export const fmtBytes = (n: number) => (n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(1) + ' MB')
 export const fmtMs = (s: number | null | undefined) => (s == null ? '—' : s < 1 ? Math.round(s * 1000) + ' ms' : s.toFixed(2) + ' s')

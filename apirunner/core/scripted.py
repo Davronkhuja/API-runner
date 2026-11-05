@@ -70,8 +70,14 @@ def scripts_chain(col, item_id):
 
 
 # ───────────────────────── scope'lar ─────────────────────────
+def effective(row):
+    """Muhit/globals qatori: Joriy qiymat (faqat shu kompyuterda) bor bo'lsa u, aks holda Boshlang'ich (`value`)."""
+    cur = row.get("current")
+    return row.get("value", "") if cur is None else cur
+
+
 def _vars_of(rows):
-    return {r["key"]: r.get("value", "") for r in (rows or []) if r.get("key") and not r.get("disabled") and r.get("enabled", True)}
+    return {r["key"]: effective(r) for r in (rows or []) if r.get("key") and not r.get("disabled") and r.get("enabled", True)}
 
 
 def load_scopes(ws, ref, row=None):
@@ -144,14 +150,17 @@ def _apply(rows, before, after, enabled_key):
         if k in before and _s(before[k]) == _s(v):
             continue
         hit = next((r for r in rows if r.get("key") == k), None)
+        # muhit/globals (enabled_key bor): skript faqat JORIY qiymatni o'zgartiradi, Boshlang'ich tegilmaydi; collection — `value`
+        field = "current" if enabled_key else "value"
         if hit:
-            hit["value"] = _s(v)
+            hit[field] = _s(v)
             if enabled_key:
                 hit[enabled_key] = True
             hit.pop("disabled", None)
         else:
-            row = {"key": k, "value": _s(v), "type": "default"}
+            row = {"key": k, "value": "" if enabled_key else _s(v), "type": "default"}
             if enabled_key:
+                row["current"] = _s(v)
                 row[enabled_key] = True
             rows.append(row)
     removed = set(before) - set(after)

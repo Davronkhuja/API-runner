@@ -143,19 +143,19 @@ def test_path_variables_table_and_substitution(ui, echo_server):
 def test_collection_settings_save_auth_vars_description_roundtrip(ui, app):
     ui.locator("[data-name='Col']").dblclick()
     expect(T(ui, "tab-collection")).to_be_visible()
+    ui.click("[data-scope-section=auth]")
     ui.select_option("[data-testid=auth-type]", "bearer")
     T(ui, "auth-token").fill("NEWCOL")
     ui.click("[data-scope-section=vars]")
-    T(ui, "var-add").click()
-    ui.locator("[data-testid=var-key]").last.fill("extra")
-    ui.locator("[data-testid=var-val]").last.fill("1")
-    ui.click("[data-scope-section=desc]")
+    ui.locator("[data-testid=var-key]").nth(1).fill("extra")                     # 0 — "base"; 1 — ghost (yozilgach oddiy qator)
+    ui.locator("[data-testid=var-val]").nth(1).fill("1")
+    ui.click("[data-scope-section=overview]")
     T(ui, "scope-desc").fill("Tavsif matni")
     T(ui, "scope-save").click()
     cid = app.api("GET", "/api/workspace")["collections"][0]["id"]
     col = app.api("GET", f"/api/collections/{cid}")
     assert col["auth"]["bearer"][0]["value"] == "NEWCOL"
-    assert any(v["key"] == "extra" for v in col["variable"])
+    assert {"key": "extra", "value": "1"}.items() <= next(v for v in col["variable"] if v["key"] == "extra").items() and all(v["key"] for v in col["variable"])
     assert col["x-apirunner"]["description"] == "Tavsif matni"
     open_req(ui, "AtRoot")
     assert send_and_json(ui)["headers"]["Authorization"] == "Bearer NEWCOL"
@@ -165,6 +165,7 @@ def test_folder_settings_via_context_menu_save_and_inherit_option(ui, app):
     ui.locator("[data-name='Fold']").click(button="right")
     ui.click("[data-act=settings]")
     expect(T(ui, "tab-folder")).to_be_visible()
+    ui.click("[data-scope-section=auth]")
     ui.select_option("[data-testid=auth-type]", "inherit")          # papka ham meros qila oladi
     ui.click("[data-scope-section=scripts]")
     T(ui, "script-pre").fill("console.log(1)")
@@ -179,9 +180,8 @@ def test_folder_settings_via_context_menu_save_and_inherit_option(ui, app):
 def test_globals_tab_edit_and_use(ui, app):
     ui.click("[data-testid=sb-environments]")
     T(ui, "globals-row").click()
-    T(ui, "env-add").click()
-    T(ui, "env-key").last.fill("gv")
-    T(ui, "env-val").last.fill("GLOBALVAL")
+    T(ui, "env-key").first.fill("gv")                                          # ghost yozilgach oddiy qator bo'ladi, pastida yangi ghost
+    T(ui, "env-val").first.fill("GLOBALVAL")
     T(ui, "env-save").click()
     eventually_globals = app.api("GET", "/api/globals")["values"]
-    assert any(v["key"] == "gv" and v["value"] == "GLOBALVAL" for v in eventually_globals)
+    assert any(v["key"] == "gv" and v.get("current", v["value"]) == "GLOBALVAL" for v in eventually_globals)

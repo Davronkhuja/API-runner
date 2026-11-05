@@ -3,11 +3,14 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
+import { useLastRun } from '../stores/lastrun'
 import { draftFromItem, eventsFromDraft, extFromDraft, requestFromDraft } from './draft'
 import { applyScriptResult, scriptsFor } from './scripts'
 import { logRequest, logResponse } from './console'
 import { prepareAuth, specFor } from './scope'
-import { showToast } from './ui'
+import { askConfirm, showToast } from './ui'
+import { missingFilesOf } from './files'
+import { confirmWrite } from './envkind'
 import type { RequestItem } from '../types/model'
 
 /** Saqlash dialogi kerak bo'lgan (hali saqlanmagan) tab uchun App.vue shuni to'ldiradi. */
@@ -21,8 +24,9 @@ export async function saveTab(tab: Tab): Promise<boolean> {
   const [cid, id] = tab.ref.split(':')
   const request = requestFromDraft(tab.draft)
   const existing = (tree.findItem(cid, id) as any)?.event
-  await tree.updateItem(cid, id, { name: tab.draft.name, request, event: eventsFromDraft(tab.draft, existing), 'x-apirunner': extFromDraft(tab.draft) })
-  tabs.markSaved(tab.id, { title: tab.draft.name })
+  // Nom bu yerda YOZILMAYDI: u yagona manbadan (daraxt/server, lib/rename.ts) keladi — Save qayta nomlashni bosib ketmasin
+  await tree.updateItem(cid, id, { request, event: eventsFromDraft(tab.draft, existing), 'x-apirunner': extFromDraft(tab.draft) })
+  tabs.markSaved(tab.id, { title: (tree.findItem(cid, id) as any)?.name ?? tab.draft.name })
   return true
 }
 
@@ -42,8 +46,18 @@ export function openRequest(cid: string, id: string, permanent = false) {
   return tabs.open('request', ref, item.name, { permanent, draft: tabs.tabs.some(t => t.ref === ref) ? undefined : draftFromItem(item) })
 }
 
+/** Tarixga javob natijasi: holat, vaqt, hajm, sarlavhalar va (kesilgan) matn — javoblarni solishtirish uchun. */
+const HIST_BODY_LIMIT = 100_000
+function historyResult(r: any) {
+  const raw = typeof r.response === 'string' ? r.response : JSON.stringify(r.response ?? '', null, 2)
+  return { time: r.time, size: r.size, resp_headers: r.resp_headers, body: raw.slice(0, HIST_BODY_LIMIT), body_truncated: raw.length > HIST_BODY_LIMIT || undefined }
+}
+
 export async function sendTab(tab: Tab) {
   if (!tab.draft || !tab.draft.url.trim()) { showToast('URL kiriting!', 'warn'); return }
+  if (!(await confirmWrite(tab.draft.method))) return
+  const missing = await missingFilesOf(tab.draft)
+  if (missing.length && !(await askConfirm(`Fayl topilmadi: ${missing.map(m => m.name).join(', ')}. Body'da faylni qayta tanlang. Baribir yuborilsinmi? (xato qaytadi)`, 'Baribir yuborish'))) return
   const hist = useHistory()
   await useTabs().flush()
   tab.response = { loading: true }
@@ -56,9 +70,11 @@ export async function sendTab(tab: Tab) {
     logRequest(spec.method, tab.draft.url, tab.id)
     const r = await post('/run_one', spec)
     tab.response = r
+    useLastRun().setResult(tab.ref, r.status, r.time)
+    useTabs().persistSoon()          // holat/o'lcham/sarlavhalar sahifa yangilanganda ham qoladi (matn emas)
     logResponse(r, tab.id)
     await applyScriptResult(r.scripts, { tabId: tab.id, ref: tab.ref })
-    hist.add('request', { ...spec, env_vars: undefined, scripts: undefined, ref: undefined, scripts_info: undefined, timestamp: Date.now(), status: r.status }).catch(() => {})
+    hist.add('request', { ...spec, env_vars: undefined, scripts: undefined, ref: undefined, scripts_info: undefined, timestamp: Date.now(), status: r.status, ...historyResult(r) }).catch(() => {})
     hist.add('url', { method: tab.draft.method, url: tab.draft.url }).catch(() => {})
   } catch (e: any) {
     tab.response = { status: 'ERR', response: e.message, time: 0, size: 0, resp_headers: {}, url: tab.draft.url }

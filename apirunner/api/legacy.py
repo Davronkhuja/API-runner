@@ -11,7 +11,7 @@ from flask import Blueprint, Response, current_app, jsonify, request, stream_wit
 
 from ..core.engine import ExecContext, execute  # noqa: F401
 from ..core.scripted import Services, run_item
-from ..storage import model
+from ..storage import files, model
 from ..storage.migrate import LEGACY_COLLECTION_ID, LEGACY_COLLECTION_NAME
 from ..storage.legacy_view import flat_view
 from ..storage.workspace import NotFound
@@ -198,6 +198,7 @@ def run_job():
         return jsonify({"error": "URL kiritilmagan"}), 400
     if not data.get("rows"):
         data["rows"] = [{}]
+    data = files.resolve_spec(data, current_app.extensions["workspace"].root)
     return jsonify({"job_id": current_app.extensions["jobs"].start(data)})
 
 
@@ -242,7 +243,7 @@ def run_one():
     cfg = request.get_json(silent=True) or {}
     if not (cfg.get("url") or "").strip():
         return jsonify({"error": "no url"}), 400
-    spec = dict(cfg, url=cfg["url"].strip(), timeout=cfg.get("timeout") or 30)
+    spec = files.resolve_spec(dict(cfg, url=cfg["url"].strip(), timeout=cfg.get("timeout") or 30), current_app.extensions["workspace"].root)
     jobs = current_app.extensions["jobs"]
     services = Services(ws=current_app.extensions["workspace"], cookies=current_app.extensions["cookies"], allowed_file_roots=jobs.allowed_file_roots)
     res = run_item(spec, services, scripts=cfg.get("scripts"), ref=cfg.get("ref"), row=cfg.get("row"), info=cfg.get("scripts_info"))

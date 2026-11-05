@@ -94,7 +94,7 @@ def test_variables_set_by_pre_request_are_used_in_url_and_persisted_in_workspace
     d = client.post("/run_one", json={"url": "{{base}}/echo/{{sub}}", "ref": f"{cid}:r1", "env_vars": {"base": echo},
                                       "scripts": {"prerequest": [S("pm.environment.set('sub', 'x1'); pm.variables.set('base', pm.collectionVariables.get('base'))", "prerequest")], "test": []}}).get_json()
     assert d["status"] == 404 and d["url"].endswith("/echo/x1")                      # echo'da /echo/x1 yo'q, lekin {{sub}} yechildi
-    assert env_vals(client, eid)["sub"]["value"] == "x1"                               # skript yozgan o'zgaruvchi muhitga saqlandi
+    assert env_vals(client, eid)["sub"]["current"] == "x1" and env_vals(client, eid)["sub"]["value"] == ""                               # skript yozgan o'zgaruvchi muhitga saqlandi
 
 
 def test_persistence_rules_env_globals_collection_but_not_data_local(client, echo):
@@ -105,8 +105,8 @@ def test_persistence_rules_env_globals_collection_but_not_data_local(client, ech
         pm.variables.set('local_only', 'L'); pm.iterationData.set && 0;""")])
     assert d["scripts"]["changed"] == ["environment", "globals", "collection"]
     ev = env_vals(client, eid)
-    assert ev["tok"]["value"] == "T1" and ev["new_env"]["value"] == "42" and "sec" not in ev and ev["new_env"]["enabled"] is True
-    g = {v["key"]: v["value"] for v in client.get("/api/globals").get_json()["values"]}
+    assert ev["tok"]["current"] == "T1" and ev["new_env"]["current"] == "42" and "sec" not in ev and ev["new_env"]["enabled"] is True
+    g = {v["key"]: v["current"] for v in client.get("/api/globals").get_json()["values"]}
     assert g == {"g1": '{"a": 1}'}                                                     # g0 o'chirildi, obyekt JSON sifatida
     col = client.get(f"/api/collections/{cid}").get_json()
     assert {v["key"]: v["value"] for v in col["variable"]} == {"base": echo, "cv": "C1"}
@@ -160,6 +160,7 @@ def test_limits_api_clamps_and_applies(client, echo):
     assert r["meta"]["script_limits"] == {"timeout_ms": 100, "memory_mb": 24, "max_requests": 2}
     d = run_one(client, echo, test=[S("while(true){}")])
     assert d["status"] == 200 and d["scripts"]["errors"][0]["name"] == "TimeoutError" and "100 ms" in d["scripts"]["errors"][0]["message"]
+    client.put("/api/workspace/meta", json={"script_limits": {"timeout_ms": 8000, "memory_mb": 24, "max_requests": 2}})   # xotira chegarasi vaqt chegarasidan oldin urilsin (yuklama ostida 100 ms yetmaydi)
     d = run_one(client, echo, test=[S("const a=[]; while(true) a.push(new Array(10000).fill(1))")])
     assert d["scripts"]["errors"][0]["name"] == "MemoryError" and "24 MB" in d["scripts"]["errors"][0]["message"]
     client.put("/api/workspace/meta", json={"script_limits": {"timeout_ms": 5000, "memory_mb": 64, "max_requests": 2}})

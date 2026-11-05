@@ -4,3 +4,5 @@ declare module '*.vue' {
   const c: DefineComponent<{}, {}, any>
   export default c
 }
+
+declare const __UI_VERSION__: string

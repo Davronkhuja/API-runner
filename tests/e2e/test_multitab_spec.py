@@ -2,6 +2,8 @@
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 from tests.e2e.conftest import eventually
 
 TREE = [("f1", "Papka", [("a", "Alfa", None), ("b", "Beta", None)]), ("c", "Gamma", None), ("d", "Delta", None)]
@@ -72,15 +74,15 @@ def test_each_tab_keeps_independent_state_url_params_body_auth_scripts_response_
     ui.select_option("[data-testid=auth-type]", "bearer")
     ui.fill("[data-testid=auth-token]", "TOK-G")
     ui.click("[data-section=body]")
-    ui.select_option("[data-testid=body-mode]", "raw")
+    set_body_mode(ui, "raw")
     ui.fill("[data-testid=body-raw]", "gamma-body")
     ui.click("[data-testid=send]")
     expect(ui.locator("[data-testid=resp-status]")).to_have_text("200")
     open_perm(ui, "Delta")
-    expect(ui.locator("[data-testid=url]")).to_have_value("http://x/Delta")
+    expect(ui.locator("[data-testid=url]")).to_have_text("http://x/Delta")
     expect(ui.locator("[data-testid=response]")).to_contain_text("Javob shu yerda")
     ui.locator(f"{TABS}", has_text="Gamma").click()
-    expect(ui.locator("[data-testid=url]")).to_have_value(echo_server + "/echo?x=1")
+    expect(ui.locator("[data-testid=url]")).to_have_text(echo_server + "/echo?x=1")
     expect(ui.locator("[data-testid=resp-status]")).to_have_text("200")
     ui.click("[data-section=auth]")
     expect(ui.locator("[data-testid=auth-token]")).to_have_value("TOK-G")
@@ -95,7 +97,7 @@ def test_switching_tabs_loses_nothing(ui):
     edit_url(ui, "http://keep-me")
     open_perm(ui, "Delta")
     ui.locator(TABS, has_text="Gamma").click()
-    expect(ui.locator("[data-testid=url]")).to_have_value("http://keep-me")
+    expect(ui.locator("[data-testid=url]")).to_have_text("http://keep-me")
     expect(ui.locator(f"{TABS}", has_text="Gamma").locator("[data-testid=dirty-dot]")).to_be_visible()
 
 
@@ -147,7 +149,7 @@ def test_dialog_dont_save_discards_and_closes(ui, app):
     ui.click("[data-testid=dlg-discard]")
     expect(ui.locator(TABS)).to_have_count(0)
     open_perm(ui, "Gamma")
-    expect(ui.locator("[data-testid=url]")).to_have_value("http://x/Gamma")
+    expect(ui.locator("[data-testid=url]")).to_have_text("http://x/Gamma")
 
 
 def test_dialog_cancel_keeps_tab_open(ui):
@@ -156,7 +158,7 @@ def test_dialog_cancel_keeps_tab_open(ui):
     ui.click("[data-testid=tab-close]")
     ui.click("[data-testid=dlg-cancel]")
     expect(ui.locator(TABS)).to_have_count(1)
-    expect(ui.locator("[data-testid=url]")).to_have_value("http://edited")
+    expect(ui.locator("[data-testid=url]")).to_have_text("http://edited")
 
 
 def _ctx(p, tab_title, act):
@@ -243,7 +245,7 @@ def test_open_tabs_and_active_tab_restored_after_page_reload(ui):
     ui.wait_for_selector(TABS)
     assert titles(ui) == ["Alfa", "Gamma", "Delta"]
     expect(ui.locator(f"{TABS}.active .title")).to_have_text("Gamma")
-    expect(ui.locator("[data-testid=url]")).to_have_value("http://drafted")
+    expect(ui.locator("[data-testid=url]")).to_have_text("http://drafted")
 
 
 def test_open_tabs_and_active_tab_restored_after_server_restart(ui, app):

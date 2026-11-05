@@ -2,6 +2,110 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.10] — 2026-11-05 — Fix: javob paneli, sidebar va Console o'lchamini o'zgartirish
+### Fixed
+- **Javob paneli o'lchami o'zgarmasdi**: sudralganda `.resp` kattalashar, lekin `.req-pane` kontent o'lchamidan qisqarmay, panel pastga, ko'rinmas joyga o'sardi. Endi `.req-pane` va `.resp` — `min-height/min-width: 0`, ichki kontent scroll bo'ladi; o'lcham **foizda** (javob ulushi) saqlanadi va konteynerga clamp qilinadi: har ikki qism kamida 120px (yonma-yon rejimda kenglik uchun ham). Oyna o'lchami o'zgarganda clamp qayta hisoblanadi (ResizeObserver).
+- Sudrash: `setPointerCapture` (kursor panel tashqarisiga chiqsa ham davom etadi), sudrash paytida matn belgilanmaydi va butun sahifada `row-resize`/`col-resize` kursori; ushlash zonasi 12px (chiziq ingichka), hover'da accent rang; ikki marta bosish — 50/50 (sidebar 284px, Console 240px); klaviatura (↑↓ / ←→).
+- O'lcham **layout bo'yicha** (ustma-ust va yonma-yon alohida) saqlanadi va sahifa yangilanganda tiklanadi.
+- Xuddi shu tuzatish **sidebar kengligi** (180…min(420, oyna/2), tor oynada qayta clamp) va **Console balandligi** (≥100px, ish maydoni siqilib ketmaydi; endi saqlanadi) uchun.
+### Added
+- **Javobni maksimal qilish** tugmasi (ajratgichda): so'rov panelini yig'ib, javobni to'liq ochadi / qaytaradi.
+- 12 yangi e2e (`test_resizers.py`): `boundingClientRect.top` va panel o'lchamlari haqiqatan o'zgarishi, clamp, dblclick, reload, klaviatura, oyna o'lchami, maksimal qilish.
+
+## [2.3.9] — 2026-11-05 — Nom qoidalari, Runner tanlovi, Body formatlari
+### Fixed
+- **Rename'dagi takror nom tekshiruvi olib tashlandi**: Postman kabi bir papkada (va collection/papka darajasida) bir xil nomli elementlar ruxsat, ular ID bo'yicha ajraladi — `v1/hm/projects` GET va POST uchun "allaqachon bor" xatosi endi chiqmaydi. Faqat **bo'sh nom** rad etiladi. Nom va metod ikkalasi bir xil bo'lsa (papkalar uchun — bir xil nom) bloklanmaydi: input ostida kulrang yumshoq ogohlantirish, saqlash baribir ishlaydi.
+- Nomi to'liq URL bo'lib qolgan so'rov (yoki `{{base}}/...`): qayta nomlashda input host'siz path bilan to'ldiriladi (`v1/hm/projects/item`); nom berilmagan so'rovni saqlashda ham dialog URL'dan shu qisqa nomni taklif qiladi.
+### Added
+- **Runner: "faqat GET'ni belgilash"** muhit sozlamasi (`runner_get_only`): Prod uchun sukut bo'yicha yoqiq, Dev/Test uchun o'chiq (Muhit tabida o'zgartiriladi). Oxirgi tanlov har collection/papka uchun eslab qolinadi (brauzerda).
+- **Body formati**: HTML va JavaScript (sintaksis ranglash, mos Content-Type: `text/html`, `application/javascript`; Postman `language` bilan saqlanadi).
+- 12 yangi e2e (`test_rename_rules.py`, `test_prod_safety.py` yangilandi).
+
+## [2.3.8] — 2026-11-04 — Yangi ekranlar (C guruhi, docs/design maketlari)
+### Added
+- **Folder / Collection Overview** (Folder.dc): papka/collection tabida so'rovlar jadvali (metod, nom, auth manbai — "↑ Meros" yoki "Bearer Token (o'zi)", oxirgi status, vaqt; filtr; qator bosilsa so'rov ochiladi), auth meros statistikasi (progress, "N ta so'rov meros oladi") va papka tokeni bilan bir xil qo'lda yozilganlari haqida ogohlantirish + "Ularni Meros'ga o'tkazish…", o'zgaruvchilar va skriptlar soni, **oxirgi run** (har so'rov uchun nuqta) va "Papkani ishga tushirish" tugmasi. Oxirgi natijalar brauzerda saqlanadi (Bosqich 4 SQLite saqlashiga o'tkaziladi).
+- **Muhit muharriri** (Env.dc): **Boshlang'ich / Joriy qiymat** ustunlari. Boshlang'ich eksport va zaxiraga tushadi; Joriy faqat shu kompyuterda ishlatiladi va bor bo'lsa ustun; **skriptlar (`pm.environment.set`) faqat Joriy'ni o'zgartiradi**. Secret qiymatlar maskalanadi ("ko'z" bilan ko'rsatiladi), "Joriy → boshlang'ich (hammasi)", "Joriy qiymatlarni tiklash", Dublikat, Eksport (Postman, faqat boshlang'ich), FAOL belgisi, "Bu muhitni N ta so'rov ishlatadi"; yon paneldagi muhit qatorlarida tur rangi.
+- **Tarix** (History.dc): kunlar bo'yicha guruhlash (Bugun/Kecha), host va path alohida, status va vaqt, ketma-ket bir xil so'rovlar "×N" bo'lib birlashadi (ochib alohida yozuvlarni tanlash mumkin), status filtrlari (2xx/4xx/5xx/Xato) va qidiruv, **ikki yozuv javobining diff'i** (A — eskirog'i, B — yangirog'i; "+N/−M qator", sarlavhalar farqi, vaqt va ID maydonlarini e'tiborsiz qoldirish opsiyasi), "Tabda ochish", "Collection'ga saqlash". Javob matni tarixga 100 KB gacha saqlanadi.
+- **Sozlamalar → Ko'rinish** (Split.dc): so'rov va javob **yonma-yon / ustma-ust** (headerdagi almashtirgich ham) va **Zich rejim**; tanlov brauzerda saqlanadi.
+- **Body turi segmentli tugmalar** (none | form-data | urlencoded | raw | binary | GraphQL; raw uchun JSON/Text formati; ←/→ klavishlari). **POST/PUT tanlanganda (tana tanlanmagan bo'lsa) raw JSON sukut bo'yicha.**
+### Changed
+- **Batch formasi** 2 qatorli grid, yorliqlar kesilmaydi. Tasdiq dialoglari tarix panelidan yuqorida ko'rinadi.
+- Tarix paneli: qator bosilsa tanlanadi (ochish — "Tabda ochish" tugmasi).
+- 18 yangi e2e (`test_screens.py`), diff uchun vitest; yangi ekranlar skrinshotlari (light/dark) `docs/screenshots/after/`.
+
+## [2.3.7] — 2026-11-04 — Fayl biriktirish Postman uslubida (D guruhi)
+### Changed
+- **Fayl faqat Body'da yuboriladi**: Body → form-data qatorida **Turi (Text | File)** va ixtiyoriy **Content-Type** ustuni (sukut — fayl turidan), binary rejimi. Headers va urlencoded'da 📎 yo'q. Params'dagi 📎 **tezkor tugma**: fayl Body → form-data'ga yangi File qatori bo'lib qo'shiladi (kalit — Params qatori nomi, bo'sh bo'lsa `file`), Params qatori o'chadi, Body tabi ochiladi, toast "Fayl Body → form-data'ga qo'shildi"; fayl Params jadvaliga sudrab tashlansa ham shunday.
+- **File qatori**: fayl nomi, hajmi, "Almashtirish" va ×; bitta kalitga bir nechta fayl; qatorga (yoki ghost'ga) sudrab tashlash — qator o'zi File'ga o'tadi.
+- **Fayl topilmasa** (yo'l eskirgan yoki tozalangan) qator qizil, "topilmadi, qayta tanlang"; yuborishdan oldin ogohlantirish dialogi; server ham aniq xato qaytaradi (matn sifatida yuborib yubormaydi).
+- **Binary**: drop zona, fayl nomi va hajmi, Content-Type fayl nomidan avtomatik.
+- **Yuklangan fayllar workspace ichida** (`workspace/files/<sha256>`, bir xil mazmun bir marta): saqlangan so'rov keyin ham ishlaydi. Zaxiralar fayllarni qattiq havola bilan oladi (joy ko'paymaydi). **Sozlamalar → Fayllar**: hajm/soni va "Ishlatilmaganlarni tozalash" (kolleksiya, muhit va ochiq tablar havola qilmagan, 1 soatdan eski fayllar; faqat sizning buyrug'ingiz bilan).
+- Code snippet va cURL eksport form-data fayllarini chiqaradi: `-F 'file=@ariza.pdf'`, Python `open(...)`, PHP `CURLFile`, Java/C#/Go.
+### Migration (sxema 2 → 3)
+- Params'da fayl qatori bo'lgan saqlangan so'rovlar (eski UI: `x-apirunner.legacy.params[type=file]` yoki query'da `yo'l::nom`) avtomatik Body → form-data'ga ko'chiriladi; matnli parametrlar query'da qoladi; fayllar `workspace/files`ga nusxalanadi (asl joyida qoladi). **Avval to'liq zaxira**, xatoda rollback, idempotent. Yuboriladigan so'rov avvalgidek (characterization test: eski usul va migratsiyadan keyingi javoblari bir xil). Eski tana `x-apirunner.pre_files_body`da, asl yozuv `legacy`da saqlanadi.
+- Ochiq tablarning eski qoralamalaridagi Params fayl qatorlari ham shu tarzda Body'ga ko'chadi.
+### Added
+- `POST /api/files`, `/api/files/status|adopt|cleanup`, `GET /api/files/usage`; `FileMissingError` (`file_missing`).
+- 14 yangi e2e (`test_file_attach.py`), 12 yangi unit test (`test_files.py`).
+
+## [2.3.6] — 2026-11-04 — Prod xavfsizligi (B guruhi)
+### Added
+- **Muhit turi Dev / Test / Prod** (rang va belgi): muhit muharririda "Turi" tugmalari, `kind` va `confirm_writes` muhit bilan birga saqlanadi (server noto'g'ri qiymatni 400 bilan rad etadi). Prod faol bo'lsa headerda aniq **PROD** belgisi.
+- **Yozuvchi so'rovlardan oldin tasdiq**: faol muhitda yoqilgan bo'lsa POST/PUT/PATCH/DELETE (so'rov tabi va Batch) yuborishdan oldin dialog — Prod uchun sukut bo'yicha yoqiq, har qanday muhitda sozlanadi; bekor qilinsa hech narsa yuborilmaydi.
+- **Runner sukut bo'yicha faqat GET** belgilab ochiladi (qo'lda belgilangan saqlanadi).
+- **RunGuard**: Prod faol bo'lsa Runner ishga tushishdan oldin dialog — metodlar bo'yicha sonlar, "Faqat GET" (tavsiya, sukut) va "Hammasi"; ikkinchisi `prod` yozilmaguncha bloklangan.
+- Yangi dizayn tokenlari `--env-dev/test/prod/prod-bg` (WCAG AA tekshiruvi bilan).
+- 11 yangi e2e (`test_prod_safety.py`).
+
+## [2.3.5] — 2026-11-04 — Qo'lda tekshiruv xatolari (A guruhi)
+### Fixed
+- **Eski server ogohlantirishi**: UI build'iga versiya yoziladi (`__UI_VERSION__`, manba `apirunner/__init__.py`), status bar `/api/version` ni har 20 soniyada so'raydi; farq bo'lsa "⚠ Server eski — `pm2 restart api-runner`". README'da "yangilashdan keyin restart" qadami.
+- **Sahifa yangilangach javob paneli**: holat/o'lcham/sarlavhalar endi har javobdan keyin saqlanadi (avval faqat keyingi tahrirda yozilardi); matn saqlanmaydi, shuning uchun bo'sh `<pre>` o'rniga "Javob saqlanmagan" holati va "Qayta yuborish" tugmasi. Yuklanayotgan (`loading`) holat saqlanmaydi.
+- **Ghost qatorda 📎 yo'q**; "Bulk Edit" sarlavhada bir qatorda (nowrap, kengroq ustun).
+- **Disabled holat** (masalan o'zgarishsiz "Saqlash") yorug' va qorong'i temada bir xil: xira, `not-allowed`, hover'da o'zgarmaydi.
+- ⌘K'da Import va Runner buyruqlari bor ekan — testlar bilan mustahkamlandi.
+### Added
+- 7 yangi e2e (`test_stage4_fixes.py`).
+
+## [2.3.4] — 2026-11-04 — Fix: URL'da belgilangan joy ko'rinmasdi
+### Fixed
+- **URL maydonida belgilash (selection) ko'rinmasdi**: eski maydon shaffof `<input>` + ustiga rangli nusxa (overlay) edi va `::selection` matnni shaffof qilib qo'ygan. Endi URL — bir qatorli **CodeMirror 6** (`UrlEditor.vue`, body muharriri bilan bir xil asos): belgilash yorug'/qorong'i temada aniq ko'rinadi (yangi `--sel` token, WCAG AA matn kontrasti `test_design_tokens` da), kursor, undo/redo (⌘Z/⌘⇧Z), uzun URL gorizontal scroll, overlay va piksel-moslashtirish kerak emas.
+- Saqlangan: `{{var}}` chiplari (aniqlangan/aniqlanmagan/dinamik ranglari, hoverda scope va qiymat tooltip), so'rov qismi (`?…`) xira, URL↔Params sinxroni, cURL paste, URL tarixi, Enter — yuborish. Ko'p qatorli matn paste qilinsa qatorlar birlashtiriladi (URL doim bir qator).
+- 7 yangi e2e (`test_url_editor.py`): selection foni (computed style) yorug'/qorong'i, klaviatura bilan belgilash, undo/redo, chip/tooltip, paste, Enter/⌘Enter, kursor. Mavjud testlar `[data-testid=url]` (endi `contenteditable`) uchun `to_have_text` ga o'tkazildi.
+
+## [2.3.3] — 2026-11-04 — Fix: jadvalga yangi qator qo'shish (ghost qator)
+### Fixed
+- **Jadvallarda doim bitta bo'sh "ghost" qator** (Params, Headers, form-data, urlencoded, Variables, Environment/Globals): yangi qo'shish uchun alohida tugma kerak emas — ghost qatorga yozilishi bilan u oddiy qatorga aylanadi va pastda yangi ghost paydo bo'ladi. Ghost saqlanmaydi, URL'ga `&` qo'shmaydi, o'zi dirty holat yaratmaydi; faqat Kalit/Qiymat/Tavsif bo'sh bo'lsa ghost hisoblanadi (tavsifi bor qator oddiy). URL↔Params sinxronida (`?id=`), Bulk Edit'dan qaytganda va qator o'chirilganda ham aniq bitta ghost qoladi. Ghost'da checkbox, ushlagich va × ko'rinmaydi; fayl biriktirish (form-data) ghost'dan ham ishlaydi.
+- Variables va Environment jadvalidagi alohida "+ qo'shish" tugmalari olib tashlandi.
+### Added
+- Ustun sarlavhalari (**Kalit | Qiymat | Tavsif**), **Bulk Edit** sarlavha qatorining o'ng chetida.
+- Klaviatura: Enter — keyingi katak/qator, Tab oxirgi katakdan keyingi qator kaliti, Shift+Tab orqaga, Alt+Backspace — qatorni o'chirish.
+- 11 yangi e2e (`test_ghost_rows.py`).
+
+## [2.3.2] — 2026-11-04 — Fix: nomni o'zgartirish
+### Fixed
+- **Rename → Save nomni eskisiga qaytarardi** (paritet regressiyasi): sidebar'dagi rename faqat serverni va tab sarlavhasini yangilardi, ochiq tab qoralamasidagi `draft.name` eski qolardi va ⌘S qoralamani butunligicha yozib nomni bosib ketardi. Endi nom **bitta manbadan** (`lib/rename.ts → renameNode`) o'zgaradi: server, daraxt, barcha ochiq tablar (sarlavha va qoralama nomi) birdaniga; qoralamadagi boshqa saqlanmagan o'zgarishlar (method, URL, body) va dirty holati tegilmaydi. `saveTab` saqlangan so'rovda nom maydonini umuman yozmaydi.
+### Added
+- **Breadcrumb'dagi so'rov nomi** bosilganda (yoki Enter) inline input: Enter/blur — saqlash, Esc — bekor; saqlanmagan yangi so'rovda bosilsa "Saqlash" dialogi ochiladi. Papka va collection tabi sarlavhasida ham xuddi shunday.
+- **Collection'ni qayta nomlash** (F2, kontekst menyu, tab sarlavhasi); Runner tabi sarlavhasi ham yangilanadi.
+- Tab kontekst menyusida **"Nomini o'zgartirish"** (so'rov va collection/papka tablari).
+- **Dublikat** qilingach yangi element darhol rename rejimida ("… Copy" belgilangan); nusxa nomlari takrorlanmaydi ("X Copy", "X Copy 2").
+- Rename input'ga fokus va belgilash ishonchli (`nextTick` + `focus/select`, `autofocus` o'rniga); Enter/Esc dan keyingi blur ikkinchi marta ishlamaydi.
+- Bo'sh nom va bir papkadagi takror nom uchun aniq xabar (Enter — tahrirda qoladi, blur — bekor qiladi); collection nomlari ham takrorlanmaydi.
+- 11 yangi e2e (`test_rename.py`).
+
+## [2.3.1] — 2026-11-04 — Papka/collection auth'ini topish va boshqarish
+### Added
+- **Papka/collection tabi Postman kabi**: daraxtda qator bosilsa preview tab ochiladi (ikki marta — doimiy); chevron faqat ochadi/yopadi; kontekst menyu saqlangan (Sozlamalar, Runner, …). Bo'limlar: **Overview** (so'rovlar/papkalar soni, auth xulosasi, o'zgaruvchilar, o'z auth'i bor so'rovlar soni, tavsif) | **Auth** | **Variables** | **Scripts** | **Run** (Runner'ni shu papka/collection doirasida ochadi — Runner endi `cid:papka` ref'ini qo'llab-quvvatlaydi).
+- **Meros manbasi**: so'rovning Auth tabida "Meros" tanlanganda qaysi papka/collection auth'i ishlatilishi (tur, nom) va "Papkaga/Collection'ga o'tish" havolasi ko'rinadi; hech narsada auth bo'lmasa — aniq tushuntirish. Papka Auth tabida ham yuqoridagi manba ko'rsatiladi.
+- **Ommaviy "Meros" taklifi**: papka/collection'ga auth qo'yilganda ichidagi o'z auth'i bor so'rovlar sanaladi (yaqinroq ota-papkasining o'z auth'i bilan to'silganlari hisobga olinmaydi). Dialog: har bir so'rov uchun tanlash, auth turi, **bir xil token/sozlamali so'rovlar ("ko'chirishdan qolgan") avtomatik aniqlanib oldindan tanlanadi**, "Auth yo'q" qilinganlar tanlanmaydi; Hammasini tanlash / Hech birini / O'zgarishsiz qoldirish (Esc). `POST /api/collections/<cid>/inherit-auth`: **o'zgartirishdan oldin avtomatik zaxira** (`…_pre-bulk-auth`), bitta atomik yozuv; ochiq tablardagi qoralamalar ham "Meros"ga o'tadi.
+- **Daraxtda qulf belgisi** (🔒): o'z auth'i bor collection, papka va so'rovlarda (tur tooltip'da; meros va "Auth yo'q" belgilanmaydi).
+- 12 yangi e2e (`test_node_tabs.py`) va 1 backend testi.
+### Changed
+- Papka bosilganda endi tab (preview) ham ochiladi; "tab ochiq emas" holatini tekshiruvchi bitta test yangilandi.
+### ROADMAP
+- Yangi **Bosqich 4b — Kundalik qulayliklar** (Initial/Current qiymatlar, `{{` avtoto'ldirish, Example'lar daraxtda, Docs paneli, Trash, Find & Replace, javoblar tarixi va diff, Send and Download, JWT RS*/ES*/NTLM/Hawk) va Bosqich 7 ga rejalashtirilgan run'lar (monitor) hamda proxy capture qo'shildi.
+
 ## [2.3.0] — 2026-11-04 — Bosqich 3 tugadi (skriptlar va testlar)
 ### Added (UI)
 - **Skript muharriri** (CodeMirror 6, JavaScript): so'rov tabida **Scripts** bo'limi (Pre-request / Tests), shuningdek collection va papka sozlamalarida (meros: collection → papka → so'rov). `pm.*` / legacy avtoto'ldirish (≈130 nom, izoh bilan), tayyor **snippetlar paneli** (Status 200, javob vaqti, JSON qiymati, javobdan muhitga yozish, token olish, header, `setNextRequest`, HMAC … — pre/test bo'yicha ajratilgan), qator raqamlari, xato qatorlarini belgilash. Skriptlar Postman `event[]` formatida saqlanadi (import/eksport bilan mos); saqlanmagan skript tahriri sahifa yangilanganda tiklanadi.

@@ -9,6 +9,7 @@ import os
 import sqlite3
 
 from . import backup as bk
+from . import files as fstore
 from . import model
 from .db import connect, entry_hash
 from .migrate import legacy_to_collection, migrate_saved_requests
@@ -81,7 +82,87 @@ def step_1_to_2(ws):
         c.close()
 
 
-STEPS = {1: step_1_to_2}
+def _split_file_value(value):
+    """Eski UI qiymati: "yo'l::AslNom.ext" yoki shunchaki yo'l."""
+    path, _, name = str(value or "").partition("::")
+    return path.strip(), (name.strip() or os.path.basename(path.strip()))
+
+
+def _file_params(item):
+    """Eski UI'da Params'ga biriktirilgan fayllar: [(kalit, qiymat)]. Manba: x-apirunner.legacy.params (type=file) va query."""
+    out = []
+    legacy = (item.get("x-apirunner") or {}).get("legacy") or {}
+    for p in legacy.get("params") or []:
+        if p.get("type") == "file" and p.get("name"):
+            out.append((p["name"], p.get("value", "")))
+    for q in (item.get("request", {}).get("url") or {}).get("query") or []:
+        v = q.get("value") or ""
+        if q.get("key") and (q.get("type") == "file" or ("::" in v and os.path.isabs(v.split("::")[0]) and os.path.isfile(v.split("::")[0]))) and (q["key"], v) not in out:
+            out.append((q["key"], v))
+    return out
+
+
+def _drop_from_raw(raw, pairs):
+    from urllib.parse import unquote
+    base, sep, qs = (raw or "").partition("?")
+    if not sep:
+        return raw
+    keep = []
+    for part in qs.split("&"):
+        k, _, v = part.partition("=")
+        if (unquote(k.replace("+", " ")), unquote(v.replace("+", " "))) not in pairs:
+            keep.append(part)
+    return base + ("?" + "&".join(keep) if keep else "")
+
+
+def migrate_item_files(ws, item):
+    """Bitta so'rov: Params'dagi fayl qatorlari -> Body → form-data (type=file). True — o'zgardi.
+
+    Yuboriladigan so'rov avvalgidek: eski engine fayl bor so'rovda faqat fayllarni multipart qilib yuborar, matnli parametrlar query'da
+    qolar, tana e'tiborga olinmasdi — shuning uchun form-data'ga faqat fayllar tushadi; eski tana `x-apirunner.pre_files_body`da saqlanadi.
+    """
+    fparams = _file_params(item)
+    if not fparams:
+        return False
+    req = item.setdefault("request", {})
+    url = req.setdefault("url", {})
+    root = ws.root
+    rows = []
+    for key, value in fparams:
+        path, name = _split_file_value(value)
+        if path and os.path.isfile(path):
+            ref = fstore.adopt(root, path, name)["ref"]                 # vaqtinchalik papka tozalansa ham ishlashi uchun omborga nusxa
+        else:
+            ref = path                                                  # topilmadi — tashqi yo'l; UI qizil qator ko'rsatadi
+        same = next((r for r in rows if r["key"] == key), None)         # eski engine bitta kalitga bitta fayl; takror kalit — ketma-ket fayllar
+        if same:
+            same["src"].append(ref)
+        else:
+            rows.append({"key": key, "type": "file", "src": [ref]})
+    pairs = {(k, v) for k, v in fparams}
+    url["query"] = [q for q in url.get("query") or [] if (q.get("key"), q.get("value") or "") not in pairs]
+    if url.get("raw"):
+        url["raw"] = _drop_from_raw(url["raw"], pairs)
+    ext = item.setdefault("x-apirunner", {})
+    if req.get("body") and ext.get("pre_files_body") is None:
+        ext["pre_files_body"] = req["body"]
+    req["body"] = {"mode": "formdata", "formdata": rows}
+    ext["files_migrated"] = True
+    return True
+
+
+def step_2_to_3(ws):
+    """Params'dagi fayl qatorlari (eski UI) -> Body → form-data; fayllar workspace/files omboriga nusxalanadi. Idempotent."""
+    for c in ws.list_collections():
+        col = ws.get_collection(c["id"])
+        changed = False
+        for it, _ in model.iter_requests(col["item"]):
+            changed = migrate_item_files(ws, it) or changed
+        if changed:
+            ws.save_collection(col)
+
+
+STEPS = {1: step_1_to_2, 2: step_2_to_3}
 
 
 def restore_workspace(backup_path, ws_root):

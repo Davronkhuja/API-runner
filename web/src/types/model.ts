@@ -11,7 +11,7 @@ export interface PmRequest {
     file?: { src?: string; name?: string }
     graphql?: { query?: string; variables?: string }
     urlencoded?: PmQuery[]
-    formdata?: { key: string; value?: string; src?: string; type: 'text' | 'file'; disabled?: boolean }[]
+    formdata?: { key: string; value?: string; src?: string | string[]; type: 'text' | 'file'; contentType?: string; disabled?: boolean }[]
     options?: { raw?: { language?: string } }
   }
   auth?: { type: string; [k: string]: any } | null
@@ -22,7 +22,7 @@ export interface RequestItem {
   request: PmRequest
   response: unknown[] // Examples
   event?: { listen: string; script: { type?: string; exec: string[] | string } }[]
-  'x-apirunner'?: { legacy?: Record<string, any>; settings?: Record<string, any> }
+  'x-apirunner'?: { legacy?: Record<string, any>; files_migrated?: boolean; pre_files_body?: unknown; settings?: Record<string, any> }
 }
 export interface FolderItem {
   id: string
@@ -41,7 +41,9 @@ export interface Collection {
   variable?: unknown[]
   event?: unknown[]
 }
-export interface EnvValue { key: string; value: string; enabled: boolean; type: 'default' | 'secret' }
-export interface Environment { id: string; name: string; values: EnvValue[] }
+/** value — Boshlang'ich (eksport/zaxiraga tushadi); current — Joriy (shu kompyuterda; skriptlar shuni o'zgartiradi, bor bo'lsa ustun). */
+export interface EnvValue { key: string; value: string; current?: string | null; enabled: boolean; type: 'default' | 'secret' }
+export type EnvKind = 'dev' | 'test' | 'prod'
+export interface Environment { id: string; name: string; values: EnvValue[]; kind?: EnvKind | ''; confirm_writes?: boolean; runner_get_only?: boolean }
 export interface CollectionMeta { id: string; name: string; requests: number }
 export type DropPosition = 'before' | 'after' | 'inside'

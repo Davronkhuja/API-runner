@@ -27,6 +27,8 @@ const P: Record<string, string[]> = {
   trash: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 13h10l1-13', 'M9 7V4h6v3'],
   send: ['m4 4 16 8-16 8 3-8z', 'M7 12h13'],
   sidebar: ['M4 5h16v14H4z', 'M9 5v14'],
+  lock: ['M7 11V8a5 5 0 0 1 10 0v3', 'M5 11h14v10H5z'],
+  alert: ['M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', 'M12 9v4', 'M12 17h.01'],
   refresh: ['M20 12a8 8 0 1 1-2.3-5.7', 'M20 4v5h-5'],
 }
 </script>

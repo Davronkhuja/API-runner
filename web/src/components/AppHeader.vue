@@ -7,6 +7,8 @@ import { useWorkspace } from '../stores/workspace'
 import { cmdkOpen, showToast } from '../lib/ui'
 import { theme, toggleTheme } from '../lib/theme'
 import Icon from './Icon.vue'
+import { layout, toggleLayout } from '../lib/view'
+import { isProd } from '../lib/envkind'
 
 const tabs = useTabs(), tree = useTree(), ws = useWorkspace()
 const importInput = ref<HTMLInputElement>()
@@ -41,11 +43,14 @@ function openVars() {
       <button aria-label="Import (Postman, OpenAPI)" title="Postman/OpenAPI import" data-testid="import-btn" @click="importInput?.click()"><Icon name="download" :size="15" />Import</button>
       <input ref="importInput" type="file" accept=".json" hidden data-testid="import-file" tabindex="-1" aria-hidden="true" @change="onImportFile">
       <label class="envsel"><span class="dot" :class="{ on: ws.activeEnvId }" aria-hidden="true" />
+        <span v-if="ws.activeEnv?.kind" class="kind-dot" :class="'kind-' + ws.activeEnv.kind" aria-hidden="true" />
         <select :value="ws.activeEnvId ?? ''" data-testid="env-select" aria-label="Faol muhit" @change="ws.setActive(($event.target as HTMLSelectElement).value || null)">
           <option value="">Muhit yo'q</option><option v-for="e in ws.environments" :key="e.id" :value="e.id">{{ e.name }}</option>
         </select>
       </label>
+      <span v-if="isProd(ws.activeEnv)" class="prod-badge" role="status" data-testid="prod-badge" :title="`Faol muhit: ${ws.activeEnv!.name} — Prod`"><Icon name="alert" :size="13" />PROD</span>
       <button class="ib" aria-label="Muhit o'zgaruvchilari" title="Muhit o'zgaruvchilari" data-testid="env-vars-btn" @click="openVars"><Icon name="eye" :size="17" /></button>
+      <button class="ib" :aria-label="layout === 'side' ? 'So\'rov va javobni ustma-ust qilish' : 'So\'rov va javobni yonma-yon qilish'" title="Yonma-yon / ustma-ust" data-testid="layout-toggle" :aria-pressed="layout === 'side'" @click="toggleLayout"><Icon name="sidebar" :size="17" /></button>
       <button class="ib" :aria-label="theme === 'dark' ? 'Yorug temaga o\'tish' : 'Qorong\'i temaga o\'tish'" :title="theme === 'dark' ? 'Yorug tema' : 'Qorong\'i tema'" data-testid="theme" @click="toggleTheme"><Icon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" /></button>
       <button class="ib" aria-label="Sozlamalar" title="Sozlamalar" data-testid="settings-btn" @click="tabs.open('settings', 'settings', 'Sozlamalar', { permanent: true })"><Icon name="settings" :size="17" /></button>
     </div>

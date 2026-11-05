@@ -6,6 +6,8 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 from playwright.sync_api import expect
 
+from conftest import set_body_mode
+
 from tests.e2e.conftest import eventually
 
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
@@ -36,7 +38,7 @@ def new_post(p, url):
 # ── binary ──
 def test_binary_body_sends_raw_file(ui, echo_server, tmp_path):
     new_post(ui, echo_server + "/echo")
-    ui.select_option("[data-testid=body-mode]", "binary")
+    set_body_mode(ui, "binary")
     expect(T(ui, "content-type-auto")).to_contain_text("application/octet-stream")
     f = tmp_path / "data.bin"
     f.write_bytes(b"BINARY-CONTENT-123")
@@ -50,7 +52,7 @@ def test_binary_body_sends_raw_file(ui, echo_server, tmp_path):
 
 def test_binary_custom_content_type(ui, echo_server, tmp_path):
     new_post(ui, echo_server + "/echo")
-    ui.select_option("[data-testid=body-mode]", "binary")
+    set_body_mode(ui, "binary")
     T(ui, "content-type").fill("image/png")
     f = tmp_path / "x.png"
     f.write_bytes(b"PNG?")
@@ -62,7 +64,7 @@ def test_binary_custom_content_type(ui, echo_server, tmp_path):
 # ── GraphQL ──
 def test_graphql_body_is_json_envelope(ui, echo_server):
     new_post(ui, echo_server + "/echo")
-    ui.select_option("[data-testid=body-mode]", "graphql")
+    set_body_mode(ui, "graphql")
     expect(T(ui, "content-type-auto")).to_contain_text("application/json")
     ui.fill("[data-testid=gql-query]", "query($id: ID!) { user(id: $id) { name } }")
     ui.fill("[data-testid=gql-vars]", '{"id": 7}')
@@ -75,7 +77,7 @@ def test_graphql_body_is_json_envelope(ui, echo_server):
 
 def test_graphql_invalid_variables_reported(ui, echo_server):
     new_post(ui, echo_server + "/echo")
-    ui.select_option("[data-testid=body-mode]", "graphql")
+    set_body_mode(ui, "graphql")
     ui.fill("[data-testid=gql-query]", "{ a }")
     ui.fill("[data-testid=gql-vars]", "{nope")
     T(ui, "send").click()
@@ -93,7 +95,7 @@ def test_graphql_and_binary_persist_in_saved_request(ui, app, echo_server):
     ui.wait_for_selector("[data-testid=app]")
     ui.locator("[data-name='Gql']").dblclick()
     ui.click("[data-section=body]")
-    expect(T(ui, "body-mode")).to_have_value("graphql")
+    expect(T(ui, "body-mode")).to_have_attribute("data-value", "graphql")
     assert send(ui)["response"]["json"] == {"query": "{ q }", "variables": {"a": 1}}
     ui.fill("[data-testid=gql-query]", "{ changed }")
     T(ui, "save").click()
@@ -134,7 +136,7 @@ def test_bulk_edit_params_and_back_to_table(ui, echo_server):
     assert vals[0:2] == ["a", "1"] and "b" in vals and "c" in vals and "x:y" in vals
     boxes = ui.locator("[data-testid=params-table] input[type=checkbox]")
     assert [boxes.nth(i).is_checked() for i in range(3)] == [True, False, True]
-    qs = parse_qs(urlsplit(T(ui, "url").input_value()).query)
+    qs = parse_qs(urlsplit(T(ui, "url").inner_text()).query)
     assert qs == {"a": ["1"], "c": ["x:y"]}                                       # o'chirilgan 'b' URL'da yo'q
     assert send(ui)["response"]["args"] == {"a": ["1"], "c": ["x:y"]}
 

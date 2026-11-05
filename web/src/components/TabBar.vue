@@ -14,6 +14,7 @@ const dragId = ref<string | null>(null)
 const overId = ref<{ id: string; side: 'l' | 'r' } | null>(null)
 const scroller = ref<HTMLElement>()
 
+const canRename = (id: string) => { const t = tabs.tabs.find(x => x.id === id); return !!t && (t.kind === 'collection' || (t.kind === 'request' && !!t.draft)) }
 const confirm = (t: Tab) => askClose(`"${t.title}" saqlanmagan. Saqlansinmi?`)
 const save = async (t: Tab) => { await saveTab(t) }
 const closeTab = (id: string) => tabs.close(id, confirm, save)
@@ -33,7 +34,8 @@ function ctx(e: MouseEvent, id: string) { menu.value = { x: e.clientX, y: e.clie
 async function act(a: string) {
   const id = menu.value!.id; menu.value = null
   const t = tabs.tabs.find(x => x.id === id)!
-  if (a === 'dup') tabs.duplicate(id)
+  if (a === 'rename') { tabs.activate(id); await nextTick(); tabs.renameRequest = id }
+  else if (a === 'dup') tabs.duplicate(id)
   else if (a === 'close') await closeTab(id)
   else if (a === 'others') await tabs.closeOthers(id, confirm, save)
   else if (a === 'right') await tabs.closeRight(id, confirm, save)
@@ -76,6 +78,7 @@ async function pick(id: string) {
       </div>
     </div>
     <div v-if="menu" class="menu" :style="{ left: menu.x + 'px', top: menu.y + 'px' }" data-testid="tab-menu" @click.stop>
+      <button data-act="rename" :disabled="!canRename(menu.id)" @click="act('rename')">Nomini o'zgartirish</button>
       <button data-act="dup" @click="act('dup')">Dublikat</button>
       <button data-act="close" @click="act('close')">Yopish</button>
       <button data-act="others" :disabled="tabs.tabs.length < 2" @click="act('others')">Boshqalarini yopish</button>
