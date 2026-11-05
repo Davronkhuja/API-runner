@@ -126,7 +126,7 @@ function applyBulk() {
 <template>
   <div ref="root" class="kv-wrap-outer">
     <div v-if="bulk" style="text-align:right;margin-bottom:6px"><button class="ghost" data-testid="kv-bulk" @click="toggleBulk">Key-Value Edit</button></div>
-    <textarea v-if="bulk" v-model="bulkText" :data-testid="(testid ?? 'kv') + '-bulk'" aria-label="Bulk Edit" placeholder="kalit:qiymat (har qatorda bittadan; // — o'chirilgan)" style="width:100%;height:160px;font-family:var(--font-mono)" @input="applyBulk" />
+    <textarea v-if="bulk" v-model="bulkText" :data-testid="(testid ?? 'kv') + '-bulk'" aria-label="Bulk Edit" placeholder="kalit:qiymat (har qatorda bittadan; // — o'chirilgan)" style="width:100%;min-height:160px;resize:vertical;font-family:var(--font-mono)" @input="applyBulk" />
     <div v-else class="kv-wrap" @dragover="quickAttach && dragFiles($event) && $event.preventDefault()" @drop="onTableDrop">
       <table class="kv kv-head" aria-hidden="false">
         <colgroup v-if="formdata"><col style="width:22px"><col style="width:26px"><col style="width:24%"><col style="width:96px"><col><col style="width:22%"><col style="width:112px"></colgroup>

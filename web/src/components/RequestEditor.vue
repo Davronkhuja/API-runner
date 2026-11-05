@@ -6,7 +6,7 @@ import { useHistory } from '../stores/history'
 import { sendTab, saveTab } from '../lib/actions'
 import { fmtBytes, showToast } from '../lib/ui'
 import { layout } from '../lib/view'
-import { clampPane, drag, HANDLE, loadJSON, saveJSON } from '../lib/resize'
+import { clampPane, drag, HANDLE, loadJSON, MIN_PANE, MIN_REQ, MIN_REQ_SIDE, MIN_RESP_SIDE, saveJSON } from '../lib/resize'
 import KvTable from './KvTable.vue'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
@@ -99,15 +99,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
 const SPLIT_KEY = 'apirunner.split.v1'
 const ratios = reactive(loadJSON(SPLIT_KEY, { stack: 0.5, side: 0.5 }))
 const workEl = ref<HTMLElement>(), workSize = ref(0), respMax = ref(false)
+const mins = (): [number, number] => (layout.value === 'side' ? [MIN_RESP_SIDE, MIN_REQ_SIDE] : [MIN_PANE, MIN_REQ])
 const avail = computed(() => Math.max(0, workSize.value - HANDLE))
-const respPx = computed(() => clampPane(avail.value, ratios[layout.value] * avail.value))
+const respPx = computed(() => clampPane(avail.value, ratios[layout.value] * avail.value, ...mins()))
 const respStyle = computed(() => (respMax.value ? {} : layout.value === 'side' ? { flex: 'none', width: respPx.value + 'px' } : { flex: 'none', height: respPx.value + 'px' }))
 let ro: ResizeObserver | undefined
 const measure = () => { const w = workEl.value; if (w) workSize.value = layout.value === 'side' ? w.clientWidth : w.clientHeight }
 onMounted(() => { measure(); ro = new ResizeObserver(measure); if (workEl.value) ro.observe(workEl.value) })
 onBeforeUnmount(() => ro?.disconnect())
 watch(layout, () => nextTick(measure))
-const setResp = (px: number) => { ratios[layout.value] = avail.value ? clampPane(avail.value, px) / avail.value : 0.5 }
+const setResp = (px: number) => { ratios[layout.value] = avail.value ? clampPane(avail.value, px, ...mins()) / avail.value : 0.5 }
 function startResize(e: PointerEvent) {
   const start = respPx.value
   respMax.value = false

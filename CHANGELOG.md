@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.13] — 2026-11-05 — QA: real ssenariylar, skrinshotlar, layout tuzatishlari
+### Fixed
+- Qisqa javob ostida bo'sh oq maydon qolardi — javob qutisi endi panelni to'ldiradi (uzun javobda panel scroll qiladi).
+- Yonma-yon rejimda so'rov paneli juda tor bo'lib qolardi (bo'limlar qatori o'ralib, "Cookie'lar" kesilardi): so'rov paneli yonma-yonda ≥380px, javob ≥280px; ustma-ustda so'rov paneli ≥240px (muharrir ≥~120px qoladi). Bo'limlar qatori o'ralmaydi.
+- Bulk Edit maydoni qat'iy 160px o'rniga `min-height` + vertikal resize.
+### Added
+- **QA jarayoni**: `tests/e2e/test_qa_scenarios.py` — 60+ qatorli JSON POST (400) → reload, 2 MB JSON, rasm, 204, resizer, yonma-yon; 1440×900 va 1920×1080, light/dark; "bo'sh joy yo'q" tekshiruvlari. Skrinshotlar `docs/screenshots/qa/2.3.13/` (ro'yxat va topilmalar shu papkadagi README'da).
+- Qat'iy px balandlik auditi (`height:\s*\d+px`): qolganlari boshqaruv elementlari (tugma/input/qator/progress/diagramma) — asosli; kontent konteynerlari (muharrirlar, skript, javob, iframe preview) flex yoki viewport-nisbiy.
+
 ## [2.3.12] — 2026-11-05 — Javob matni serverda saqlanadi
 ### Fixed
 - **"Javob saqlanmagan" 376 baytlik 400 javobida ham chiqardi**: javob matni endi **SQLite**da (`responses` jadvali, har javob 5 MB gacha) saqlanadi — sahifa yangilanganda, server qayta ishga tushganda va tab qayta ochilganda status, sarlavhalar va tana to'liq tiklanadi. "Javob saqlanmagan" faqat haqiqatan ma'lumot bo'lmaganda (eski sessiya) qoladi.

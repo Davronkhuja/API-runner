@@ -549,9 +549,9 @@ def test_response_resizer_changes_height(ui):
     bb = T(ui, "resp-resizer").bounding_box()
     ui.mouse.move(bb["x"] + 20, bb["y"] + 2)
     ui.mouse.down()
-    ui.mouse.move(bb["x"] + 20, bb["y"] - 80, steps=5)
+    ui.mouse.move(bb["x"] + 20, bb["y"] + 80, steps=5)                                   # pastga: javob kichrayadi (yuqoriga imkon oz — so'rov paneli ≥240px)
     ui.mouse.up()
-    assert T(ui, "response").bounding_box()["height"] > h0 + 40
+    assert T(ui, "response").bounding_box()["height"] < h0 - 40
 
 
 # ── v2.1.10: History drawer, karta yig'ish ──

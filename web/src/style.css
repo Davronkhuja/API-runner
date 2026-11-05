@@ -459,3 +459,10 @@ body.resizing-row iframe,body.resizing-col iframe{pointer-events:none}
 .resp-trunc b{font-weight:600}
 .resp-empty-body{padding:22px;border:1px dashed var(--border-strong);border-radius:9px;color:var(--text);text-align:center;font-size:13px}
 .rp-frame{flex:1 1 auto;min-height:320px;height:auto}
+
+/* QA (v2.3.13): qisqa javob ham panelni to'ldiradi (uzun bo'lsa .resp scroll qiladi); bo'limlar qatori o'ralmaydi, torda scroll */
+.resp>[data-testid=resp-panel]{flex:1 0 auto}
+.resp [data-testid=resp-body],.resp-empty-body{flex:1 0 auto}
+.sections{overflow-x:auto;scrollbar-width:none}.sections::-webkit-scrollbar{display:none}
+.sections button{white-space:nowrap;flex:none}
+.seg{white-space:nowrap}
