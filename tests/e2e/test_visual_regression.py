@@ -178,3 +178,40 @@ def test_15_scripts(vp):
     open_req(vp, "contracts")
     vp.click("[data-section=scripts]")
     snap(vp, "15-scripts")
+
+
+MASK_RUN = "[data-testid=runner-sub],[data-testid=runner-history],[data-testid=runner-s-avg],[data-testid=runner-row]>span:nth-child(5),[data-testid=rc-table] td:nth-child(5),[data-testid=rc-table] td:nth-child(3),[data-testid=rc-table] td:nth-child(4),[data-testid=rc-summary]{visibility:hidden!important}"
+
+
+def _run_on_echo(vp, app, echo_server, times):
+    """Haqiqiy Runner ishga tushiriladi (lokal echo server); vaqtga bog'liq kataklar yashiriladi."""
+    cid = next(c["id"] for c in app.api("GET", "/api/workspace")["collections"] if c["name"] == "Kolleksiya")
+    col = app.api("GET", f"/api/collections/{cid}")
+    col["variable"] = [{"key": "base", "value": echo_server}]
+    app.api("PUT", f"/api/collections/{cid}", col)
+    vp.reload()
+    vp.wait_for_selector("[data-testid=app]")
+    vp.add_style_tag(content=HIDE + MASK_RUN)
+    vp.locator("[data-name='Kolleksiya']").first.click(button="right")
+    vp.click("[data-act=runner]")
+    for _ in range(times):
+        vp.click("[data-testid=runner-run]")
+        expect(T(vp, "runner-progress-label")).to_contain_text("Tugadi", timeout=30000)
+
+
+def test_16_runner_results(vp, app, echo_server):
+    _run_on_echo(vp, app, echo_server, 1)
+    snap(vp, "16-runner-results")
+
+
+def test_17_runner_compare(vp, app, echo_server):
+    _run_on_echo(vp, app, echo_server, 2)
+    T(vp, "runner-compare").click()
+    expect(T(vp, "runner-compare-dialog")).to_be_visible()
+    snap(vp, "17-runner-compare")
+
+
+def test_18_batch_settings(vp):
+    open_req(vp, "payments")
+    vp.click("[data-section=batch]")
+    snap(vp, "18-batch-settings")

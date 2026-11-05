@@ -56,7 +56,9 @@ pm2 restart api-runner              # yangi kod/versiyadan keyin (git pull / yan
 pm2 logs api-runner                 # jurnal
 ```
 
-**Yangilashdan keyin restart qiling.** UI statik fayllari diskdan darhol yangilanadi, lekin Python serveri xotirada eski kodda qoladi. Status bar'da UI va server versiyalari farq qilsa "Server eski — pm2 restart api-runner" ogohlantirishi chiqadi.
+**Yangilashdan keyin restart kerak — endi UI'dan:** "Server eski" ogohlantirishidagi **Qayta ishga tushirish** tugmasi serverni xavfsiz to'xtatadi (faol run bo'lsa tasdiq so'raydi), PM2 uni yangi kod bilan ko'taradi va sahifa o'zi yangilanadi. PM2 ostida bo'lmasa (`run.command`) tugma o'rniga ko'rsatma chiqadi. Qo'lda: `pm2 restart api-runner`.
+
+**Eski eslatma.** UI statik fayllari diskdan darhol yangilanadi, lekin Python serveri xotirada eski kodda qoladi. Status bar'da UI va server versiyalari farq qilsa "Server eski — pm2 restart api-runner" ogohlantirishi chiqadi.
 
 Portni o'zgartirish: `ecosystem.config.js` dagi `APIRUNNER_PORT` ni tahrirlang, so'ng `pm2 restart api-runner --update-env`.
 
@@ -76,6 +78,9 @@ Node.js kerak emas — frontend build natijasi (`apirunner/static/app/`) repoga 
 1. Method (`GET`, `POST`, `PUT`...) va URL kiriting
 2. Kerak bo'lsa **Params**, **Headers**, **Auth** yoki **Body** tablarini to'ldiring
 3. **▶ RUN** tugmasini bosing
+
+### Runner v2 (v2.5.0)
+Collection/papka kontekst menyusidan **Runner**: chapda yagona "Run sozlamalari" paneli (iteratsiyalar, kechikish, parallel, retry, timeout, muhit, CSV/JSON data fayl, "o'zgaruvchi qiymatlarini saqlash", "birinchi xatoda to'xtash", "javoblarni saqlash"), o'ngda real-time natijalar jadvali (Testlar ustuni), `run #N` tarixi, "Avvalgi run bilan solishtirish" va Eksport (JSON/HTML/JUnit). Hisoblash serverda, natijalar `workspace/state.db` (SQLite) da — sahifa yangilangach ham saqlanadi. So'rovdagi **Batch** shu panel va shu engine'dan foydalanadi.
 
 ### Batch yuborish (Runner rejimi)
 

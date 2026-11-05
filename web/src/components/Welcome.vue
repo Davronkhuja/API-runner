@@ -13,6 +13,10 @@ import Icon from './Icon.vue'
 const tabs = useTabs(), tree = useTree(), hist = useHistory()
 const emit = defineEmits<{ import: []; 'import-file': [File] }>()
 const recent = computed(() => hist.items.slice(0, 5))
+const urlParts = (url: string) => { try { const u = new URL(url); return { host: u.host, path: u.pathname + u.search } } catch { return { host: '', path: url } } }
+/** Nom: so'rov nomi; eski yozuvlarda nom yo'q — yo'lning oxirgi qismi (yoki URL). */
+const labelOf = (h: any) => h.payload.name || urlParts(h.payload.url).path.split('?')[0].replace(/\/+$/, '').split('/').pop() || urlParts(h.payload.url).path || h.payload.url
+const hostOf = (h: any) => urlParts(h.payload.url).host
 onMounted(() => { hist.load(); window.addEventListener('paste', onPaste) })
 onBeforeUnmount(() => window.removeEventListener('paste', onPaste))
 
@@ -60,7 +64,7 @@ const drop = (e: DragEvent) => { const f = e.dataTransfer?.files?.[0]; if (f) { 
           <h2 id="wl-recent">Oxirgi so'rovlar</h2>
           <div class="list-box" data-testid="wl-recent">
             <button v-for="h in recent" :key="h.id" class="row" style="height:34px" data-testid="wl-recent-row" @click="openFromHistory(h)">
-              <span class="m" :class="'m-' + h.payload.method">{{ h.payload.method }}</span><span class="name">{{ h.payload.url }}</span>
+              <span class="m" :class="'m-' + h.payload.method">{{ h.payload.method }}</span><span class="name" :title="h.payload.url" data-testid="wl-recent-name">{{ labelOf(h) }}</span><span class="muted wl-host" data-testid="wl-recent-host">{{ hostOf(h) }}</span>
             </button>
             <div v-if="!recent.length" class="muted" style="padding:14px;text-align:center" data-testid="wl-recent-empty">Hali so'rov yuborilmagan</div>
           </div>

@@ -179,6 +179,33 @@ def scenes(base, echo):
     def runner(p):
         p.locator("[data-name=\"Katta collection\"]").first.click(button="right"); p.click("[data-act=runner]"); p.wait_for_selector("[data-testid=runner-tab]")
     S["runner"] = runner
+    def run_done(p, times=1):
+        runner(p)
+        for _ in range(times):
+            p.click("[data-testid=runner-run]")
+            try:
+                p.wait_for_selector("[data-testid=runguard]", timeout=800); p.click("[data-testid=runguard-run-get]")
+            except Exception:  # noqa: BLE001 — Prod bo'lmasa RunGuard chiqmaydi
+                pass
+            p.wait_for_function("() => /Tugadi|To'xtatildi/.test(document.querySelector('[data-testid=runner-progress-label]')?.textContent || '')", timeout=30000)
+    S["runner-results"] = lambda p: (run_done(p), p.locator("[data-testid=runner-row]").first.click())
+    def run_compare(p):
+        run_done(p, 2); p.click("[data-testid=runner-compare]"); p.wait_for_selector("[data-testid=runner-compare-dialog]")
+    S["runner-compare"] = run_compare
+    S["runner-export-menu"] = lambda p: (run_done(p), p.click("[data-testid=runner-export]"))
+    def mock_version(p, **over):
+        import apirunner
+        info = {"version": apirunner.__version__, "ui_version": apirunner.__version__, "started": 1, "managed": True, "active": 0, **over}
+        p.route("**/api/version", lambda r: r.fulfill(json=info))
+        p.reload(); js_ready(p)
+    S["server-stale"] = lambda p: (mock_version(p, version="0.0.1"), p.wait_for_selector("[data-testid=restart-server]"))
+    S["server-stale-hint"] = lambda p: (mock_version(p, version="0.0.1", managed=False), p.wait_for_selector("[data-testid=restart-hint]"))
+    S["new-build"] = lambda p: (mock_version(p, ui_version="99.0.0"), p.wait_for_selector("[data-testid=new-build]"))
+    def restarting(p):
+        mock_version(p, version="0.0.1")
+        p.route("**/api/admin/restart", lambda r: r.fulfill(json={"ok": True}))
+        p.click("[data-testid=restart-server]"); p.wait_for_selector("[data-testid=restarting]")
+    S["restarting"] = restarting
     S["cookies"] = lambda p: p.click("[data-testid=cookies-btn]")
     def console(p):
         open_req(p, "Oddiy so'rov"); send(p); p.click("[data-testid=console-btn]"); p.wait_for_selector("[data-testid=console]")

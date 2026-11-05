@@ -1,19 +1,18 @@
-import { eventSource, post } from '../api/client'
-import { prepareAuth, specFor } from './scope'
 import type { Tab } from '../stores/tabs'
-import { applyScriptResult, scriptsFor } from './scripts'
+import { applyScriptResult } from './scripts'
 import { logScripts } from './console'
+import { buildPlan, defaultRunSettings, startRun, stopRun, type RunSettings } from './runs'
 
-
-export interface BatchSettings { rowsMode: 'all' | 'custom'; count: number; delay: number; timeout: number; concurrency: number; retry: number; ssl: boolean }
-export const defaultBatch = (): BatchSettings => ({ rowsMode: 'all', count: 10, delay: 0, timeout: 120, concurrency: 1, retry: 0, ssl: true })
+/** Batch ham Runner bilan bir xil sozlamalar (RunSettings) + qatorlar soni; hisoblash serverdagi yagona run engine'da. */
+export interface BatchSettings extends RunSettings { rowsMode: 'all' | 'custom'; count: number }
+export const defaultBatch = (): BatchSettings => ({ ...defaultRunSettings(), save_responses: true, rowsMode: 'all', count: 10 })
 
 export interface BatchState {
   settings: BatchSettings
   data: { name: string; rows: Record<string, string>[] } | null
   status: 'idle' | 'running' | 'done' | 'stopped' | 'error'
   statusText: string
-  jobId: string | null
+  jobId: number | null
   results: any[]
   total: number
   summary: any | null
@@ -21,48 +20,39 @@ export interface BatchState {
 }
 export const newBatchState = (): BatchState => ({ settings: defaultBatch(), data: null, status: 'idle', statusText: 'Tayyor', jobId: null, results: [], total: 0, summary: null, filter: 'all' })
 
-let sources = new WeakMap<object, EventSource>()
-
-/** Eski UI bilan bir xil protokol: POST /run -> SSE /stream/<id> (result, done). */
-export async function startBatch(tab: Tab, vars: Record<string, string>, onDone?: (b: BatchState) => void) {
+/** Bitta so'rov × data qatorlari → bitta run (scope = so'rov ref); step hodisalari eski natija kartalariga moslanadi. */
+export async function startBatch(tab: Tab, vars: Record<string, string>, onDone?: (b: BatchState) => void, envName = '') {
   const b = (tab.state!.batch ??= newBatchState()) as BatchState
   const d = tab.draft!
   const s = b.settings
   let rows = b.data?.rows?.length ? b.data.rows : [{}]
   if (s.rowsMode === 'custom') rows = rows.slice(0, Math.max(1, s.count || 1))
-  try { await prepareAuth(d, tab.ref, vars) } catch (e: any) { b.status = 'error'; b.statusText = e.message; return }
-  let spec: Record<string, any>
-  try { spec = specFor(d, tab.ref, vars) } catch (e: any) { b.status = 'error'; b.statusText = e.message; return }
-  const scripts = scriptsFor(tab.ref, d.scripts, d.name)
-  if (scripts) Object.assign(spec, { scripts, ref: tab.ref, request_name: d.name })
-  Object.assign(spec, { delay: s.delay, timeout: s.timeout, concurrency: s.concurrency, retry_count: s.retry, ssl_verify: s.ssl, rows })
   b.results = []; b.summary = null; b.total = rows.length; b.status = 'running'; b.statusText = `${rows.length} ta so'rov yuborilmoqda...`
   tab.state!.mode = 'batch'
   try {
-    const r = await post('/run', spec)
-    b.jobId = r.job_id
-  } catch (e: any) { b.status = 'error'; b.statusText = 'Xatolik: ' + e.message; return }
-  const src = eventSource('/stream/' + b.jobId)
-  sources.set(b, src)
-  src.addEventListener('result', (ev: MessageEvent) => {
-    const item = JSON.parse(ev.data)
-    b.results.push(item)
-    if (item.scripts) logScripts(item.scripts, { tabId: tab.id, ref: tab.ref })
-    b.statusText = `${item.index} / ${item.total}`
-  })
-  src.addEventListener('done', (ev: MessageEvent) => {
-    const sm = JSON.parse(ev.data)
-    src.close(); b.summary = sm; b.jobId = null
-    b.status = sm.stopped ? 'stopped' : 'done'
-    b.statusText = sm.stopped ? `To'xtatildi — ${sm.completed} ta yuborildi` : `Bajarildi — ${sm.successful} muvaffaqiyatli, ${sm.failed} xatolik`
-    if (b.results.some(r => r.scripts?.changed?.length)) applyScriptResult({ available: true, tests: [], console: [], errors: [], changed: ['environment', 'globals', 'collection'] }, { tabId: tab.id, ref: tab.ref })
-    onDone?.(b)
-  })
-  src.onerror = () => { if (b.status === 'running') { src.close() } }
+    const item = { id: tab.ref!, name: d.name, method: d.method, ref: tab.ref!, draft: d }
+    const plan = await buildPlan({ ref: tab.ref!, name: d.name || d.url, kind: 'batch' }, [item], { ...s, iterations: rows.length }, rows, envName, vars)
+    const h = await startRun(plan, {
+      step: st => {
+        b.results.push({ index: st.iter, total: rows.length, status: st.status, time: st.time, size: st.size, url: st.url, response: st.response ?? '', resp_headers: st.resp_headers ?? {}, retries: (st as any).retries, error: !!st.error || typeof st.status !== 'number' || st.status >= 400, scripts: st.scripts })
+        if (st.scripts) logScripts(st.scripts, { tabId: tab.id, ref: tab.ref })
+        b.statusText = `${b.results.length} / ${rows.length}`
+      },
+      done: sm => {
+        b.summary = sm; b.jobId = null
+        b.status = sm.stopped ? 'stopped' : sm.error ? 'error' : 'done'
+        b.statusText = sm.error ? 'Xatolik: ' + sm.error : sm.stopped ? `To'xtatildi — ${sm.completed} ta yuborildi` : `Bajarildi — ${sm.successful} muvaffaqiyatli, ${sm.failed} xatolik`
+        if (b.results.some(r => r.scripts?.changed?.length)) applyScriptResult({ available: true, tests: [], console: [], errors: [], changed: ['environment', 'globals', 'collection'] }, { tabId: tab.id, ref: tab.ref })
+        onDone?.(b)
+      },
+      lost: () => { if (b.status === 'running') { b.status = 'error'; b.statusText = "Oqim uzildi — natijalar Runner tarixida saqlangan" } },
+    })
+    b.jobId = h.id
+  } catch (e: any) { b.status = 'error'; b.statusText = 'Xatolik: ' + e.message }
 }
 export async function stopBatch(tab: Tab) {
   const b = tab.state?.batch as BatchState | undefined
-  if (b?.jobId) await post('/stop/' + b.jobId)
+  if (b?.jobId) await stopRun(b.jobId)
 }
 
 export const statsOf = (b: BatchState) => {

@@ -34,7 +34,7 @@ def test_status_bar_warns_when_server_is_older_than_ui(app, page):
     page.wait_for_selector("[data-testid=app]")
     warn = T(page, "stale-server")
     expect(warn).to_be_visible()
-    expect(warn).to_contain_text("pm2 restart api-runner")
+    expect(warn).to_contain_text("run.command")                       # PM2 ostida emas: aniq ko'rsatma
     expect(warn).to_contain_text("0.0.1")
 
 

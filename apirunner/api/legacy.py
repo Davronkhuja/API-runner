@@ -285,6 +285,11 @@ def run_one():
     res = run_item(spec, services, scripts=cfg.get("scripts"), ref=cfg.get("ref"), row=cfg.get("row"), info=cfg.get("scripts_info"),
                    ctx_kwargs={"keep_raw": True} if store else None)
     extra = _store_response(res) if store else {}
+    if cfg.get('ref') and res.get('status') not in ('SKIPPED', None):
+        try:
+            current_app.extensions['runs'].record_last(cfg['ref'], 'ERR' if res['status'] == 'ERROR' else res['status'], res.get('time'))
+        except Exception:  # noqa: BLE001 — oxirgi natija yozilmasa ham so'rov natijasi qaytadi
+            pass
     return jsonify({**extra,
         "status": "ERR" if res["status"] == "ERROR" else res["status"],
         "time": round(res["time"], 3), "size": res["size"], "response": res["response"],

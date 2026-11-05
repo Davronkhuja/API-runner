@@ -5,10 +5,12 @@ import webbrowser
 
 from flask import Flask, Response, request, send_from_directory
 
-from .api import legacy, oauth, security, workspace_api
+from .api import admin_api, legacy, oauth, runs_api, security, workspace_api
 from .core.jobs import JobManager
+from .core.run_engine import RunManager
 from .storage.cookies import CookieStore
 from .storage.db import StateDB
+from .storage.runs import RunStore
 from . import __version__
 from .storage import migrations
 from .storage.workspace import Workspace
@@ -32,10 +34,13 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     # barcha migratsiyalar (saved_requests.json import, sxema) — zaxira, sonlar tekshiruvi va rollback bilan
     result = migrations.run_all(ws, saved_file, backup_dir, __version__)
     app.extensions["workspace"] = ws
+    app.config["STARTED_AT"] = time.time()
     app.extensions["db"] = StateDB(os.path.join(ws.root, "state.db"))
     app.extensions["backup_dir"] = backup_dir
     app.extensions["saved_file"] = saved_file
     app.extensions["cookies"] = CookieStore(os.path.join(ws.root, "state.db"))
+    app.extensions["runs"] = RunStore(app.extensions["db"])
+    app.extensions["run_manager"] = RunManager(app.extensions["runs"], app.extensions["db"], ws, app.extensions["cookies"], (upload_dir, ws.root))
     app.extensions["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root), cookies=app.extensions["cookies"], workspace=ws)
     app.config.update(UPLOAD_DIR=upload_dir, SESSION_TOKEN=session_token or security.new_token(),
                       MIGRATION=result["legacy"], MIGRATION_RESULT=result)
@@ -43,6 +48,8 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     security.install(app)
     app.register_blueprint(legacy.bp)
     app.register_blueprint(workspace_api.bp)
+    app.register_blueprint(runs_api.bp)
+    app.register_blueprint(admin_api.bp)
     app.register_blueprint(oauth.bp)
 
     static = os.path.join(PKG_DIR, "static")

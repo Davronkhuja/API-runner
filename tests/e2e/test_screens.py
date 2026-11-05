@@ -365,7 +365,7 @@ def test_batch_form_is_compact_actions_on_one_line_at_the_left_and_labels_not_cl
     ui.locator("[data-name='InheritOne']").dblclick()
     ui.click("[data-section=batch]")
     cells = ui.locator("[data-testid=batch-grid] .bf").all()
-    assert len(cells) == 6
+    assert len(cells) == 6                                                                      # yagona Run sozlamalari: Qatorlar, Kechikish, Parallel, Retry, Timeout, Muhit (data fayl alohida blok)
     for c in cells:
         assert c.bounding_box()["width"] <= 250                                                 # maydonlar mazmuniga mos, 1/3 kenglikka cho'zilmaydi
     run, stop = T(ui, "batch-run").bounding_box(), T(ui, "batch-stop").bounding_box()

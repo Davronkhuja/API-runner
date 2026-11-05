@@ -30,8 +30,14 @@ class JobManager:
                               "min_time": 0, "max_time": 0, "avg_time": 0,
                               "stopped": False, "error": str(exc)})
 
-        threading.Thread(target=work, daemon=True).start()
+        t = threading.Thread(target=work, daemon=True)
+        job["thread"] = t
+        t.start()
         return job_id
+
+    def active(self):
+        with self._lock:
+            return [j for j in self._jobs.values() if j.get("thread") and j["thread"].is_alive()]
 
     def get(self, job_id):
         with self._lock:

@@ -2,6 +2,28 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.5.1] — 2026-11-05 — Server yangilanishi avtomatlashtirildi
+### Added
+- **Qayta ishga tushirish tugmasi**: "Server eski" ogohlantirishida (PM2 ostida) `POST /api/admin/restart` — sessiya tokeni va Host/Origin tekshiruvi bilan; faol run/batch bo'lmasa (yoki `force`) ularni to'xtatadi, workspace yozuvlari tugashini kutadi, SQLite WAL'ni flush qiladi va `os._exit(0)`; PM2 (`autorestart`) yangi kod bilan qayta ko'taradi. UI "Server yangilanmoqda…" overlay'i bilan `/api/version`'ni kutadi va sahifani o'zi yangilaydi (vaqt tugasa — xato va "Sahifani yangilash").
+- Faol run bo'lsa avval tasdiq so'raladi (tasdiqsiz server chiqmaydi); PM2 ostida bo'lmasa (`run.command`) tugma o'rniga aniq ko'rsatma.
+- **Yangi build bildirishnomasi**: `/api/version` endi `ui_version` (diskdagi build, `static/app/version.json`), `started`, `managed`, `active` qaytaradi; UI har 60 soniyada (va sahifa fokus olganda) tekshiradi, yangi build bo'lsa "Sahifani yangilash" taklif qilinadi; saqlanmagan tablar bo'lsa ogohlantiradi.
+- Tests: `tests/test_admin.py` (5), `tests/e2e/test_server_restart.py` (6); layout/axe sahnalari `server-stale`, `server-stale-hint`, `new-build`, `restarting`.
+### Changed
+- Bosh sahifadagi "Oxirgi so'rovlar" to'liq URL o'rniga so'rov nomini ko'rsatadi (host — kichik kulrang matn); tarixga so'rov nomi yoziladi, eski yozuvlarda nom yo'lning oxirgi qismidan olinadi.
+
+## [2.5.0] — 2026-11-05 — Bosqich 4: Collection Runner v2
+### Added
+- **Run engine serverda** (`apirunner/core/run_engine.py`, `/api/runs`): iteratsiyalar, data qatorlari, kechikish, parallel (`ThreadPoolExecutor`), retry, timeout, "birinchi xatoda to'xtash", `pm.execution.setNextRequest`/`skipRequest`, cheksiz tsikl himoyasi; natijalar real-time SSE (`/api/runs/<id>/stream?from=`) orqali, sahifa yangilangach ham tiklanadi.
+- **SQLite**: `runs`, `run_results`, `last_results` jadvallari (`workspace/state.db`); run raqami collection/papka bo'yicha (`run #14`), oxirgi 200 ta run saqlanadi, javob matni natija uchun 64 KB gacha.
+- **Runner sahifasi** (`docs/design/Runner.dc.html` bo'yicha): "<nom> — run #N" sarlavhasi (sana · muhit · iteratsiyalar), run tarixi tanlagichi, **Testlar** ustuni va statistikasi, qatorni yoyib testlar va saqlangan javobni ko'rish, "O'zgaruvchi qiymatlarini saqlash" (o'chiq bo'lsa run tugagach env/globals/collection qiymatlari qaytariladi), "Javoblarni saqlash", "Avvalgi run bilan solishtirish" dialogi (`/api/runs/<a>/compare/<b>`), **Eksport** — JSON / HTML / JUnit XML.
+- **Yagona "Run sozlamalari" paneli** (`RunSettings.vue`): Runner va so'rovdagi Batch bir xil sozlamalar va bir xil engine'dan foydalanadi (iteratsiyalar/qatorlar, kechikish ms, parallel, retry, timeout, muhit, data fayl oldindan ko'rish bilan, tanlovlar).
+- Testlar: `tests/test_runs.py` (10), `tests/e2e/test_runner_v2.py` (8); vizual baseline `16-runner-results`, `17-runner-compare`, `18-batch-settings`; layout/axe sahnalari `runner-results`, `runner-compare`, `runner-export-menu`.
+### Changed
+- **Folder Overview** oxirgi natijalari va run nuqtalari localStorage o'rniga SQLite'dan (`/api/last-results`); `/run_one` natijani `ref` bo'yicha yozadi.
+- Batch sozlamalarida kechikish endi millisekundda, "Parallel" — engine parallelligi; Batch natijalari Runner tarixida ham ko'rinadi.
+### Fixed
+- Skriptsiz so'rovlarda data fayl qatori `{{o'zgaruvchi}}` sifatida ishlatilmasdi (`run_item`).
+
 ## [2.4.1] — 2026-11-05 — Fix: nom tozalash banneri, Kod dialogi balandligi, skrinshotlar repodan
 ### Fixed
 - "N ta so'rov nomi URL ko'rinishida" banneri sidebar sarlavhasiga siqilib qolardi — endi sarlavha ostida to'liq kenglikda, yopiladigan; yopilgach qayta chiqmaydi (workspace meta'da `nameclean_dismissed`, sahifa yangilanganda ham).
