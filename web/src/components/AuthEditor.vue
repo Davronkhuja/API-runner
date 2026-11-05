@@ -93,7 +93,7 @@ const copyTok = () => { navigator.clipboard?.writeText(tok.value?.access_token ?
         <td>
           <select v-if="f.options" v-model="auth.cfg[f.k]" :data-testid="'auth-f-' + f.k" :aria-label="f.label" @change="touch"><option v-for="o in f.options" :key="o[0]" :value="o[0]">{{ o[1] }}</option></select>
           <textarea v-else-if="f.area" v-var-complete v-model="auth.cfg[f.k]" :placeholder="f.ph" spellcheck="false" :aria-label="f.label" :data-testid="'auth-f-' + f.k" style="width:100%;min-height:90px;height:auto;font-family:ui-monospace,monospace" @input="touch" />
-          <input v-else v-var-complete v-model="auth.cfg[f.k]" :type="f.secret ? 'password' : 'text'" :placeholder="f.ph" :data-testid="'auth-f-' + f.k" style="width:100%" @input="touch">
+          <input v-else v-var-complete v-model="auth.cfg[f.k]" :type="f.secret ? 'password' : 'text'" :aria-label="f.label" :placeholder="f.ph" :data-testid="'auth-f-' + f.k" style="width:100%" @input="touch">
         </td>
       </tr>
     </tbody></table>

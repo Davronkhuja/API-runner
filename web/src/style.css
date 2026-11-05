@@ -612,7 +612,7 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 .setvar-btn:hover{background:var(--accent-weak)}
 .ex-row{height:var(--ctl-sm);cursor:pointer}.ex-row .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-md);color:var(--muted)}
 .ex-tag{flex:none;font:700 var(--fs-xs) var(--font-mono);color:var(--accent-text);background:var(--accent-weak);border-radius:var(--radius-sm);padding:1px 4px;margin-right:var(--sp-2)}
-.ex-chev{margin-left:-14px;width:14px;flex:none;cursor:pointer}
+.ex-chev{margin-left:-20px;margin-right:-4px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;flex:none;cursor:pointer}
 .example-tab{padding:var(--sp-5) var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-3);height:100%;min-height:0;overflow:auto}
 .ex-head{display:flex;align-items:center;gap:var(--sp-3)}.ex-head .ex-tag{margin:0}
 .ex-name{font-size:var(--fs-xl);font-weight:600;min-width:200px;flex:0 1 420px}
@@ -649,3 +649,4 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 .fr-body{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.fr-field{font-size:var(--fs-sm);color:var(--muted);display:flex;gap:var(--sp-2);align-items:center}
 .fr-snip{font-family:var(--font-mono);font-size:var(--fs-sm);overflow-wrap:anywhere;white-space:pre-wrap}
 .fr-snip del{background:var(--err-bg);color:var(--err);text-decoration:line-through}.fr-snip ins{background:var(--ok-bg,var(--accent-weak));color:var(--ok);text-decoration:none}
+.fr-group header{flex-wrap:wrap}.fr-group header b,.fr-body,.fr-row{min-width:0;overflow-wrap:anywhere}.fr-field{flex-wrap:wrap}
