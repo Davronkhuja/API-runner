@@ -425,3 +425,26 @@ def files_usage():
 @bp.post("/files/cleanup")
 def files_cleanup():
     return jsonify(files.cleanup(_ws_root()))
+
+
+# ── saqlangan javoblar (SQLite; har tabning oxirgi javobi va tarix diff'i uchun) ──
+@bp.get("/responses/<int:rid>")
+def get_response(rid):
+    r = current_app.extensions["db"].get_response(rid)
+    if not r:
+        return jsonify({"error": "Javob saqlanmagan"}), 404
+    body = r.pop("body")
+    r["body"] = None if r["binary"] else body.decode("utf-8", "replace")
+    return jsonify(r)
+
+
+@bp.get("/responses/<int:rid>/raw")
+def get_response_raw(rid):
+    from flask import Response
+    r = current_app.extensions["db"].get_response(rid)
+    if not r:
+        return jsonify({"error": "Javob saqlanmagan"}), 404
+    resp = Response(r["body"], content_type=r["ctype"] or "application/octet-stream")
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["Content-Security-Policy"] = "sandbox"          # HTML javob (preview) skript bajara olmasin
+    return resp

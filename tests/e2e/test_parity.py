@@ -380,6 +380,7 @@ def test_environment_create_edit_activate_and_used_in_request(ui, echo_server):
     T(ui, "env-key").first.fill("host")
     T(ui, "env-val").first.fill(echo_server)
     T(ui, "env-save").click()
+    expect(T(ui, "dirty-dot")).to_have_count(0)                                       # saqlash tugagach faollashtiramiz (poyga)
     T(ui, "env-activate").click()
     expect(T(ui, "env-select")).to_have_value(re.compile(r".+"))
     new_req(ui, "{{host}}/echo?ok=1")
@@ -548,9 +549,9 @@ def test_response_resizer_changes_height(ui):
     bb = T(ui, "resp-resizer").bounding_box()
     ui.mouse.move(bb["x"] + 20, bb["y"] + 2)
     ui.mouse.down()
-    ui.mouse.move(bb["x"] + 20, bb["y"] - 80, steps=5)
+    ui.mouse.move(bb["x"] + 20, bb["y"] + 80, steps=5)                                   # pastga: javob kichrayadi (yuqoriga imkon oz — so'rov paneli ≥240px)
     ui.mouse.up()
-    assert T(ui, "response").bounding_box()["height"] > h0 + 40
+    assert T(ui, "response").bounding_box()["height"] < h0 - 40
 
 
 # ── v2.1.10: History drawer, karta yig'ish ──

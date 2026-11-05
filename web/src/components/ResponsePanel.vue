@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { downloadBlob, extFor, fetchRawBlob, MAX_STORED } from '../lib/responses'
 import type { Tab } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { requestFromDraft } from '../lib/draft'
@@ -120,6 +121,23 @@ const STATUS: Record<number, string> = { 200: 'OK', 201: 'Created', 202: 'Accept
 const statusText = computed(() => (typeof r.value?.status === 'number' ? STATUS[r.value.status] ?? '' : ''))
 const pillClass = computed(() => (typeof r.value?.status === 'number' && r.value.status < 400 ? 'ok' : 'err'))
 const timing = computed(() => { const t = r.value?.timing; return `DNS — · Ulanish (connect) ${fmtMs(t?.connect)} · TLS ${fmtMs(t?.tls)} · TTFB ${fmtMs(t?.ttfb)}` })
+// Binary javob (rasm, PDF…): serverdagi nusxadan blob sifatida olinadi va Preview'da ko'rsatiladi
+const blobUrl = ref(''), blobType = ref('')
+async function loadBlob() {
+  if (blobUrl.value) URL.revokeObjectURL(blobUrl.value)
+  blobUrl.value = ''
+  const id = r.value?.response_id
+  if (!id || !r.value?.binary) return
+  const b = await fetchRawBlob(id)
+  if (b) { blobType.value = b.type; blobUrl.value = URL.createObjectURL(b) }
+}
+watch(() => [r.value?.response_id, r.value?.binary], loadBlob, { immediate: true })
+onBeforeUnmount(() => { if (blobUrl.value) URL.revokeObjectURL(blobUrl.value) })
+const isImage = computed(() => blobType.value.startsWith('image/')), isPdf = computed(() => blobType.value === 'application/pdf')
+async function saveFile() {
+  if (r.value?.binary && r.value.response_id) { const b = await fetchRawBlob(r.value.response_id); if (b) downloadBlob(b, 'javob.' + extFor(ctype.value)) }
+  else downloadBlob(new Blob([text.value]), 'javob.' + (typeof r.value?.response === 'string' ? 'txt' : 'json'))
+}
 const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusxalandi', 'success') }
 </script>
 
@@ -154,7 +172,17 @@ const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusx
       <button class="ib" data-testid="rp-copy" aria-label="Javobni nusxalash" title="Nusxa" @click="copy"><Icon name="copy" :size="16" /></button>
     </div>
 
-    <template v-if="view === 'body'">
+    <div v-if="view === 'body' && r.binary" class="resp-binary" data-testid="resp-binary">
+      <img v-if="isImage && blobUrl" :src="blobUrl" alt="Javob rasmi" class="resp-img" data-testid="resp-image">
+      <iframe v-else-if="isPdf && blobUrl" :src="blobUrl" title="PDF javob" class="resp-pdf" data-testid="resp-pdf" />
+      <div v-else class="resp-bin-card"><Icon name="file" :size="28" /><b>{{ ctype || 'binary' }}</b><span class="muted">{{ fmtBytes(r.size ?? 0) }} — ko'rsatib bo'lmaydigan tur</span></div>
+      <div class="resp-bin-bar"><span class="muted" data-testid="resp-bin-info">{{ ctype }} · {{ fmtBytes(r.size ?? 0) }}</span><button class="sm" data-testid="rp-save-file" @click="saveFile">Faylga saqlash</button></div>
+    </div>
+    <template v-else-if="view === 'body'">
+      <div v-if="r.restored && r.stored_truncated" class="resp-trunc" role="status" data-testid="resp-trunc-banner">
+        <b>To'liq javob saqlanmagan ({{ fmtBytes(r.size ?? 0) }})</b><span>— birinchi {{ fmtBytes(MAX_STORED) }} ko'rsatilmoqda.</span>
+        <button class="sm" data-testid="rp-save-file" @click="saveFile">Faylga saqlash</button><button class="sm primary" data-testid="resp-resend" @click="sendTab(tab)">Qayta yuborish</button>
+      </div>
       <div v-if="mode !== 'preview'" class="rp-tools">
         <input v-model="search" placeholder="Qidirish…" data-testid="rp-search" style="width:170px" @keydown.enter.exact.prevent="step(1)" @keydown.shift.enter.prevent="step(-1)">
         <template v-if="search"><span class="muted" data-testid="rp-count" aria-live="polite">{{ hits.length ? cur + 1 : 0 }} / {{ hits.length }}</span>
@@ -167,6 +195,7 @@ const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusx
         <b>Javob saqlanmagan</b><span>Sahifa yangilangach javob matni xotirada qolmaydi (holat, o'lcham va sarlavhalar saqlanadi).</span>
         <button class="sm primary" data-testid="resp-resend" @click="sendTab(tab)">Qayta yuborish</button>
       </div>
+      <div v-else-if="text === '' && (r.size ?? 0) === 0" class="resp-empty-body" data-testid="resp-empty-body">Javob tanasi bo'sh <span class="muted">({{ r.status }}, 0 bayt)</span></div>
       <iframe v-else-if="mode === 'preview'" sandbox="" :srcdoc="String(r?.response ?? '')" data-testid="rp-preview" class="rp-frame" />
       <div v-else-if="virtual" ref="box" class="vlist" data-testid="resp-body" :data-virtual="true" :style="{ height: H + 'px' }" @scroll="top = ($event.target as HTMLElement).scrollTop">
         <div :style="{ height: lines.length * LH + 'px', position: 'relative' }"><div :style="{ transform: `translateY(${start * LH}px)` }">

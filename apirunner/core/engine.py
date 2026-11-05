@@ -40,6 +40,7 @@ class ExecContext:
     allowed_file_roots: tuple = ()                     # fayl parametrlari uchun ruxsat etilgan papkalar
     allowed_files: frozenset = frozenset()             # foydalanuvchi aniq tanlagan fayllar
     cookies: object = None                             # CookieStore (None = cookie jar o'chiq)
+    keep_raw: bool = False                             # natijaga xom javob baytlari (`_raw`) — faqat /run_one saqlash uchun
     keep_text: bool = False                            # natijaga xom javob matnini (`body_text`) qo'shish — skriptlar uchun
 
     def stopped(self):
@@ -279,7 +280,8 @@ def execute(spec, ctx=None):
                     "resp_headers": dict(resp.headers), "error": not ok, "retries": attempt,
                     "timing": trace.result(elapsed), "http_version": resp.http_version,
                     "set_cookies": resp.headers.get_list("set-cookie"), "redirects": len(resp.history),
-                    **({"body_text": resp.text} if ctx.keep_text else {})}
+                    **({"body_text": resp.text} if ctx.keep_text else {}),
+                    **({"_raw": resp.content} if ctx.keep_raw else {})}
         except httpx.TimeoutException:
             last_elapsed = time.perf_counter() - start
             last_err = "Request timed out ({:.0f}s)".format(timeout)

@@ -203,9 +203,9 @@ def test_resizer_by_mouse_and_keyboard(ui):
     open_req(ui, "Main")
     h0 = T(ui, "response").bounding_box()["height"]
     T(ui, "resp-resizer").focus()
-    ui.keyboard.press("ArrowUp")
-    ui.keyboard.press("ArrowUp")
-    assert T(ui, "response").bounding_box()["height"] > h0 + 30
+    ui.keyboard.press("ArrowDown")
+    ui.keyboard.press("ArrowDown")
+    assert T(ui, "response").bounding_box()["height"] < h0 - 30
 
 
 # ── bosh sahifa ──

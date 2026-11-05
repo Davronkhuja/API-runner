@@ -1,11 +1,14 @@
 /** Panel ajratgichlari uchun umumiy yordamchilar: clamp, sudrash (pointer capture), saqlash. */
 export const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
-export const MIN_PANE = 120
+export const MIN_PANE = 120          // javob paneli (va Console/sidebar) uchun eng kichik o'lcham
+export const MIN_REQ_SIDE = 380      // yonma-yon: so'rov paneli (bo'limlar qatori va body toolbar sig'ishi uchun)
+export const MIN_RESP_SIDE = 280
+export const MIN_REQ = 240           // so'rov paneli: sarlavha, bo'limlar va toolbar ~110px + muharrir kamida ~120px
 export const HANDLE = 12
 
-/** Ikki qismdan biri `size` bo'lsin: har ikki qism kamida `min`. Joy yetmasa — teng bo'linadi. */
-export function clampPane(total: number, size: number, min = MIN_PANE): number {
-  const hi = total - min
+/** Ikkinchi qism (javob) `size` bo'lsin: javob kamida `min`, birinchi (so'rov) kamida `minFirst`. Joy yetmasa — teng bo'linadi. */
+export function clampPane(total: number, size: number, min = MIN_PANE, minFirst = MIN_PANE): number {
+  const hi = total - minFirst
   return hi < min ? Math.round(total / 2) : clamp(Math.round(size), min, hi)
 }
 

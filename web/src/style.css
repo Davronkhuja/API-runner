@@ -147,7 +147,7 @@ select.m-GET,select.m-POST,select.m-PUT,select.m-PATCH,select.m-DELETE,select.m-
 .v-resizer{position:relative;height:12px;flex:none;display:flex;align-items:center;justify-content:center;cursor:row-resize;background:var(--bg);border-top:1px solid var(--border);touch-action:none}.v-resizer:hover{background:var(--accent-weak)}
 .v-resizer::before{content:"";width:36px;height:3px;border-radius:3px;background:var(--border-strong)}
 .v-resizer:hover::before,.v-resizer:focus-visible::before{background:var(--accent)}
-.body-editor{height:220px;margin-top:8px}
+.body-editor{margin-top:8px;height:260px}   /* Body'dan tashqarida (masalan collection sahifasi) sukut balandlik; so'rov muharririda quyidagi .fill qoidalari flex qiladi */
 
 .seg-group{display:inline-flex;gap:2px;padding:2px;border-radius:var(--radius);background:var(--subtle)}
 .seg{height:26px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:500 12px var(--font-ui)}
@@ -186,7 +186,7 @@ pre{margin:0;white-space:pre-wrap;word-break:break-all;font:400 12.5px/20px var(
 .rp-sep{width:1px;height:18px;background:var(--border);margin:0 4px}
 .rp-tools{display:flex;gap:8px;align-items:center;margin:10px 0 8px;flex-wrap:wrap}
 .rp-tools input{height:28px;font-size:12px}
-.rp-frame{width:100%;height:360px;border:1px solid var(--border);border-radius:9px;background:#fff}
+.rp-frame{width:100%;border:1px solid var(--border);border-radius:9px;background:#fff}
 .codebox{border:1px solid var(--border);border-radius:9px;background:var(--code);padding:8px 12px;overflow:auto;flex:1;min-height:80px}
 .resp [data-testid=resp-body]{border:1px solid var(--border);border-radius:9px;background:var(--code);padding:8px 14px}
 pre[data-testid=resp-body]{overflow:auto}
@@ -260,7 +260,7 @@ mark{background:var(--mark);color:var(--mark-text);border-radius:2px}mark.cur{ba
 
 /* ── skriptlar ── */
 .script-layout{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:14px}
-.script-box{height:220px}.script-editor{height:100%}.script-editor .cm-editor{height:100%}
+.script-box{height:clamp(220px,45vh,520px)}.script-editor{height:100%}.script-editor .cm-editor{height:100%}
 .snippets{display:flex;flex-direction:column;gap:2px;max-height:300px;overflow:auto;font-size:12px}
 .snip{height:auto;min-height:26px;padding:3px 8px;border:0;background:transparent;color:var(--accent-text);font-weight:400;font-size:12px;text-align:left;justify-content:flex-start;border-radius:6px}.snip:hover{background:var(--accent-weak)}
 .script-off{margin-bottom:10px;padding:10px 12px;border:1px solid var(--border-strong);border-left:3px solid var(--m-post);border-radius:9px;background:var(--var-bg);color:var(--text);font-size:12.5px}
@@ -275,7 +275,6 @@ mark{background:var(--mark);color:var(--mark-text);border-radius:2px}mark.cur{ba
 .cl .ct{color:var(--muted);flex-shrink:0}.cl .ci2{width:12px;flex-shrink:0;text-align:center}.cl .cx{flex:1;min-width:0;white-space:pre-wrap;word-break:break-word}.cl .co{margin-left:10px;font:11.5px var(--font-ui)}
 .cl-warn{color:var(--m-post)}.cl-error,.cl-script-error{color:var(--err);background:var(--err-bg)}.cl-request{color:var(--accent-text)}.cl-response{color:var(--muted)}.cl-info{color:var(--m-put)}
 .cl pre{font-size:11.5px;margin:2px 0}
-.editor.tall .script-box{height:230px}
 .inherit-box{margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--subtle)}
 .lock{display:inline-flex;color:var(--muted);flex-shrink:0}
 .sec-card{padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--panel)}
@@ -430,3 +429,40 @@ body.resizing-row iframe,body.resizing-col iframe{pointer-events:none}
 .resize-max{position:absolute;right:14px;top:50%;transform:translateY(-50%);height:18px;width:26px;padding:0;border:1px solid var(--border);border-radius:9px;background:var(--panel);color:var(--muted);display:flex;align-items:center;justify-content:center}
 .resize-max:hover{color:var(--text);background:var(--panel)}
 .work.side .resize-max{right:auto;left:50%;top:14px;transform:translateX(-50%) rotate(-90deg)}
+
+/* Muharrirlar so'rov panelining qolgan balandligini to'liq egallaydi (resizer bilan birga o'zgaradi) */
+.editor.fill{display:flex;flex-direction:column;overflow:hidden}
+.editor.fill>.body-panel,.editor.fill>[data-testid=scripts-panel]{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.body-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;flex:none}
+.body-toolbar .body-seg,.body-toolbar .body-fmt{margin:0}
+.editor.fill .body-editor{flex:1 1 0;min-height:0;height:auto;display:flex;flex-direction:column}
+.editor.fill .code-editor,.code-editor{min-height:0}
+.body-editor .cm-editor{flex:1;min-height:0}
+.editor.fill .gql-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.editor.fill .gql-q{flex:2 1 0}.editor.fill .gql-v{flex:1 1 0}
+.editor.fill .script-layout{flex:1 1 0;min-height:0;grid-template-rows:minmax(0,1fr)}
+.editor.fill .script-layout>div:first-child{min-height:0}
+.editor.fill .script-box{flex:1 1 0;min-height:0;height:auto}
+.editor.fill .snippets{min-height:0;max-height:none}
+.ct-text{height:28px;padding:0 8px;border:0;background:transparent;color:var(--muted);font:500 12px var(--font-mono);cursor:pointer}
+.ct-text:hover{color:var(--text);background:var(--hover)}.ct-text.static{cursor:default;display:inline-flex;align-items:center}.ct-text.static:hover{background:transparent;color:var(--muted)}
+.ct-input{height:28px;width:260px;font:12px var(--font-mono)}
+.code-editor .cm-editor{height:100%}
+
+/* Saqlangan javob: binary preview, to'liq saqlanmagan xabari, bo'sh javob */
+.resp-binary{display:flex;flex-direction:column;gap:8px;padding-top:10px;flex:1 1 auto;min-height:0}
+.resp-img{max-width:100%;max-height:100%;object-fit:contain;align-self:flex-start;border:1px solid var(--border);border-radius:9px;background:var(--subtle)}
+.resp-pdf{width:100%;flex:1 1 0;min-height:200px;border:1px solid var(--border);border-radius:9px;background:var(--subtle)}
+.resp-bin-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:28px;border:1px dashed var(--border-strong);border-radius:10px;color:var(--muted)}
+.resp-bin-bar{display:flex;align-items:center;gap:10px}
+.resp-trunc{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;padding:8px 12px;border-radius:8px;background:var(--var-bg);color:var(--var);font-size:12.5px}
+.resp-trunc b{font-weight:600}
+.resp-empty-body{padding:22px;border:1px dashed var(--border-strong);border-radius:9px;color:var(--text);text-align:center;font-size:13px}
+.rp-frame{flex:1 1 auto;min-height:320px;height:auto}
+
+/* QA (v2.3.13): qisqa javob ham panelni to'ldiradi (uzun bo'lsa .resp scroll qiladi); bo'limlar qatori o'ralmaydi, torda scroll */
+.resp>[data-testid=resp-panel]{flex:1 0 auto}
+.resp [data-testid=resp-body],.resp-empty-body{flex:1 0 auto}
+.sections{overflow-x:auto;scrollbar-width:none}.sections::-webkit-scrollbar{display:none}
+.sections button{white-space:nowrap;flex:none}
+.seg{white-space:nowrap}

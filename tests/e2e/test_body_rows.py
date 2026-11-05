@@ -53,6 +53,7 @@ def test_binary_body_sends_raw_file(ui, echo_server, tmp_path):
 def test_binary_custom_content_type(ui, echo_server, tmp_path):
     new_post(ui, echo_server + "/echo")
     set_body_mode(ui, "binary")
+    T(ui, "content-type-auto").click()                                                       # matn ko'rinishida; bosilganda tahrirlanadi
     T(ui, "content-type").fill("image/png")
     f = tmp_path / "x.png"
     f.write_bytes(b"PNG?")

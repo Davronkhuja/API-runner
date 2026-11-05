@@ -2,6 +2,32 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.13] — 2026-11-05 — QA: real ssenariylar, skrinshotlar, layout tuzatishlari
+### Fixed
+- Qisqa javob ostida bo'sh oq maydon qolardi — javob qutisi endi panelni to'ldiradi (uzun javobda panel scroll qiladi).
+- Yonma-yon rejimda so'rov paneli juda tor bo'lib qolardi (bo'limlar qatori o'ralib, "Cookie'lar" kesilardi): so'rov paneli yonma-yonda ≥380px, javob ≥280px; ustma-ustda so'rov paneli ≥240px (muharrir ≥~120px qoladi). Bo'limlar qatori o'ralmaydi.
+- Bulk Edit maydoni qat'iy 160px o'rniga `min-height` + vertikal resize.
+### Added
+- **QA jarayoni**: `tests/e2e/test_qa_scenarios.py` — 60+ qatorli JSON POST (400) → reload, 2 MB JSON, rasm, 204, resizer, yonma-yon; 1440×900 va 1920×1080, light/dark; "bo'sh joy yo'q" tekshiruvlari. Skrinshotlar `docs/screenshots/qa/2.3.13/` (ro'yxat va topilmalar shu papkadagi README'da).
+- Qat'iy px balandlik auditi (`height:\s*\d+px`): qolganlari boshqaruv elementlari (tugma/input/qator/progress/diagramma) — asosli; kontent konteynerlari (muharrirlar, skript, javob, iframe preview) flex yoki viewport-nisbiy.
+
+## [2.3.12] — 2026-11-05 — Javob matni serverda saqlanadi
+### Fixed
+- **"Javob saqlanmagan" 376 baytlik 400 javobida ham chiqardi**: javob matni endi **SQLite**da (`responses` jadvali, har javob 5 MB gacha) saqlanadi — sahifa yangilanganda, server qayta ishga tushganda va tab qayta ochilganda status, sarlavhalar va tana to'liq tiklanadi. "Javob saqlanmagan" faqat haqiqatan ma'lumot bo'lmaganda (eski sessiya) qoladi.
+- **5 MB dan katta javob**: birinchi 5 MB ko'rsatiladi va "To'liq javob saqlanmagan (12.4 MB) — Faylga saqlash / Qayta yuborish" xabari chiqadi.
+- **Binary javob** (rasm, PDF…) serverda baytlari bilan saqlanadi, Preview'da ko'rinadi (rasm, PDF; boshqalari — ma'lumot kartasi), "Faylga saqlash" bilan yuklab olinadi. Bo'sh javob (204) — aniq "Javob tanasi bo'sh" holati.
+- **Tarix dublikat saqlamaydi**: yozuvda faqat `response_id` havolasi; diff javob matnini serverdan oladi (v2.3.8 yozuvlari ham ishlaydi). Tarixdagi so'rov tanasi endi javob matni bilan bosib ketilmaydi (avval `body` maydoni to'qnashardi). Bir xil so'rovlarni "×N" ga birlashtirish endi to'liq URL (query bilan) va tanani hisobga oladi.
+### Added
+- `GET /api/responses/<id>` va `/raw` (binary baytlari, `Content-Security-Policy: sandbox`); `/run_one` `store_response` bayrog'i bilan javobni saqlaydi (Runner/Batch saqlamaydi). Umumiy hajm chegarasi 300 MB / 400 javob — eng eskilari o'chiriladi.
+- 7 unit (`test_responses.py`) + 8 e2e (`test_response_persist.py`).
+
+## [2.3.11] — 2026-11-05 — Fix: muharrirlar bo'sh joyni to'ldiradi, Content-Type takrori
+### Fixed
+- **Qat'iy balandliklar olib tashlandi** (`.body-editor{height:220px}`, `.script-box{height:220px}`): Body (raw/JSON/HTML/JS), GraphQL (Query 2 : Variables 1) va Skriptlar muharrirlari so'rov panelining qolgan balandligini to'liq egallaydi (`flex:1; min-height:0`), resizer bilan birga o'zgaradi, yonma-yon rejimda ham; kontent qisqa bo'lsa ham muharrir foni panelni to'ldiradi; scroll faqat kontent haqiqatan sig'masa paydo bo'ladi va ochilganda eng tepada (birinchi qator ko'rinadi). Collection/papka sahifasidagi skript muharriri oyna balandligiga nisbatan (`clamp(220px,45vh,520px)`).
+- **Content-Type takrori**: input va "Content-Type: …" matni o'rniga bitta matn qoldi; bosilganda tahrirlanadi (Enter/blur — yopiladi).
+### Added
+- 12 yangi e2e (`test_editor_fill.py`): 1440×900 va 1920×1080.
+
 ## [2.3.10] — 2026-11-05 — Fix: javob paneli, sidebar va Console o'lchamini o'zgartirish
 ### Fixed
 - **Javob paneli o'lchami o'zgarmasdi**: sudralganda `.resp` kattalashar, lekin `.req-pane` kontent o'lchamidan qisqarmay, panel pastga, ko'rinmas joyga o'sardi. Endi `.req-pane` va `.resp` — `min-height/min-width: 0`, ichki kontent scroll bo'ladi; o'lcham **foizda** (javob ulushi) saqlanadi va konteynerga clamp qilinadi: har ikki qism kamida 120px (yonma-yon rejimda kenglik uchun ham). Oyna o'lchami o'zgarganda clamp qayta hisoblanadi (ResizeObserver).

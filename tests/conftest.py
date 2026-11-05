@@ -6,7 +6,7 @@ os.environ["APIRUNNER_TESTING"] = "1"      # create_app() faqat aniq (tmp) yo'll
 import threading
 
 import pytest
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, request
 from werkzeug.serving import make_server
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -36,7 +36,26 @@ def _build_echo_app():
             "files_ct": {k: request.files.getlist(k)[0].mimetype for k in request.files},
         })
 
-    @app.route("/status/<int:code>")
+    @app.route("/bigtext")
+    def bigtext():
+        n = int(request.args.get("mb", "6"))
+        return Response(("x" * 1023 + "\n") * (1024 * n), content_type="text/plain")
+
+    @app.route("/png")
+    def png():
+        import struct
+        import zlib
+        w, h = 240, 150                                              # ko'rinadigan gradient rasm
+        raw = b"".join(b"\x00" + b"".join(bytes((x * 255 // w, y * 255 // h, 160)) for x in range(w)) for y in range(h))
+        chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d))  # noqa: E731
+        data = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
+        return Response(data, content_type="image/png")
+
+    @app.route("/nocontent")
+    def nocontent():
+        return "", 204
+
+    @app.route("/status/<int:code>", methods=["GET", "POST", "PUT", "DELETE"])
     def status(code):
         return jsonify({"code": code}), code
 
