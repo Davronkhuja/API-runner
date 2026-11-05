@@ -56,7 +56,9 @@ pm2 restart api-runner              # yangi kod/versiyadan keyin (git pull / yan
 pm2 logs api-runner                 # jurnal
 ```
 
-**Yangilashdan keyin restart qiling.** UI statik fayllari diskdan darhol yangilanadi, lekin Python serveri xotirada eski kodda qoladi. Status bar'da UI va server versiyalari farq qilsa "Server eski — pm2 restart api-runner" ogohlantirishi chiqadi.
+**Yangilashdan keyin restart kerak — endi UI'dan:** "Server eski" ogohlantirishidagi **Qayta ishga tushirish** tugmasi serverni xavfsiz to'xtatadi (faol run bo'lsa tasdiq so'raydi), PM2 uni yangi kod bilan ko'taradi va sahifa o'zi yangilanadi. PM2 ostida bo'lmasa (`run.command`) tugma o'rniga ko'rsatma chiqadi. Qo'lda: `pm2 restart api-runner`.
+
+**Eski eslatma.** UI statik fayllari diskdan darhol yangilanadi, lekin Python serveri xotirada eski kodda qoladi. Status bar'da UI va server versiyalari farq qilsa "Server eski — pm2 restart api-runner" ogohlantirishi chiqadi.
 
 Portni o'zgartirish: `ecosystem.config.js` dagi `APIRUNNER_PORT` ni tahrirlang, so'ng `pm2 restart api-runner --update-env`.
 

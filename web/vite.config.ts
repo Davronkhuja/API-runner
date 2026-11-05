@@ -7,7 +7,7 @@ const uiVersion = /__version__\s*=\s*"([^"]+)"/.exec(readFileSync('../apirunner/
 
 // Build natijasi Flask static papkasiga tushadi va git'ga commit qilinadi (run.command Node'siz ishlaydi).
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), { name: 'ui-version-file', generateBundle() { this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: uiVersion }) }) } }],
   define: { __UI_VERSION__: JSON.stringify(uiVersion) },
   base: '/static/app/',
   build: { outDir: '../apirunner/static/app', emptyOutDir: true, sourcemap: false },

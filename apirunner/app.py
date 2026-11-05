@@ -5,7 +5,7 @@ import webbrowser
 
 from flask import Flask, Response, request, send_from_directory
 
-from .api import legacy, oauth, runs_api, security, workspace_api
+from .api import admin_api, legacy, oauth, runs_api, security, workspace_api
 from .core.jobs import JobManager
 from .core.run_engine import RunManager
 from .storage.cookies import CookieStore
@@ -34,6 +34,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     # barcha migratsiyalar (saved_requests.json import, sxema) — zaxira, sonlar tekshiruvi va rollback bilan
     result = migrations.run_all(ws, saved_file, backup_dir, __version__)
     app.extensions["workspace"] = ws
+    app.config["STARTED_AT"] = time.time()
     app.extensions["db"] = StateDB(os.path.join(ws.root, "state.db"))
     app.extensions["backup_dir"] = backup_dir
     app.extensions["saved_file"] = saved_file
@@ -48,6 +49,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.register_blueprint(legacy.bp)
     app.register_blueprint(workspace_api.bp)
     app.register_blueprint(runs_api.bp)
+    app.register_blueprint(admin_api.bp)
     app.register_blueprint(oauth.bp)
 
     static = os.path.join(PKG_DIR, "static")

@@ -275,3 +275,7 @@ class RunManager:
     def get(self, rid):
         with self.lock:
             return self.runs.get(rid)
+
+    def active(self):
+        with self.lock:
+            return [r for r in self.runs.values() if r.status == "running"]

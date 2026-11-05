@@ -72,7 +72,7 @@ export async function sendTab(tab: Tab) {
     useTabs().persistSoon()          // holat/o'lcham/sarlavhalar sahifa yangilanganda ham qoladi (matn emas)
     logResponse(r, tab.id)
     await applyScriptResult(r.scripts, { tabId: tab.id, ref: tab.ref })
-    hist.add('request', { ...spec, store_response: undefined, env_vars: undefined, scripts: undefined, ref: undefined, scripts_info: undefined, timestamp: Date.now(), status: r.status, ...historyResult(r) }).catch(() => {})
+    hist.add('request', { ...spec, name: tab.draft.name || undefined, store_response: undefined, env_vars: undefined, scripts: undefined, ref: undefined, scripts_info: undefined, timestamp: Date.now(), status: r.status, ...historyResult(r) }).catch(() => {})
     hist.add('url', { method: tab.draft.method, url: tab.draft.url }).catch(() => {})
   } catch (e: any) {
     tab.response = { status: 'ERR', response: e.message, time: 0, size: 0, resp_headers: {}, url: tab.draft.url }

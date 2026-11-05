@@ -29,7 +29,8 @@ def _conflict(_e):
 @bp.get("/version")
 def version():
     from .. import __version__
-    return jsonify({"version": __version__})
+    from . import admin_api
+    return jsonify({"version": __version__, "ui_version": admin_api.disk_ui_version(), "started": current_app.config["STARTED_AT"], "managed": admin_api.managed(), "active": admin_api.active_count()})
 
 
 @bp.get("/export/legacy")

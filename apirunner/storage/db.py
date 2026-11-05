@@ -89,6 +89,14 @@ class StateDB:
     def _fresh(c):
         return c.execute("SELECT name FROM sqlite_master WHERE name='history'").fetchone() is None
 
+    def checkpoint(self):
+        """WAL'ni asosiy faylga yozadi (chiqishdan oldin)."""
+        c = connect(self.path)
+        try:
+            c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        finally:
+            c.close()
+
     def journal_mode(self):
         c = connect(self.path)
         try:

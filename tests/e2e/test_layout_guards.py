@@ -40,7 +40,7 @@ def page(request, world, browser):
 
 SCENES = ["welcome", "editor-empty", "editor-simple-response", "heavy-params", "heavy-headers", "heavy-auth", "heavy-body", "heavy-scripts", "heavy-settings", "heavy-batch",
           "body-graphql", "body-formdata", "resp-400", "resp-headers-tab", "resp-cookies-tab", "resp-tests-tab", "dlg-code-long", "dlg-saveas", "dlg-move", "dlg-confirm",
-          "env-tab", "env-eye", "folder-overview-80", "history-drawer", "sidebar-history", "settings", "runner", "runner-results", "runner-compare", "runner-export-menu", "cookies", "console", "cmdk", "tabs-30", "long-name-request",
+          "env-tab", "env-eye", "folder-overview-80", "history-drawer", "sidebar-history", "settings", "server-stale", "server-stale-hint", "new-build", "restarting", "runner", "runner-results", "runner-compare", "runner-export-menu", "cookies", "console", "cmdk", "tabs-30", "long-name-request",
           "layout-side", "layout-dense", "dlg-import", "dlg-nameclean"]
 
 
