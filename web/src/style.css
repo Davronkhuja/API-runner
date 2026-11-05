@@ -186,7 +186,7 @@ pre{margin:0;white-space:pre-wrap;word-break:break-all;font:400 12.5px/20px var(
 .rp-sep{width:1px;height:18px;background:var(--border);margin:0 4px}
 .rp-tools{display:flex;gap:8px;align-items:center;margin:10px 0 8px;flex-wrap:wrap}
 .rp-tools input{height:28px;font-size:12px}
-.rp-frame{width:100%;height:360px;border:1px solid var(--border);border-radius:9px;background:#fff}
+.rp-frame{width:100%;border:1px solid var(--border);border-radius:9px;background:#fff}
 .codebox{border:1px solid var(--border);border-radius:9px;background:var(--code);padding:8px 12px;overflow:auto;flex:1;min-height:80px}
 .resp [data-testid=resp-body]{border:1px solid var(--border);border-radius:9px;background:var(--code);padding:8px 14px}
 pre[data-testid=resp-body]{overflow:auto}
@@ -448,3 +448,14 @@ body.resizing-row iframe,body.resizing-col iframe{pointer-events:none}
 .ct-text:hover{color:var(--text);background:var(--hover)}.ct-text.static{cursor:default;display:inline-flex;align-items:center}.ct-text.static:hover{background:transparent;color:var(--muted)}
 .ct-input{height:28px;width:260px;font:12px var(--font-mono)}
 .code-editor .cm-editor{height:100%}
+
+/* Saqlangan javob: binary preview, to'liq saqlanmagan xabari, bo'sh javob */
+.resp-binary{display:flex;flex-direction:column;gap:8px;padding-top:10px;flex:1 1 auto;min-height:0}
+.resp-img{max-width:100%;max-height:100%;object-fit:contain;align-self:flex-start;border:1px solid var(--border);border-radius:9px;background:var(--subtle)}
+.resp-pdf{width:100%;flex:1 1 0;min-height:200px;border:1px solid var(--border);border-radius:9px;background:var(--subtle)}
+.resp-bin-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:28px;border:1px dashed var(--border-strong);border-radius:10px;color:var(--muted)}
+.resp-bin-bar{display:flex;align-items:center;gap:10px}
+.resp-trunc{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;padding:8px 12px;border-radius:8px;background:var(--var-bg);color:var(--var);font-size:12.5px}
+.resp-trunc b{font-weight:600}
+.resp-empty-body{padding:22px;border:1px dashed var(--border-strong);border-radius:9px;color:var(--text);text-align:center;font-size:13px}
+.rp-frame{flex:1 1 auto;min-height:320px;height:auto}

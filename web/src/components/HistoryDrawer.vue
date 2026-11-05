@@ -7,6 +7,7 @@ import { openFromHistory } from '../lib/history'
 import { saveAsHandler } from '../lib/actions'
 import { useTabs } from '../stores/tabs'
 import { askConfirm, fmtBytes, fmtMs } from '../lib/ui'
+import { fetchStored } from '../lib/responses'
 import { bodyLines, diffStats, headerDiff, lineDiff } from '../lib/diff'
 
 const open = defineModel<boolean>({ required: true })
@@ -26,6 +27,13 @@ const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape' && open.value) open
 onMounted(() => window.addEventListener('keydown', onEsc))
 onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
 
+/** Tarixdagi URL: so'rov yuborilganda query alohida `params` da turadi — to'liq ko'rinish uchun birlashtiriladi. */
+const fullUrl = (p: any) => {
+  const qs = (p.params ?? []).filter((x: any) => x.name).map((x: any) => `${encodeURIComponent(x.name)}=${encodeURIComponent(x.value ?? '')}`).join('&')
+  return qs && !String(p.url).includes('?') ? `${p.url}?${qs}` : p.url
+}
+// bir xil so'rov: metod + to'liq URL + so'rov tanasi (v2.3.8 yozuvlarida `body` — javob matni, shuning uchun hisobga olinmaydi)
+const reqKey = (p: any) => `${p.method} ${fullUrl(p)} ${p.resp_headers !== undefined ? '' : p.body ?? ''}`
 const parts = (url: string) => { try { const u = new URL(url); return { host: u.host, path: u.pathname + u.search } } catch { return { host: '', path: url } } }
 const statusOf = (h: HistoryEntry) => h.payload.status
 const cls = (s: any) => (s === undefined || s === null ? '' : typeof s === 'number' ? (s < 300 ? 'ok' : s < 400 ? 'ok' : s < 500 ? 'warn' : 'err') : 'err')
@@ -40,7 +48,7 @@ const passes = (h: HistoryEntry) => {
   const s = statusOf(h), n = typeof s === 'number' ? s : 0
   const okF = filter.value === 'all' || (filter.value === '2xx' && n >= 200 && n < 300) || (filter.value === '4xx' && n >= 400 && n < 500) || (filter.value === '5xx' && n >= 500) || (filter.value === 'err' && typeof s !== 'number')
   const t = q.value.trim().toLowerCase()
-  return okF && (!t || `${h.payload.method} ${h.payload.url} ${s}`.toLowerCase().includes(t))
+  return okF && (!t || `${h.payload.method} ${fullUrl(h.payload)} ${s}`.toLowerCase().includes(t))
 }
 // ketma-ket bir xil so'rovlar (metod + URL) bitta qatorga "×N" bo'lib birlashadi; ko'rsatiladigan — eng yangisi
 interface Row { h: HistoryEntry; n: number; host: string; path: string; ids: number[]; members: HistoryEntry[] }
@@ -48,8 +56,8 @@ const groups = computed(() => {
   const rows: Row[] = []
   for (const h of all.value.filter(passes)) {
     const last = rows[rows.length - 1]
-    if (last && last.h.payload.method === h.payload.method && last.h.payload.url === h.payload.url && dayLabel(last.h.ts) === dayLabel(h.ts)) { last.n++; last.ids.push(h.id); last.members.push(h); continue }
-    rows.push({ h, n: 1, ...parts(h.payload.url), ids: [h.id], members: [h] })
+    if (last && reqKey(last.h.payload) === reqKey(h.payload) && dayLabel(last.h.ts) === dayLabel(h.ts)) { last.n++; last.ids.push(h.id); last.members.push(h); continue }
+    rows.push({ h, n: 1, ...parts(fullUrl(h.payload)), ids: [h.id], members: [h] })
   }
   const out: { day: string; rows: Row[] }[] = []
   for (const r of rows) { const d = dayLabel(r.h.ts); const g = out[out.length - 1]; if (g && g.day === d) g.rows.push(r); else out.push({ day: d, rows: [r] }) }
@@ -65,9 +73,21 @@ const pair = computed(() => picked.value.map(id => all.value.find(h => h.id === 
 const A = computed(() => pair.value[0])
 const B = computed(() => pair.value[1])
 const comparing = computed(() => !!A.value && !!B.value)
-const diff = computed(() => (comparing.value ? lineDiff(bodyLines(A.value!.payload.body ?? '', ignore.value), bodyLines(B.value!.payload.body ?? '', ignore.value)) : []))
+// Javob matni tarix yozuvida emas, serverda bitta nusxada (`response_id`); eski yozuvlarda `payload.body` bor
+const loaded = ref<Record<number, { body: string; headers: Record<string, string> }>>({})
+async function ensure(h?: HistoryEntry) {
+  if (!h || loaded.value[h.id]) return
+  const p = h.payload
+  if (!p.response_id && p.resp_headers !== undefined) { loaded.value[h.id] = { body: p.body ?? '', headers: p.resp_headers }; return }      // v2.3.8 yozuvlari: matn yozuvning o'zida (`body` — javob)
+  const st = p.response_id ? await fetchStored(p.response_id) : null
+  loaded.value[h.id] = { body: st?.body ?? '', headers: st?.headers ?? {} }
+}
+const bodyOf = (h?: HistoryEntry) => (h ? loaded.value[h.id]?.body ?? '' : '')
+const headersOf = (h?: HistoryEntry) => (h ? loaded.value[h.id]?.headers ?? {} : {})
+watch(() => [A.value, B.value, current.value], () => { ensure(A.value); ensure(B.value); ensure(current.value ?? undefined) }, { immediate: true })
+const diff = computed(() => (comparing.value ? lineDiff(bodyLines(bodyOf(A.value), ignore.value), bodyLines(bodyOf(B.value), ignore.value)) : []))
 const stats = computed(() => diffStats(diff.value))
-const hdrs = computed(() => (comparing.value ? headerDiff(A.value!.payload.resp_headers, B.value!.payload.resp_headers, ignore.value) : []))
+const hdrs = computed(() => (comparing.value ? headerDiff(headersOf(A.value), headersOf(B.value), ignore.value) : []))
 
 function openInTab(h: HistoryEntry) { openFromHistory(h); open.value = false }
 function saveToCollection(h: HistoryEntry) {
@@ -139,19 +159,19 @@ async function removeOne(id: number) { await hist.remove(id); await load() }
             </div>
             <div v-if="!diff.length" class="empty">Javoblar bo'sh</div>
           </div>
-          <p v-if="!A!.payload.body && !B!.payload.body" class="muted" data-testid="hd-nobody">Bu yozuvlarda javob matni saqlanmagan (eski tarix) — faqat yangi so'rovlarda solishtirish mumkin.</p>
+          <p v-if="loaded[A!.id] && loaded[B!.id] && !bodyOf(A) && !bodyOf(B)" class="muted" data-testid="hd-nobody">Bu yozuvlarda javob matni saqlanmagan (eski tarix) — faqat yangi so'rovlarda solishtirish mumkin.</p>
         </template>
         <template v-else-if="current">
           <div class="hx-det-head">
             <span class="m" :class="'m-' + current.payload.method" style="font-size:12px">{{ current.payload.method }}</span>
-            <b class="mono" data-testid="hd-det-path">{{ parts(current.payload.url).path }}</b><span class="muted">{{ parts(current.payload.url).host }}</span>
+            <b class="mono" data-testid="hd-det-path">{{ parts(fullUrl(current.payload)).path }}</b><span class="muted">{{ parts(fullUrl(current.payload)).host }}</span>
             <span style="flex:1" />
             <button data-testid="hd-open" @click="openInTab(current)">Tabda ochish</button>
             <button data-testid="hd-save" @click="saveToCollection(current)">Collection'ga saqlash</button>
           </div>
           <div class="hx-card" style="max-width:420px"><span class="status-pill" :class="cls(statusOf(current))">{{ statusOf(current) ?? '—' }}</span><b>{{ when(current.ts) }}</b>
             <span class="muted" style="margin-left:auto">{{ current.payload.time != null ? fmtMs(current.payload.time) : '—' }} · {{ current.payload.size != null ? fmtBytes(current.payload.size) : '—' }}</span></div>
-          <pre v-if="current.payload.body" class="hx-body" data-testid="hd-body">{{ current.payload.body }}</pre>
+          <pre v-if="bodyOf(current)" class="hx-body" data-testid="hd-body">{{ bodyOf(current) }}</pre>
           <p v-else class="muted">Javob matni saqlanmagan.</p>
           <p class="muted" style="font-size:12px">Ikki yozuvni solishtirish uchun ro'yxatda ikkita katakchani belgilang.</p>
         </template>

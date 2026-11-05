@@ -238,6 +238,41 @@ def stop_job(job_id):
     return jsonify({"error": "Job topilmadi"}), 404
 
 
+BINARY_PREFIX = ("image/", "audio/", "video/", "font/")
+BINARY_TYPES = ("application/pdf", "application/zip", "application/octet-stream", "application/gzip", "application/x-", "application/vnd.", "application/msword")
+
+
+def _is_binary(ctype, raw):
+    c = (ctype or "").split(";")[0].strip().lower()
+    if c == "image/svg+xml" or c.endswith("+xml") or c.endswith("+json"):
+        return False
+    if c.startswith(BINARY_PREFIX) or c.startswith(BINARY_TYPES):
+        return True
+    try:
+        raw[:65536].decode("utf-8")
+        return False
+    except UnicodeDecodeError:
+        return not c.startswith("text/")
+
+
+def _store_response(res):
+    """Javobni SQLite'ga (5 MB gacha) saqlaydi; `_raw` ni natijadan olib tashlaydi. Qo'shimcha maydonlarni qaytaradi."""
+    raw = res.pop("_raw", None)
+    if raw is None or res.get("status") in ("ERROR", "SKIPPED"):
+        return {}
+    hdrs = res.get("resp_headers") or {}
+    ctype = next((v for k, v in hdrs.items() if k.lower() == "content-type"), "")
+    binary = _is_binary(ctype, raw)
+    rid = current_app.extensions["db"].save_response(res.get("status"), hdrs, ctype, res.get("size") or len(raw), raw, binary)
+    extra = {"response_id": rid, "content_type": ctype}
+    if binary:
+        extra.update(binary=True, response="[binary: %s, %d bayt]" % (ctype or "noma'lum tur", len(raw)))
+        res["response"] = extra["response"]
+    if len(raw) > 5 * 1024 * 1024:
+        extra["stored_truncated"] = True
+    return extra
+
+
 @bp.post("/run_one")
 def run_one():
     cfg = request.get_json(silent=True) or {}
@@ -246,8 +281,11 @@ def run_one():
     spec = files.resolve_spec(dict(cfg, url=cfg["url"].strip(), timeout=cfg.get("timeout") or 30), current_app.extensions["workspace"].root)
     jobs = current_app.extensions["jobs"]
     services = Services(ws=current_app.extensions["workspace"], cookies=current_app.extensions["cookies"], allowed_file_roots=jobs.allowed_file_roots)
-    res = run_item(spec, services, scripts=cfg.get("scripts"), ref=cfg.get("ref"), row=cfg.get("row"), info=cfg.get("scripts_info"))
-    return jsonify({
+    store = bool(cfg.get("store_response"))
+    res = run_item(spec, services, scripts=cfg.get("scripts"), ref=cfg.get("ref"), row=cfg.get("row"), info=cfg.get("scripts_info"),
+                   ctx_kwargs={"keep_raw": True} if store else None)
+    extra = _store_response(res) if store else {}
+    return jsonify({**extra,
         "status": "ERR" if res["status"] == "ERROR" else res["status"],
         "time": round(res["time"], 3), "size": res["size"], "response": res["response"],
         "resp_headers": res["resp_headers"], "url": res["url"],

@@ -6,7 +6,7 @@ os.environ["APIRUNNER_TESTING"] = "1"      # create_app() faqat aniq (tmp) yo'll
 import threading
 
 import pytest
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, request
 from werkzeug.serving import make_server
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -35,6 +35,20 @@ def _build_echo_app():
             "files_all": {k: [f.filename for f in request.files.getlist(k)] for k in request.files},
             "files_ct": {k: request.files.getlist(k)[0].mimetype for k in request.files},
         })
+
+    @app.route("/bigtext")
+    def bigtext():
+        n = int(request.args.get("mb", "6"))
+        return Response(("x" * 1023 + "\n") * (1024 * n), content_type="text/plain")
+
+    @app.route("/png")
+    def png():
+        import base64
+        return Response(base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="), content_type="image/png")
+
+    @app.route("/nocontent")
+    def nocontent():
+        return "", 204
 
     @app.route("/status/<int:code>")
     def status(code):

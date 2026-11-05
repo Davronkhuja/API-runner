@@ -16,6 +16,22 @@ CREATE TABLE IF NOT EXISTS history (
 );
 CREATE INDEX IF NOT EXISTS idx_history_kind_ts ON history(kind, ts);
 """
+RESPONSES = """
+CREATE TABLE IF NOT EXISTS responses (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts        REAL NOT NULL,
+    status    TEXT,
+    headers   TEXT NOT NULL,
+    ctype     TEXT NOT NULL DEFAULT '',
+    size      INTEGER NOT NULL,          -- javobning haqiqiy hajmi (bayt)
+    stored    INTEGER NOT NULL,          -- saqlangan bayt (MAX_RESPONSE gacha)
+    binary    INTEGER NOT NULL DEFAULT 0,
+    body      BLOB
+);
+"""
+MAX_RESPONSE = 5 * 1024 * 1024          # har javob uchun saqlanadigan eng ko'p hajm
+RESPONSE_BUDGET = 300 * 1024 * 1024     # umumiy hajm chegarasi: eng eskilari o'chiriladi
+RESPONSE_KEEP = 400
 HASH_INDEX = ("CREATE UNIQUE INDEX IF NOT EXISTS idx_history_dedupe ON history(source, kind, hash) "
               "WHERE hash IS NOT NULL")
 
@@ -41,6 +57,7 @@ class StateDB:
             c.execute("PRAGMA journal_mode=WAL")           # doimiy; bir vaqtda o'qish/yozish xavfsiz
             if self._fresh(c):
                 c.executescript(SCHEMA)               # yangi baza: hash ustuni bilan (schema 2)
+            c.executescript(RESPONSES)                      # har qanday bazada (eski ham): IF NOT EXISTS
             c.commit()
             cols = [r[1] for r in c.execute("PRAGMA table_info(history)")]
             self.has_hash = "hash" in cols
@@ -60,6 +77,47 @@ class StateDB:
             return c.execute("PRAGMA journal_mode").fetchone()[0]
         finally:
             c.close()
+
+    # ── saqlangan javoblar (tab qayta ochilganda/yangilanganda tiklash va tarix diff'i uchun; bitta nusxa) ──
+    def save_response(self, status, headers, ctype, size, raw, binary):
+        stored = raw[:MAX_RESPONSE]
+        with self._lock:
+            c = connect(self.path)
+            try:
+                with c:
+                    cur = c.execute("INSERT INTO responses(ts, status, headers, ctype, size, stored, binary, body) VALUES (?,?,?,?,?,?,?,?)",
+                                    (time.time(), str(status), json.dumps(headers or {}, ensure_ascii=False), ctype or "", int(size), len(stored), 1 if binary else 0, stored))
+                    rid = cur.lastrowid
+                    self._prune_responses(c)
+                    return rid
+            finally:
+                c.close()
+
+    @staticmethod
+    def _prune_responses(c):
+        c.execute("DELETE FROM responses WHERE id NOT IN (SELECT id FROM responses ORDER BY id DESC LIMIT ?)", (RESPONSE_KEEP,))
+        total = c.execute("SELECT COALESCE(SUM(stored),0) FROM responses").fetchone()[0]
+        while total > RESPONSE_BUDGET:
+            row = c.execute("SELECT id, stored FROM responses ORDER BY id ASC LIMIT 1").fetchone()
+            if not row:
+                break
+            c.execute("DELETE FROM responses WHERE id=?", (row["id"],))
+            total -= row["stored"]
+
+    def get_response(self, rid, with_body=True):
+        with self._lock:
+            c = connect(self.path)
+            try:
+                r = c.execute("SELECT * FROM responses WHERE id=?", (rid,)).fetchone()
+            finally:
+                c.close()
+        if not r:
+            return None
+        out = {"id": r["id"], "ts": r["ts"], "status": r["status"], "headers": json.loads(r["headers"]), "ctype": r["ctype"], "size": r["size"],
+               "stored": r["stored"], "truncated": r["size"] > r["stored"], "binary": bool(r["binary"])}
+        if with_body:
+            out["body"] = bytes(r["body"] or b"")
+        return out
 
     def add_history(self, kind, payload, ts=None, source="app", dedupe=False):
         """Qo'shilgan bo'lsa True. dedupe=True: bir xil (source, kind, mazmun) yozuv qayta qo'shilmaydi."""

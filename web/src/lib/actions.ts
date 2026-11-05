@@ -46,11 +46,9 @@ export function openRequest(cid: string, id: string, permanent = false) {
   return tabs.open('request', ref, item.name, { permanent, draft: tabs.tabs.some(t => t.ref === ref) ? undefined : draftFromItem(item) })
 }
 
-/** Tarixga javob natijasi: holat, vaqt, hajm, sarlavhalar va (kesilgan) matn — javoblarni solishtirish uchun. */
-const HIST_BODY_LIMIT = 100_000
+/** Tarixga javob natijasi: faqat havola (`response_id`) — matn serverda bitta nusxada (SQLite), dublikat saqlanmaydi. */
 function historyResult(r: any) {
-  const raw = typeof r.response === 'string' ? r.response : JSON.stringify(r.response ?? '', null, 2)
-  return { time: r.time, size: r.size, resp_headers: r.resp_headers, body: raw.slice(0, HIST_BODY_LIMIT), body_truncated: raw.length > HIST_BODY_LIMIT || undefined }
+  return { time: r.time, size: r.size, ...(r.response_id ? { response_id: r.response_id } : {}) }
 }
 
 export async function sendTab(tab: Tab) {
@@ -65,6 +63,7 @@ export async function sendTab(tab: Tab) {
     await prepareAuth(tab.draft, tab.ref)
     const spec = specFor(tab.draft, tab.ref)
     spec.timeout = 30
+    spec.store_response = true               // javob serverda saqlanadi (sahifa yangilangach tiklash)
     const scripts = scriptsFor(tab.ref, tab.draft.scripts, tab.draft.name)
     if (scripts) Object.assign(spec, { scripts, ref: tab.ref, scripts_info: { requestName: tab.draft.name, requestId: tab.ref?.split(':')[1] ?? '' } })
     logRequest(spec.method, tab.draft.url, tab.id)
@@ -74,7 +73,7 @@ export async function sendTab(tab: Tab) {
     useTabs().persistSoon()          // holat/o'lcham/sarlavhalar sahifa yangilanganda ham qoladi (matn emas)
     logResponse(r, tab.id)
     await applyScriptResult(r.scripts, { tabId: tab.id, ref: tab.ref })
-    hist.add('request', { ...spec, env_vars: undefined, scripts: undefined, ref: undefined, scripts_info: undefined, timestamp: Date.now(), status: r.status, ...historyResult(r) }).catch(() => {})
+    hist.add('request', { ...spec, store_response: undefined, env_vars: undefined, scripts: undefined, ref: undefined, scripts_info: undefined, timestamp: Date.now(), status: r.status, ...historyResult(r) }).catch(() => {})
     hist.add('url', { method: tab.draft.method, url: tab.draft.url }).catch(() => {})
   } catch (e: any) {
     tab.response = { status: 'ERR', response: e.message, time: 0, size: 0, resp_headers: {}, url: tab.draft.url }
