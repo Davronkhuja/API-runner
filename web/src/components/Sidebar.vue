@@ -11,11 +11,10 @@ import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { openFromHistory } from '../lib/history'
 import { openRequest } from '../lib/actions'
-import { askConfirm, showToast, sidePanel } from '../lib/ui'
+import { askConfirm, findOpen, showToast, sidePanel, trashOpen } from '../lib/ui'
 import Icon from './Icon.vue'
 import { authName, hasRealAuth, openNodeTab } from '../lib/nodes'
 import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
-import TrashDialog from './TrashDialog.vue'
 import { exId, ensureExampleIds, openExample } from '../lib/examples'
 import { isFolder, type DropPosition, type RequestItem, type TreeItem } from '../types/model'
 import { draftFromItem } from '../lib/draft'
@@ -201,7 +200,6 @@ const loadHistory = openFromHistory
 const openEnv = (id: string, name: string) => tabs.open('environment', id, name, { permanent: true })
 async function delEnv(id: string, name: string) { if (await askConfirm(`'${name}' Savatga o'tkazilsinmi? (30 kun ichida tiklash mumkin)`, "O'chirish")) await ws.deleteEnv(id) }
 const cleanOpen = ref(false)
-const trashOpen = ref(false)
 const cleanCount = computed(() => urlNamedItems().length)
 async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(id, 'Yangi muhit') }
 </script>
@@ -215,6 +213,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
           <button class="ib" aria-label="Yangi so'rov" title="Yangi so'rov" data-testid="sb-new-request" @click="tabs.openNew()"><Icon name="plus" :size="16" /></button>
           <button class="ib" aria-label="Yangi collection" title="Yangi collection" data-testid="new-collection" @click="newCollection"><Icon name="folder-plus" :size="16" /></button>
           <button class="ib" aria-label="Savat (o'chirilganlar)" title="Savat — 30 kun saqlanadi" data-testid="trash-open" @click="trashOpen = true"><Icon name="trash" :size="16" /></button>
+          <button class="ib" aria-label="Find &amp; Replace" title="Workspace bo'ylab qidirish va almashtirish" data-testid="find-open" @click="findOpen = true"><Icon name="search" :size="16" /></button>
         </template>
         <template v-else-if="panel === 'environments'"><button class="ib" aria-label="Yangi muhit" title="Yangi muhit" data-testid="new-env" @click="newEnv"><Icon name="plus" :size="16" /></button></template>
         <template v-else-if="panel === 'history'">
@@ -230,7 +229,6 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
       <button class="ib nc-x" aria-label="Taklifni yopish" title="Yopish" data-testid="nameclean-close" @click="dismissOffer()">×</button>
     </div>
     <NameCleanDialog v-if="cleanOpen" @close="cleanOpen = false" />
-    <TrashDialog v-if="trashOpen" @close="trashOpen = false" />
 
     <template v-if="panel === 'collections'">
       <div class="sb-search"><input v-model="tree.filter" placeholder="Filtr…" aria-label="Kolleksiyalarda qidirish" data-testid="sb-search"></div>

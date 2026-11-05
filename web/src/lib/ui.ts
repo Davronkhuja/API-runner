@@ -8,6 +8,8 @@ export type SidePanel = 'collections' | 'environments' | 'history' | 'runner'
 export const sidePanel = ref<SidePanel>('collections')
 export const cmdkOpen = ref(false)
 export const importOpen = ref(false)
+export const findOpen = ref(false)
+export const trashOpen = ref(false)
 
 export const toast = ref<{ msg: string; kind: string } | null>(null)
 let tt: ReturnType<typeof setTimeout>

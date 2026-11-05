@@ -5,7 +5,7 @@ from flask import Blueprint, current_app, jsonify, request
 
 from ..core import scripting
 from ..core.scripting.sandbox import Limits
-from ..storage import files, model, tree_ops
+from ..storage import files, findreplace, model, tree_ops
 from ..storage.migrate import import_localstorage
 from ..storage.trash import TrashError
 from ..storage.workspace import Conflict, NotFound
@@ -523,3 +523,47 @@ def get_response_raw(rid):
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["Content-Security-Policy"] = "sandbox"          # HTML javob (preview) skript bajara olmasin
     return resp
+
+
+# ── Workspace bo'ylab Find & Replace ──
+def _fr_load(d):
+    ws = _ws()
+    rx = findreplace.build_regex(d.get("query", ""), bool(d.get("case")), bool(d.get("word")), bool(d.get("regex")))
+    cids = d.get("collection_ids") or None
+    cols = [ws.get_collection(c["id"]) for c in ws.list_collections() if not cids or c["id"] in cids]
+    envs = ws.list_environments()
+    return rx, findreplace.collect(cols, envs, d.get("targets"), cids), cols, envs
+
+
+@bp.post("/find-replace/search")
+def fr_search():
+    d = request.get_json(silent=True) or {}
+    try:
+        rx, fields, _c, _e = _fr_load(d)
+        results, truncated = findreplace.search(fields, rx, d.get("replacement", ""), bool(d.get("regex")))
+    except findreplace.FindError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"results": results, "truncated": truncated, "total": sum(r["count"] for r in results)})
+
+
+@bp.post("/find-replace/apply")
+def fr_apply():
+    """Tanlangan maydonlarni (`ids`) almashtiradi. OLDIN avtomatik zaxira; hammasi workspace qulfi ostida, qayta o'qilgan yangi holat ustida."""
+    from .. import __version__
+    from ..storage import backup as bk
+    d = request.get_json(silent=True) or {}
+    ids = d.get("ids") or []
+    if not ids:
+        return jsonify({"error": "Almashtirish uchun hech narsa tanlanmagan"}), 400
+    ws = _ws()
+    try:
+        with ws.lock:
+            rx, fields, cols, envs = _fr_load(d)
+            findreplace.search(fields, rx, d.get("replacement", ""), bool(d.get("regex")))          # almashtirish matni (backref) tekshiruvi
+            path = bk.create_backup(ws.root, current_app.extensions["saved_file"], __version__, current_app.extensions["backup_dir"], suffix="pre-find-replace")
+            changed, total, skipped = findreplace.apply(fields, rx, d.get("replacement", ""), bool(d.get("regex")), ids)
+            for (kind, did), doc in changed.items():
+                ws.save_collection(doc) if kind == "collection" else ws.save_environment(doc)
+    except findreplace.FindError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"ok": True, "replacements": total, "documents": len(changed), "skipped": skipped, "backup": os.path.basename(path)})
