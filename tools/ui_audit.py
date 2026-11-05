@@ -179,6 +179,20 @@ def scenes(base, echo):
     def runner(p):
         p.locator("[data-name=\"Katta collection\"]").first.click(button="right"); p.click("[data-act=runner]"); p.wait_for_selector("[data-testid=runner-tab]")
     S["runner"] = runner
+    def run_done(p, times=1):
+        runner(p)
+        for _ in range(times):
+            p.click("[data-testid=runner-run]")
+            try:
+                p.wait_for_selector("[data-testid=runguard]", timeout=800); p.click("[data-testid=runguard-run-get]")
+            except Exception:  # noqa: BLE001 — Prod bo'lmasa RunGuard chiqmaydi
+                pass
+            p.wait_for_function("() => /Tugadi|To'xtatildi/.test(document.querySelector('[data-testid=runner-progress-label]')?.textContent || '')", timeout=30000)
+    S["runner-results"] = lambda p: (run_done(p), p.locator("[data-testid=runner-row]").first.click())
+    def run_compare(p):
+        run_done(p, 2); p.click("[data-testid=runner-compare]"); p.wait_for_selector("[data-testid=runner-compare-dialog]")
+    S["runner-compare"] = run_compare
+    S["runner-export-menu"] = lambda p: (run_done(p), p.click("[data-testid=runner-export]"))
     S["cookies"] = lambda p: p.click("[data-testid=cookies-btn]")
     def console(p):
         open_req(p, "Oddiy so'rov"); send(p); p.click("[data-testid=console-btn]"); p.wait_for_selector("[data-testid=console]")

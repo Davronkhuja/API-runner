@@ -217,7 +217,7 @@ defineExpose({ loadData })
             <div v-if="expanded.has(keyOf(r))" class="res-detail" data-testid="runner-detail">
               <p class="muted" style="margin:0 0 6px;overflow-wrap:anywhere">{{ r.url }}</p>
               <ul v-if="r.tests.length" class="res-tests"><li v-for="t in r.tests" :key="t.name" :class="t.skipped ? 'muted' : t.passed ? 'ok' : 'err'" data-testid="runner-test">{{ t.skipped ? '○' : t.passed ? '✓' : '✗' }} {{ t.name }}<small v-if="t.error"> — {{ t.error }}</small></li></ul>
-              <pre v-if="bodies[keyOf(r)]" class="res-body" data-testid="runner-body">{{ bodies[keyOf(r)].slice(0, 20000) }}</pre>
+              <pre v-if="bodies[keyOf(r)]" class="res-body" tabindex="0" aria-label="Javob matni" data-testid="runner-body">{{ bodies[keyOf(r)].slice(0, 20000) }}</pre>
               <p v-else-if="bodies[keyOf(r)] === ''" class="muted" style="margin:0">Javob matni saqlanmagan (sozlamalarda "Javoblarni saqlash" o'chiq yoki bo'sh javob).</p>
             </div>
           </template>
@@ -231,8 +231,8 @@ defineExpose({ loadData })
       <template v-else>
         <label class="dlg-field"><span>Avvalgi run</span><select v-model="cmpId" data-testid="rc-select" @change="doCompare"><option v-for="h in history.filter(x => x.id !== run?.id)" :key="h.id" :value="h.id">#{{ h.number }} · {{ fmtWhen(h.started) }}</option></select></label>
         <p v-if="cmp" class="muted" data-testid="rc-summary">#{{ cmp.a.number }} → #{{ cmp.b.number }}: <b>{{ cmp.changed }}</b> ta so'rov statusi o'zgargan</p>
-        <table v-if="cmp" class="kv" data-testid="rc-table"><thead><tr><th>Iter.</th><th>So'rov</th><th>Oldingi</th><th>Hozirgi</th><th>Δ vaqt</th></tr></thead>
-          <tbody><tr v-for="(x, i) in cmp.rows" :key="i" :class="{ 'rc-changed': x.changed }" data-testid="rc-row"><td>#{{ x.iter }}</td><td>{{ x.method }} {{ x.name }}</td><td>{{ x.a ? x.a.status + ' · ' + fmtMs(x.a.time) : '—' }}</td><td>{{ x.b ? x.b.status + ' · ' + fmtMs(x.b.time) : '—' }}</td>
+        <table v-if="cmp" class="kv rc-table" data-testid="rc-table"><thead><tr><th>Iter.</th><th>So'rov</th><th>Oldingi</th><th>Hozirgi</th><th>Δ vaqt</th></tr></thead>
+          <tbody><tr v-for="(x, i) in cmp.rows" :key="i" :class="{ 'rc-changed': x.changed }" data-testid="rc-row"><td>#{{ x.iter }}</td><td :title="`${x.method} ${x.name}`">{{ x.method }} {{ x.name }}</td><td>{{ x.a ? x.a.status + ' · ' + fmtMs(x.a.time) : '—' }}</td><td>{{ x.b ? x.b.status + ' · ' + fmtMs(x.b.time) : '—' }}</td>
             <td>{{ x.delta == null ? '—' : (x.delta >= 0 ? '+' : '') + fmtMs(x.delta) }}</td></tr></tbody></table>
       </template>
     </Dialog>

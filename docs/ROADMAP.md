@@ -63,15 +63,15 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] **Console paneli** (status bardan ochiladi: so'rov/javob loglari, `console.log`, skript xatolari) — v2.3.0
 
 ## Bosqich 4 — Collection Runner v2
-- [ ] Runner sozlamalari, batch integratsiyasi, real-time SSE, SQLite, eksport (JSON/HTML/JUnit), solishtirish
-- [ ] **Runner (dizayn maketidan qolganlari)**: parallel so'rovlar, "o'zgaruvchi qiymatlarini saqlash", "javoblarni saqlash", natijalar jadvalida **Testlar** ustuni (Bosqich 3 test natijalariga bog'liq), run raqami/tarixi sarlavhasi (`run #14`), "avvalgi run bilan solishtirish" va "Eksport" tugmalari Runner sahifasida
+- [x] Runner sozlamalari, batch integratsiyasi, real-time SSE, SQLite, eksport (JSON/HTML/JUnit), solishtirish — v2.5.0
+- [x] **Runner (dizayn maketidan qolganlari)** — v2.5.0: parallel so'rovlar, "o'zgaruvchi qiymatlarini saqlash", "javoblarni saqlash", natijalar jadvalida **Testlar** ustuni (Bosqich 3 test natijalariga bog'liq), run raqami/tarixi sarlavhasi (`run #14`), "avvalgi run bilan solishtirish" va "Eksport" tugmalari Runner sahifasida
 
 ## Qo'lda tekshiruvdan keyingi qo'shimchalar (Bosqich 4 bilan birga, v2.3.5–v2.3.8)
 - [x] A: server/UI versiya ogohlantirishi (`/api/version`), saqlanmagan javob holati, ghost qatorda 📎 yo'q, izchil disabled holat, ⌘K Import/Runner — v2.3.5
 - [x] B: muhit turi Dev/Test/Prod, PROD belgisi, yozuvchi so'rovlar tasdig'i, Runner sukut bo'yicha faqat GET, RunGuard — v2.3.6
 - [x] Fayl biriktirish Postman uslubida (Body → form-data Turi/Content-Type, ko'p fayl, drop, topilmadi, binary, `workspace/files`, sxema 3 migratsiyasi, Sozlamalar → Fayllar) — v2.3.7
 - [x] C: Folder/Collection Overview, Env (Initial/Current, secret, tur), Tarix (kunlar, ×N, filtr, diff), Ko'rinish (yonma-yon/ustma-ust, zich rejim), Body segmentlari (POST/PUT — raw JSON), Batch formasi 2 qatorli grid — v2.3.8
-- [ ] **Batch formasini Runner tabiga ko'chirish** (ko'rib chiqildi: Runner v2 sozlamalari — parallel, kechikish, retry, timeout, data fayl — Batch bilan bir xil, shuning uchun Bosqich 4 da yagona "Run sozlamalari" paneliga birlashtiriladi; so'rov tabidagi "Batch / Runner" esa shu panelni bitta so'rov uchun ochuvchi qisqa yo'l bo'lib qoladi)
+- [x] **Batch formasini Runner tabiga ko'chirish** (v2.5.0: yagona `RunSettings`) (ko'rib chiqildi: Runner v2 sozlamalari — parallel, kechikish, retry, timeout, data fayl — Batch bilan bir xil, shuning uchun Bosqich 4 da yagona "Run sozlamalari" paneliga birlashtiriladi; so'rov tabidagi "Batch / Runner" esa shu panelni bitta so'rov uchun ochuvchi qisqa yo'l bo'lib qoladi)
 - [ ] Folder Overview: "Hujjat yaratish" va "Eksport" tugmalari (maketda bor; Bosqich 5 — Export bilan birga)
 
 - [x] **UI audit va tuzatishlar** (v2.4.0): `docs/ui-audit.md`; yagona Dialog, Import dialogi, muhit popover, muharrirlar (qator raqami/fold/qidiruv/JSON xatosi), Headers tabi, Sozlamalar avtosaqlash, umumiy Tarix komponenti, nomlarni tozalash, dizayn tokenlari; himoya: vizual regressiya, layout, axe, fixed-height lint
