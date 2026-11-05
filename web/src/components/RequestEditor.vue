@@ -165,6 +165,11 @@ function setMode(id: (typeof BODY_SEGS)[number]['id']) {
   d.value.body.mode = id === 'raw' ? (d.value.body.mode === 'raw' ? 'raw' : 'json') : id
   touch()
 }
+// Matn muharrirlari (body raw/JSON/GraphQL, skriptlar) so'rov panelining qolgan balandligini to'liq egallaydi
+const fillEditor = computed(() => section.value === 'scripts' || (section.value === 'body' && ['json', 'raw', 'graphql'].includes(d.value.body.mode)))
+const ctEditable = computed(() => !['none', 'form', 'multipart', 'graphql'].includes(d.value.body.mode))
+const ctEditing = ref(false), ctInput = ref<HTMLInputElement>()
+async function editCt() { ctEditing.value = true; await nextTick(); ctInput.value?.focus() }
 const fmt = computed(() => (d.value.body.mode === 'json' ? 'json' : (d.value.body.rawLang ?? 'text') === 'text' ? 'raw' : d.value.body.rawLang!))
 function setFormat(v: string) {
   if (v === 'json') d.value.body.mode = 'json'
@@ -238,7 +243,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       <div style="flex:1" />
       <button data-testid="sections-cookies" class="ghost sm" style="height:26px;margin:0" @click="tabs.open('cookies', 'cookies', 'Cookie\'lar', { permanent: true })">Cookie'lar</button>
     </div>
-    <div class="editor" :class="{ tall: section === 'scripts' }" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
+    <div class="editor" :class="{ fill: fillEditor }" ref="reqEl" @scroll="tab.scroll.req = ($event.target as HTMLElement).scrollTop">
       <template v-if="section === 'params'">
         <KvTable :rows="d.params" quick-attach testid="params-table" @change="onParamsChange" @attach="attachToBody" />
         <div v-if="d.pathVars.length" data-testid="path-vars" style="margin-top:12px">
@@ -254,7 +259,8 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <SettingsForm :model="d.settings" :fallback="wsStore.settings" @change="touch" />
       </div>
       <BatchPanel v-else-if="section === 'batch'" :tab="tab" />
-      <div v-else data-testid="body-panel">
+      <div v-else class="body-panel" data-testid="body-panel">
+        <div class="body-toolbar">
         <div class="seg-group body-seg" role="radiogroup" aria-label="Body turi" data-testid="body-mode" :data-value="d.body.mode" @keydown.left.prevent="stepMode(-1)" @keydown.right.prevent="stepMode(1)">
           <button v-for="m in BODY_SEGS" :key="m.id" class="seg" :class="{ on: segOn(m.id) }" role="radio" :aria-checked="segOn(m.id)" :tabindex="segOn(m.id) ? 0 : -1" :data-mode="m.id" @click="setMode(m.id)">{{ m.label }}</button>
         </div>
@@ -262,8 +268,12 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
           <option value="json">JSON</option><option value="raw">Text</option><option value="html">HTML</option><option value="javascript">JavaScript</option>
         </select>
         <button v-if="d.body.mode === 'json'" data-testid="beautify" style="margin-left:8px" @click="beautify" title="Cmd/Ctrl+B">Beautify</button>
-        <input v-if="d.body.mode !== 'none' && d.body.mode !== 'form' && d.body.mode !== 'multipart' && d.body.mode !== 'graphql'" v-model="d.body.contentType" :placeholder="autoCT || 'Content-Type'" style="margin-left:8px;width:220px" data-testid="content-type" @input="touch">
-        <span v-if="effectiveCT" class="muted" style="margin-left:8px" data-testid="content-type-auto">Content-Type: {{ effectiveCT }}</span>
+        <template v-if="ctEditable && ctEditing">
+          <input ref="ctInput" v-model="d.body.contentType" class="ct-input" :placeholder="autoCT || 'Content-Type'" aria-label="Content-Type" data-testid="content-type" @input="touch" @keydown.enter.prevent="ctEditing = false" @keydown.esc.prevent="ctEditing = false" @blur="ctEditing = false">
+        </template>
+        <button v-else-if="effectiveCT && ctEditable" class="ct-text" data-testid="content-type-auto" title="Content-Type'ni o'zgartirish uchun bosing" @click="editCt">Content-Type: {{ effectiveCT }}</button>
+        <span v-else-if="effectiveCT" class="ct-text static muted" data-testid="content-type-auto">Content-Type: {{ effectiveCT }}</span>
+        </div>
         <CodeEditor v-if="d.body.mode === 'json' || d.body.mode === 'raw'" :key="fmt" v-model="d.body.raw" :lang="fmt === 'json' ? 'json' : fmt === 'html' ? 'html' : fmt === 'javascript' ? 'javascript' : 'raw'" testid="body-raw" placeholder='{ "key": "{{value}}" }' class="body-editor" @update:model-value="touch" @beautify="beautify" />
         <div v-else-if="d.body.mode === 'binary'" data-testid="binary-panel" class="bin-zone" :class="{ over: binOver, missing: binMissing }" style="margin-top:8px"
              @dragover.prevent="binOver = true" @dragleave="binOver = false" @drop.prevent="onBinDrop">
@@ -278,9 +288,9 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
           <template v-else><span class="muted">Faylni shu yerga tashlang yoki</span><button data-testid="binary-pick" @click="binInput?.click()">Fayl tanlash…</button></template>
           <input ref="binInput" type="file" hidden data-testid="binary-file" @change="pickBinary">
         </div>
-        <div v-else-if="d.body.mode === 'graphql'" data-testid="graphql-panel" style="margin-top:8px">
-          <b>Query</b><CodeEditor v-model="d.body.gql.query" lang="raw" testid="gql-query" placeholder="query { users { id name } }" class="body-editor" style="height:160px" @update:model-value="touch" />
-          <b>Variables (JSON)</b><CodeEditor v-model="d.body.gql.variables" lang="json" testid="gql-vars" placeholder='{ "id": 1 }' class="body-editor" style="height:90px" @update:model-value="touch" />
+        <div v-else-if="d.body.mode === 'graphql'" data-testid="graphql-panel" class="gql-panel">
+          <b>Query</b><CodeEditor v-model="d.body.gql.query" lang="raw" testid="gql-query" placeholder="query { users { id name } }" class="body-editor gql-q" @update:model-value="touch" />
+          <b>Variables (JSON)</b><CodeEditor v-model="d.body.gql.variables" lang="json" testid="gql-vars" placeholder='{ "id": 1 }' class="body-editor gql-v" @update:model-value="touch" />
         </div>
         <KvTable v-else-if="d.body.mode === 'form'" :rows="d.body.fields" testid="form-table" @change="touch" />
         <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" formdata testid="formdata-table" @change="touch" />

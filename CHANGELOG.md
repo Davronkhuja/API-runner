@@ -2,6 +2,13 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.3.11] — 2026-11-05 — Fix: muharrirlar bo'sh joyni to'ldiradi, Content-Type takrori
+### Fixed
+- **Qat'iy balandliklar olib tashlandi** (`.body-editor{height:220px}`, `.script-box{height:220px}`): Body (raw/JSON/HTML/JS), GraphQL (Query 2 : Variables 1) va Skriptlar muharrirlari so'rov panelining qolgan balandligini to'liq egallaydi (`flex:1; min-height:0`), resizer bilan birga o'zgaradi, yonma-yon rejimda ham; kontent qisqa bo'lsa ham muharrir foni panelni to'ldiradi; scroll faqat kontent haqiqatan sig'masa paydo bo'ladi va ochilganda eng tepada (birinchi qator ko'rinadi). Collection/papka sahifasidagi skript muharriri oyna balandligiga nisbatan (`clamp(220px,45vh,520px)`).
+- **Content-Type takrori**: input va "Content-Type: …" matni o'rniga bitta matn qoldi; bosilganda tahrirlanadi (Enter/blur — yopiladi).
+### Added
+- 12 yangi e2e (`test_editor_fill.py`): 1440×900 va 1920×1080.
+
 ## [2.3.10] — 2026-11-05 — Fix: javob paneli, sidebar va Console o'lchamini o'zgartirish
 ### Fixed
 - **Javob paneli o'lchami o'zgarmasdi**: sudralganda `.resp` kattalashar, lekin `.req-pane` kontent o'lchamidan qisqarmay, panel pastga, ko'rinmas joyga o'sardi. Endi `.req-pane` va `.resp` — `min-height/min-width: 0`, ichki kontent scroll bo'ladi; o'lcham **foizda** (javob ulushi) saqlanadi va konteynerga clamp qilinadi: har ikki qism kamida 120px (yonma-yon rejimda kenglik uchun ham). Oyna o'lchami o'zgarganda clamp qayta hisoblanadi (ResizeObserver).

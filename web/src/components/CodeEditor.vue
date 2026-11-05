@@ -31,7 +31,7 @@ const theme = EditorView.theme({
   '&': { backgroundColor: 'var(--code)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '9px', height: '100%' },
   '&.cm-focused': { outline: '1px solid var(--accent)' },
   '.cm-scroller': { fontFamily: 'var(--font-mono)', fontSize: '12.5px', overflow: 'auto' },
-  '.cm-content': { caretColor: 'var(--text)', padding: '6px 0' },
+  '.cm-content': { caretColor: 'var(--text)', padding: '6px 0', minHeight: '100%' },
   '.cm-cursor': { borderLeftColor: 'var(--text)' },
 })
 

@@ -380,6 +380,7 @@ def test_environment_create_edit_activate_and_used_in_request(ui, echo_server):
     T(ui, "env-key").first.fill("host")
     T(ui, "env-val").first.fill(echo_server)
     T(ui, "env-save").click()
+    expect(T(ui, "dirty-dot")).to_have_count(0)                                       # saqlash tugagach faollashtiramiz (poyga)
     T(ui, "env-activate").click()
     expect(T(ui, "env-select")).to_have_value(re.compile(r".+"))
     new_req(ui, "{{host}}/echo?ok=1")
