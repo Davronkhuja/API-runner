@@ -608,3 +608,5 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 .var-popup button.on{background:var(--accent-weak)}
 .var-popup .vn{font-family:var(--font-mono);flex:none}.var-popup .vv{color:var(--muted);font-family:var(--font-mono);font-size:var(--fs-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .var-popup .vs{margin-left:auto;color:var(--muted);font-size:var(--fs-sm);flex:none}
+.setvar-btn{position:fixed;z-index:1050;height:var(--ctl-sm);padding:0 var(--sp-3);border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--panel);color:var(--accent-text);font-size:var(--fs-sm);font-weight:600;box-shadow:var(--shadow)}
+.setvar-btn:hover{background:var(--accent-weak)}
