@@ -16,6 +16,7 @@ import EnvTab from './components/EnvTab.vue'
 import RunnerTab from './components/RunnerTab.vue'
 import RunGuard from './components/RunGuard.vue'
 import RestartOverlay from './components/RestartOverlay.vue'
+import VarPopup from './components/VarPopup.vue'
 import Dialog from './components/Dialog.vue'
 import ImportDialog from './components/ImportDialog.vue'
 import CollectionTab from './components/CollectionTab.vue'
@@ -212,6 +213,7 @@ function openRunnerWithData(name: string, text: string) {
     </Dialog>
     <RunGuard />
     <RestartOverlay />
+    <VarPopup />
     <ImportDialog v-if="importOpen" @close="importOpen = false" />
     <Dialog v-if="saveAs" title="So'rovni saqlash" testid="saveas-dialog" width="460px" @close="saveAs.resolve(false); saveAs = null">
       <label class="dlg-field"><span>Nomi</span><input v-model="saveAs.name" style="width:100%" data-testid="saveas-name" data-autofocus @keydown.enter="confirmSaveAs"></label>

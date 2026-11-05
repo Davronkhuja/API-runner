@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Annotation, EditorState, StateEffect, type Range } from '@codemirror/state'
 import { Decoration, EditorView, ViewPlugin, keymap, placeholder as cmPlaceholder, type DecorationSet, type ViewUpdate } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { completionTheme, varCompletion } from '../lib/varcomplete'
 
 export interface VarInfo { ok: boolean; title: string }
 const props = defineProps<{ modelValue: string; placeholder?: string; vars: (name: string) => VarInfo }>()
@@ -66,7 +67,7 @@ onMounted(() => {
     state: EditorState.create({
       doc: props.modelValue,
       extensions: [
-        history(), theme, filter, chips,
+        history(), theme, filter, chips, varCompletion(), completionTheme,
         ...(props.placeholder ? [cmPlaceholder(props.placeholder)] : []),
         EditorView.contentAttributes.of({ 'data-testid': 'url', 'aria-label': "So'rov URL", spellcheck: 'false', autocapitalize: 'off', autocorrect: 'off' }),
         keymap.of([

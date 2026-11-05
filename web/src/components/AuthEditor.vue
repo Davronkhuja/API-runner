@@ -83,17 +83,17 @@ const copyTok = () => { navigator.clipboard?.writeText(tok.value?.access_token ?
       </template>
       <p v-else class="muted" style="margin:0" data-testid="auth-inherit-note">{{ inheritNote || "Meros: ota papka va collection'da auth yo'q — Auth yuborilmaydi." }}</p>
     </div>
-    <p v-if="auth.type === 'bearer'"><input v-model="auth.token" placeholder="Token" style="width:100%" data-testid="auth-token" @input="touch"></p>
-    <p v-if="auth.type === 'basic'"><input v-model="auth.user" placeholder="Username" @input="touch"> <input v-model="auth.pass" :type="showPass ? 'text' : 'password'" placeholder="Password" data-testid="auth-pass" @input="touch"> <button class="ghost" data-testid="auth-eye" @click="showPass = !showPass">👁</button> <span class="muted" data-testid="auth-preview">Authorization: Basic {{ preview }}</span></p>
-    <p v-if="auth.type === 'custom'"><input v-model="auth.custom" placeholder="Authorization qiymati" style="width:100%" data-testid="auth-custom" @input="touch"></p>
+    <p v-if="auth.type === 'bearer'"><input v-var-complete v-model="auth.token" placeholder="Token" style="width:100%" data-testid="auth-token" @input="touch"></p>
+    <p v-if="auth.type === 'basic'"><input v-var-complete v-model="auth.user" placeholder="Username" @input="touch"> <input v-var-complete v-model="auth.pass" :type="showPass ? 'text' : 'password'" placeholder="Password" data-testid="auth-pass" @input="touch"> <button class="ghost" data-testid="auth-eye" @click="showPass = !showPass">👁</button> <span class="muted" data-testid="auth-preview">Authorization: Basic {{ preview }}</span></p>
+    <p v-if="auth.type === 'custom'"><input v-var-complete v-model="auth.custom" placeholder="Authorization qiymati" style="width:100%" data-testid="auth-custom" @input="touch"></p>
 
     <table v-if="fields.length" class="kv auth-fields" data-testid="auth-fields"><tbody>
       <tr v-for="f in fields" :key="f.k">
         <td style="width:190px" class="muted">{{ f.label }}</td>
         <td>
           <select v-if="f.options" v-model="auth.cfg[f.k]" :data-testid="'auth-f-' + f.k" :aria-label="f.label" @change="touch"><option v-for="o in f.options" :key="o[0]" :value="o[0]">{{ o[1] }}</option></select>
-          <textarea v-else-if="f.area" v-model="auth.cfg[f.k]" :placeholder="f.ph" spellcheck="false" :aria-label="f.label" :data-testid="'auth-f-' + f.k" style="width:100%;min-height:90px;height:auto;font-family:ui-monospace,monospace" @input="touch" />
-          <input v-else v-model="auth.cfg[f.k]" :type="f.secret ? 'password' : 'text'" :placeholder="f.ph" :data-testid="'auth-f-' + f.k" style="width:100%" @input="touch">
+          <textarea v-else-if="f.area" v-var-complete v-model="auth.cfg[f.k]" :placeholder="f.ph" spellcheck="false" :aria-label="f.label" :data-testid="'auth-f-' + f.k" style="width:100%;min-height:90px;height:auto;font-family:ui-monospace,monospace" @input="touch" />
+          <input v-else v-var-complete v-model="auth.cfg[f.k]" :type="f.secret ? 'password' : 'text'" :placeholder="f.ph" :data-testid="'auth-f-' + f.k" style="width:100%" @input="touch">
         </td>
       </tr>
     </tbody></table>
