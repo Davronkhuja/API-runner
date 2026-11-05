@@ -9,6 +9,7 @@ import { logRequest, logResponse } from './console'
 import { prepareAuth, specFor } from './scope'
 import { askConfirm, showToast } from './ui'
 import { saveResponseFile } from './responses'
+import { saveExampleTab } from './examples'
 import { missingFilesOf } from './files'
 import { confirmWrite } from './envkind'
 import type { RequestItem } from '../types/model'
@@ -19,6 +20,7 @@ export const saveAsHandler: { fn: ((tab: Tab) => Promise<boolean>) | null } = { 
 export async function saveTab(tab: Tab): Promise<boolean> {
   const tabs = useTabs(), tree = useTree()
   await tabs.flush()
+  if (tab.kind === 'example') return saveExampleTab(tab)
   if (tab.kind !== 'request' || !tab.draft) return true
   if (!tab.ref) return saveAsHandler.fn ? saveAsHandler.fn(tab) : false
   const [cid, id] = tab.ref.split(':')

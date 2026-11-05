@@ -610,3 +610,13 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 .var-popup .vs{margin-left:auto;color:var(--muted);font-size:var(--fs-sm);flex:none}
 .setvar-btn{position:fixed;z-index:1050;height:var(--ctl-sm);padding:0 var(--sp-3);border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--panel);color:var(--accent-text);font-size:var(--fs-sm);font-weight:600;box-shadow:var(--shadow)}
 .setvar-btn:hover{background:var(--accent-weak)}
+.ex-row{height:var(--ctl-sm);cursor:pointer}.ex-row .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-md);color:var(--muted)}
+.ex-tag{flex:none;font:700 var(--fs-xs) var(--font-mono);color:var(--accent-text);background:var(--accent-weak);border-radius:var(--radius-sm);padding:1px 4px;margin-right:var(--sp-2)}
+.ex-chev{margin-left:-14px;width:14px;flex:none;cursor:pointer}
+.example-tab{padding:var(--sp-5) var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-3);height:100%;min-height:0;overflow:auto}
+.ex-head{display:flex;align-items:center;gap:var(--sp-3)}.ex-head .ex-tag{margin:0}
+.ex-name{font-size:var(--fs-xl);font-weight:600;min-width:200px;flex:0 1 420px}
+.ex-orig{margin:0;font-size:var(--fs-md);overflow-wrap:anywhere}
+.ex-grid{display:flex;gap:var(--sp-4);flex-wrap:wrap}.ex-grid .bf{flex:0 0 auto}.ex-grid input[type=number]{width:110px}.ex-grid select{width:130px}
+.ex-h{margin:var(--sp-3) 0 0;font-size:var(--fs-md);color:var(--muted);font-weight:600}
+.ex-body{height:min(46vh,420px);min-height:160px;flex:none}

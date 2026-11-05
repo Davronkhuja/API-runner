@@ -15,6 +15,7 @@ import RequestEditor from './components/RequestEditor.vue'
 import EnvTab from './components/EnvTab.vue'
 import RunnerTab from './components/RunnerTab.vue'
 import RunGuard from './components/RunGuard.vue'
+import ExampleTab from './components/ExampleTab.vue'
 import RestartOverlay from './components/RestartOverlay.vue'
 import VarPopup from './components/VarPopup.vue'
 import SetVarPopover from './components/SetVarPopover.vue'
@@ -189,6 +190,7 @@ function openRunnerWithData(name: string, text: string) {
           <RunnerTab v-else-if="tabs.active.kind === 'runner'" :key="tabs.active.id" :tab="tabs.active" />
           <SettingsTab v-else-if="tabs.active.kind === 'settings'" :key="tabs.active.id" />
           <CookiesTab v-else-if="tabs.active.kind === 'cookies'" :key="tabs.active.id" />
+          <ExampleTab v-else-if="tabs.active.kind === 'example'" :key="tabs.active.id" :tab="tabs.active" />
           <CollectionTab v-else-if="tabs.active.kind === 'collection'" :key="tabs.active.id" :tab="tabs.active" />
         </template>
         <Welcome v-else @import="clickImport" @import-file="handleFile" />

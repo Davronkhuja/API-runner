@@ -10,6 +10,7 @@ import { fmtBytes, fmtMs, showToast } from '../lib/ui'
 import Icon from './Icon.vue'
 import { sendTab } from '../lib/actions'
 import { parseSetCookie } from '../lib/cookies'
+import { exId } from '../lib/examples'
 import { openScriptAt, type ScriptResult } from '../lib/scripts'
 
 const props = defineProps<{ tab: Tab }>()
@@ -106,7 +107,7 @@ async function saveExample() {
   const resp = r.value, d = props.tab.draft!
   const body = typeof resp.response === 'string' ? resp.response : JSON.stringify(resp.response, null, 2)
   const ex = {
-    name: `${resp.status} ${d.method} · ${new Date().toLocaleTimeString()}`, originalRequest: requestFromDraft(d), status: String(resp.status), code: Number(resp.status) || 0,
+    id: exId(), name: `${resp.status} ${d.method} · ${new Date().toLocaleTimeString()}`, originalRequest: requestFromDraft(d), status: String(resp.status), code: Number(resp.status) || 0,
     header: Object.entries(resp.resp_headers ?? {}).map(([key, value]) => ({ key, value })), body, _postman_previewlanguage: typeof resp.response === 'string' ? 'text' : 'json',
   }
   await tree.updateItem(cid, id, { response: [...examples.value, ex] })

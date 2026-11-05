@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { get, post, patch, del, put } from '../api/client'
 import { isFolder, type Collection, type CollectionMeta, type DropPosition, type TreeItem } from '../types/model'
 
-export interface Row { id: string; collectionId: string; item: TreeItem | null; depth: number; folder: boolean; expanded: boolean; parentId: string | null; isCollection: boolean; name: string }
+export interface Row { id: string; collectionId: string; item: TreeItem | null; depth: number; folder: boolean; expanded: boolean; parentId: string | null; isCollection: boolean; name: string; isExample?: boolean; exampleId?: string; hasExamples?: boolean }
 
 export const rowKey = (collectionId: string, id: string) => `${collectionId}:${id}`
 
@@ -65,8 +65,11 @@ export const useTree = defineStore('tree', () => {
           const k = rowKey(m.id, it.id)
           const f = isFolder(it)
           const exp = f ? (q ? true : isExpanded(k, it)) : false
-          out.push({ id: it.id, collectionId: m.id, item: it, depth, folder: f, expanded: exp, parentId, isCollection: false, name: it.name })
+          const exs = f ? [] : ((it as any).response ?? []) as { id?: string; name: string }[]
+          const rexp = !f && exs.length > 0 && (q ? exs.some(e => e.name.toLowerCase().includes(q)) : (k in expandedOverride.value ? expandedOverride.value[k] : false))
+          out.push({ id: it.id, collectionId: m.id, item: it, depth, folder: f, expanded: f ? exp : rexp, parentId, isCollection: false, name: it.name, hasExamples: exs.length > 0 })
           if (f && exp) walk(it.item, depth + 1, it.id)
+          if (rexp) exs.forEach((e, i) => out.push({ id: `${it.id}#${e.id ?? i}`, collectionId: m.id, item: it, depth: depth + 1, folder: false, expanded: false, parentId: it.id, isCollection: false, name: e.name, isExample: true, exampleId: e.id ?? '' }))
         }
       }
       walk(col.item, 1, null)
@@ -76,7 +79,7 @@ export const useTree = defineStore('tree', () => {
 
   // ── tanlash: Shift = oraliq, Cmd/Ctrl = qo'shish/olish ──
   function select(k: string, mods: { shift?: boolean; meta?: boolean } = {}) {
-    const keys = rows.value.filter(r => !r.isCollection).map(r => rowKey(r.collectionId, r.id))
+    const keys = rows.value.filter(r => !r.isCollection && !r.isExample).map(r => rowKey(r.collectionId, r.id))
     if (mods.shift && anchor.value && keys.includes(anchor.value)) {
       const a = keys.indexOf(anchor.value), b = keys.indexOf(k)
       selection.value = keys.slice(Math.min(a, b), Math.max(a, b) + 1)
@@ -99,6 +102,7 @@ export const useTree = defineStore('tree', () => {
     const [tc, tid] = targetKey.split(':')
     const target = rows.value.find(r => r.collectionId === tc && r.id === tid)
     if (!target) return false
+    if (target.isExample) return false
     if (target.isCollection) return pos === 'inside'
     if (pos === 'inside' && !target.folder) return false
     for (const dk of dragKeys) {
