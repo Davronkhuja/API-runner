@@ -8,6 +8,27 @@
   --on-accent: #FFFFFF;
   --radius: 8px;
   --radius-lg: 12px;
+  --radius-sm: 6px;
+  --radius-pill: 999px;
+  /* boshqaruv o'lchamlari (ikonka-tugma/tugma/input) */
+  --ctl-xs: 24px;
+  --ctl-sm: 28px;
+  --ctl: 32px;
+  --ctl-lg: 36px;
+  /* bo'shliqlar: 4/8 shkala */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  /* shrift o'lchamlari */
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 14px;
+  --fs-xl: 16px;
+  --fs-2xl: 20px;
   --header-h: 48px;
   --rail-w: 64px;
   --tabbar-h: 38px;

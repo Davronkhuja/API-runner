@@ -72,7 +72,11 @@ function markLine(line: string, ln: number): string {
   }
   return out + esc(line.slice(last))
 }
-const prettyHtml = computed(() => (search.value ? lines.value.map((l, i) => markLine(l, i)).join('\n') : (mode.value === 'pretty' && typeof shown.value !== 'string' ? highlightJson(text.value) : esc(text.value))))
+// har qator alohida `.rl` (CSS counter bilan qator raqami: nusxa olinganda raqamlar kirmaydi)
+const prettyHtml = computed(() => {
+  const html = search.value ? lines.value.map((l, i) => markLine(l, i)).join('\n') : (mode.value === 'pretty' && typeof shown.value !== 'string' ? highlightJson(text.value) : esc(text.value))
+  return html.split('\n').map(l => `<span class="rl">${l}</span>`).join('')
+})
 
 function step(d: number) {
   if (!hits.value.length) return
@@ -138,6 +142,9 @@ async function saveFile() {
   if (r.value?.binary && r.value.response_id) { const b = await fetchRawBlob(r.value.response_id); if (b) downloadBlob(b, 'javob.' + extFor(ctype.value)) }
   else downloadBlob(new Blob([text.value]), 'javob.' + (typeof r.value?.response === 'string' ? 'txt' : 'json'))
 }
+const hq = ref('')
+const shownHeaders = computed(() => { const q = hq.value.trim().toLowerCase(); return q ? headers.value.filter(([k, v]) => (k + ' ' + v).toLowerCase().includes(q)) : headers.value })
+function copyHeaders(rows: [string, string][]) { navigator.clipboard?.writeText(rows.map(([k, v]) => `${k}: ${v}`).join('\n')); showToast(rows.length === 1 ? 'Header nusxalandi' : `${rows.length} ta header nusxalandi`, 'success') }
 const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusxalandi', 'success') }
 </script>
 
@@ -145,9 +152,9 @@ const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusx
   <div v-if="!r" class="empty-state" data-testid="resp-empty">
     <Icon name="inbox" :size="34" />
     <strong>Javob shu yerda chiqadi</strong>
-    <span style="font-size:12.5px">«Yuborish» tugmasini yoki <span class="kbd">⌘</span> + <span class="kbd">↵</span> ni bosing</span>
+    <span style="font-size:var(--fs-md)">«Yuborish» tugmasini yoki <span class="kbd">⌘</span> + <span class="kbd">↵</span> ni bosing</span>
   </div>
-  <div v-else-if="r.loading" class="empty-state" role="status" data-testid="resp-loading"><strong>Yuborilmoqda…</strong></div>
+  <div v-else-if="r.loading" class="empty-state state-loading" role="status" data-testid="resp-loading"><span class="spinner" aria-hidden="true" /><strong>Yuborilmoqda…</strong></div>
   <div v-else data-testid="resp-panel" style="display:flex;flex-direction:column">
     <div class="rp-bar" data-testid="resp-bar">
       <button :class="{ on: view === 'body' }" data-testid="rp-body-tab" @click="view = 'body'">Body</button>
@@ -191,13 +198,13 @@ const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusx
         <span v-if="jpResult.error" class="err" data-testid="rp-jp-error">{{ jpResult.error }}</span>
         <span v-else-if="jpResult.value" class="muted" data-testid="rp-jp-count">{{ jpResult.value.length }} natija</span>
       </div>
-      <div v-if="r?.truncated && r.response === undefined" class="resp-missing" data-testid="resp-not-saved" role="status">
+      <div v-if="r?.truncated && r.response === undefined" class="resp-missing state-empty" data-testid="resp-not-saved" role="status">
         <b>Javob saqlanmagan</b><span>Sahifa yangilangach javob matni xotirada qolmaydi (holat, o'lcham va sarlavhalar saqlanadi).</span>
         <button class="sm primary" data-testid="resp-resend" @click="sendTab(tab)">Qayta yuborish</button>
       </div>
       <div v-else-if="text === '' && (r.size ?? 0) === 0" class="resp-empty-body" data-testid="resp-empty-body">Javob tanasi bo'sh <span class="muted">({{ r.status }}, 0 bayt)</span></div>
       <iframe v-else-if="mode === 'preview'" sandbox="" :srcdoc="String(r?.response ?? '')" data-testid="rp-preview" class="rp-frame" />
-      <div v-else-if="virtual" ref="box" class="vlist" data-testid="resp-body" :data-virtual="true" :style="{ height: H + 'px' }" @scroll="top = ($event.target as HTMLElement).scrollTop">
+      <div v-else-if="virtual" ref="box" class="vlist" data-testid="resp-body" tabindex="0" role="region" aria-label="Javob matni" :data-virtual="true" :style="{ height: H + 'px' }" @scroll="top = ($event.target as HTMLElement).scrollTop">
         <div :style="{ height: lines.length * LH + 'px', position: 'relative' }"><div :style="{ transform: `translateY(${start * LH}px)` }">
           <div v-for="l in slice" :key="l.n" class="vline" :style="{ height: LH + 'px', lineHeight: LH + 'px' }" v-html="l.html" /></div></div>
       </div>
@@ -205,35 +212,49 @@ const copy = () => { navigator.clipboard?.writeText(text.value); showToast('Nusx
       <div v-if="virtual" class="muted" data-testid="rp-virtual-note">{{ lines.length }} qator (virtual scroll)</div>
     </template>
 
-    <div v-else-if="view === 'tests'" data-testid="rp-tests" style="padding-top:10px;display:flex;flex-direction:column;gap:6px">
+    <div v-else-if="view === 'tests'" data-testid="rp-tests" style="display:flex;flex-direction:column;gap:6px">
+      <div class="rp-tools" data-testid="rp-tests-tools"><span class="muted" style="font-size:var(--fs-sm)">{{ tests.length ? `${passed} o'tdi · ${failed} yiqildi${skipped ? ' · ' + skipped + ' o\'tkazildi' : ''}` : 'Testlar yo\'q' }}</span></div>
       <div v-if="sc && sc.available === false" class="script-off" role="alert" data-testid="rp-scripts-off"><b>Skriptlar o'chiq.</b> {{ sc.message }} — <code>{{ sc.install }}</code></div>
       <div v-else-if="!sc" class="muted" data-testid="rp-tests-none">Bu so'rovda (yoki ota papka/collection'da) skript yo'q. <b>Scripts</b> bo'limida <i>Tests</i> skripti yozing.</div>
       <template v-else>
-        <div class="muted" data-testid="tests-summary" style="font-size:12.5px"><b class="ok">{{ passed }} o'tdi</b> · <b :class="failed ? 'err' : 'muted'">{{ failed }} muvaffaqiyatsiz</b><template v-if="skipped"> · {{ skipped }} o'tkazildi</template> · {{ tests.length }} ta test</div>
+        <div class="muted" data-testid="tests-summary" style="font-size:var(--fs-md)"><b class="ok">{{ passed }} o'tdi</b> · <b :class="failed ? 'err' : 'muted'">{{ failed }} muvaffaqiyatsiz</b><template v-if="skipped"> · {{ skipped }} o'tkazildi</template> · {{ tests.length }} ta test</div>
         <div v-for="(t, i) in tests" :key="i" class="test-row" :data-status="t.skipped ? 'skip' : t.passed ? 'pass' : 'fail'" data-testid="test-row">
-          <span class="status-pill" :class="t.skipped ? '' : t.passed ? 'ok' : 'err'" style="font-size:10.5px;padding:2px 8px">{{ t.skipped ? 'SKIP' : t.passed ? 'PASS' : 'FAIL' }}</span>
+          <span class="status-pill" :class="t.skipped ? '' : t.passed ? 'ok' : 'err'" style="font-size:var(--fs-xs);padding:2px 8px">{{ t.skipped ? 'SKIP' : t.passed ? 'PASS' : 'FAIL' }}</span>
           <span style="flex:1;min-width:0"><span data-testid="test-name">{{ t.name }}</span>
-            <span v-if="t.error" class="err" style="display:block;font:12px var(--font-mono)" data-testid="test-error">{{ t.error.name }}: {{ t.error.message }}<button v-if="t.error.line" class="ghost sm" style="height:20px" data-testid="test-error-link" @click="openScriptAt(tab, t.error)">qator {{ t.error.line }}</button></span></span>
+            <span v-if="t.error" class="err" style="display:block;font:var(--fs-sm) var(--font-mono)" data-testid="test-error">{{ t.error.name }}: {{ t.error.message }}<button v-if="t.error.line" class="ghost sm" style="height:20px" data-testid="test-error-link" @click="openScriptAt(tab, t.error)">qator {{ t.error.line }}</button></span></span>
           <span class="muted origin" data-testid="test-origin">{{ scopeLabel(t.origin) }}</span>
         </div>
         <div v-if="sc.errors.length" class="h-label" style="margin-top:10px">Skript xatolari</div>
         <div v-for="(e, i) in sc.errors" :key="'e' + i" class="script-error" data-testid="script-error">
-          <div><span class="status-pill err" style="font-size:10.5px;padding:2px 8px">{{ e.name }}</span> <span data-testid="script-error-msg">{{ e.message }}</span></div>
-          <div class="muted" style="font-size:12px;margin-top:2px"><span data-testid="script-error-origin">{{ scopeLabel(e.origin) }}{{ e.origin.name ? ' «' + e.origin.name + '»' : '' }} · {{ kindLabel(e.origin) }}</span>
+          <div><span class="status-pill err" style="font-size:var(--fs-xs);padding:2px 8px">{{ e.name }}</span> <span data-testid="script-error-msg">{{ e.message }}</span></div>
+          <div class="muted" style="font-size:var(--fs-sm);margin-top:2px"><span data-testid="script-error-origin">{{ scopeLabel(e.origin) }}{{ e.origin.name ? ' «' + e.origin.name + '»' : '' }} · {{ kindLabel(e.origin) }}</span>
             <button v-if="e.line" class="ghost sm" style="height:20px" data-testid="script-error-link" @click="openScriptAt(tab, e)">qator {{ e.line }} ↗</button></div>
-          <details v-if="e.stack"><summary class="muted" style="cursor:pointer;font-size:12px">stack trace</summary><pre data-testid="script-error-stack" style="margin-top:4px">{{ e.stack }}</pre></details>
+          <details v-if="e.stack"><summary class="muted" style="cursor:pointer;font-size:var(--fs-sm)">stack trace</summary><pre data-testid="script-error-stack" style="margin-top:4px">{{ e.stack }}</pre></details>
         </div>
         <div v-if="sc.skipped" class="muted" data-testid="rp-skipped">So'rov <code>pm.execution.skipRequest()</code> bilan o'tkazib yuborildi.</div>
         <div v-if="sc.next_set" class="muted" data-testid="rp-next">Keyingi so'rov: <code>{{ sc.next_request === null ? 'null (run to\'xtaydi)' : sc.next_request }}</code></div>
       </template>
     </div>
-    <table v-else-if="view === 'cookies'" class="kv" data-testid="rp-cookies"><thead><tr><th style="text-align:left">Nom</th><th style="text-align:left">Qiymat</th><th style="text-align:left">Domen</th><th style="text-align:left">Yo'l</th><th style="text-align:left">Muddat</th><th style="text-align:left">Bayroqlar</th></tr></thead><tbody>
+    <template v-else-if="view === 'cookies'">
+      <div class="rp-tools" data-testid="rp-cookies-tools"><span class="muted" style="font-size:var(--fs-sm)">{{ setCookies.length }} ta cookie o'rnatildi</span></div>
+          <table class="kv" data-testid="rp-cookies"><thead><tr><th style="text-align:left">Nom</th><th style="text-align:left">Qiymat</th><th style="text-align:left">Domen</th><th style="text-align:left">Yo'l</th><th style="text-align:left">Muddat</th><th style="text-align:left">Bayroqlar</th></tr></thead><tbody>
       <tr v-for="c in setCookies" :key="c.name" data-testid="rp-cookie-row"><td><b>{{ c.name }}</b></td><td style="word-break:break-all">{{ c.value }}</td><td>{{ c.domain }}</td><td>{{ c.path }}</td><td>{{ c.expires || (c.maxAge ? c.maxAge + ' s' : 'sessiya') }}</td><td>{{ [c.httpOnly && 'HttpOnly', c.secure && 'Secure', c.sameSite && 'SameSite=' + c.sameSite].filter(Boolean).join(' · ') }}</td></tr>
       <tr v-if="!setCookies.length"><td colspan="6" class="muted">Bu javob cookie o'rnatmadi</td></tr>
     </tbody></table>
-    <table v-else class="kv" data-testid="rp-headers"><tbody>
-      <tr v-for="[k, v] in headers" :key="k"><td style="width:240px"><b>{{ k }}</b></td><td style="word-break:break-all">{{ v }}</td></tr>
-      <tr v-if="!headers.length"><td class="muted">Header yo'q</td></tr>
-    </tbody></table>
+    </template>
+    <template v-else>
+      <div class="rp-tools" data-testid="rp-headers-tools">
+        <input v-model="hq" placeholder="Header qidirish…" aria-label="Header qidirish" data-testid="rp-headers-search" style="width:220px">
+        <span class="muted" style="font-size:var(--fs-sm)">{{ shownHeaders.length }} / {{ headers.length }}</span>
+        <span style="flex:1" />
+        <button class="sm" data-testid="rp-headers-copy-all" @click="copyHeaders(shownHeaders)">Hammasini nusxalash</button>
+      </div>
+      <table class="kv rp-headers" data-testid="rp-headers"><colgroup><col style="width:240px"><col><col style="width:36px"></colgroup><tbody>
+        <tr v-for="[k, v] in shownHeaders" :key="k" data-testid="rp-header-row"><td class="hk"><b>{{ k }}</b></td><td class="hv">{{ v }}</td>
+          <td><button class="ib" :aria-label="`${k} nusxalash`" title="Nusxa" data-testid="rp-header-copy" @click="copyHeaders([[k, v]])"><Icon name="copy" :size="14" /></button></td></tr>
+        <tr v-if="!headers.length"><td colspan="3" class="muted">Header yo'q</td></tr>
+        <tr v-else-if="!shownHeaders.length"><td colspan="3" class="muted">Filtr bo'yicha header yo'q</td></tr>
+      </tbody></table>
+    </template>
   </div>
 </template>

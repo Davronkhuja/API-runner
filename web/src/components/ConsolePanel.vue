@@ -35,7 +35,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', onWinResize))
 
 <template>
   <section v-if="consoleOpen" class="console" :style="{ height: consoleHeight + 'px' }" aria-label="Console" data-testid="console">
-    <div class="v-resizer" role="separator" aria-orientation="horizontal" aria-label="Console balandligi" tabindex="0" data-testid="console-resizer" @pointerdown="startResize" @dblclick="resetConsole" @keydown.up.prevent="nudgeConsole(24)" @keydown.down.prevent="nudgeConsole(-24)" />
+    <div class="v-resizer" role="separator" aria-orientation="horizontal" aria-label="Console balandligi" tabindex="0" data-testid="console-resizer" :aria-valuenow="consoleHeight" @pointerdown="startResize" @dblclick="resetConsole" @keydown.up.prevent="nudgeConsole(24)" @keydown.down.prevent="nudgeConsole(-24)" />
     <div class="console-bar">
       <b>Console</b><span class="muted" data-testid="console-count">{{ shown.length }} / {{ entries.length }}</span>
       <div class="seg-group" role="group" aria-label="Filtr">
@@ -52,7 +52,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', onWinResize))
         <span class="cx"><span data-testid="console-text">{{ e.text }}</span>
           <span v-if="e.origin?.scope" class="muted co" data-testid="console-origin">{{ originLabel(e) }}</span>
           <button v-if="e.line && e.origin?.scope" class="ghost sm" style="height:20px" data-testid="console-goto" @click="jump(e)">qator {{ e.line }} ↗</button>
-          <details v-if="e.stack && e.level === 'script-error'"><summary class="muted" style="cursor:pointer;font-size:11.5px">stack trace</summary><pre>{{ e.stack }}</pre></details></span>
+          <details v-if="e.stack && e.level === 'script-error'"><summary class="muted" style="cursor:pointer;font-size:var(--fs-sm)">stack trace</summary><pre>{{ e.stack }}</pre></details></span>
       </div>
       <div v-if="!shown.length" class="muted" style="padding:14px;text-align:center" data-testid="console-empty">{{ entries.length ? 'Filtr bo\'yicha yozuv yo\'q' : "Hali yozuv yo'q — so'rov yuboring yoki skriptda console.log() chaqiring" }}</div>
     </div>

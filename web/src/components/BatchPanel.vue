@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { confirmWrite } from '../lib/envkind'
+import Dialog from './Dialog.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
@@ -74,7 +75,7 @@ void tabs
             <button v-if="b.data" class="ghost" data-testid="batch-file-clear" @click="b.data = null">× tozalash</button></span>
           <input ref="fileInput" type="file" accept=".csv,.json" hidden data-testid="batch-file" @change="onFile">
           <span class="muted bf-info" data-testid="batch-data-info">{{ b.data ? `${b.data.name}: ${b.data.rows.length} qator` : 'faylsiz — 1 ta so\'rov' }}</span></div>
-        <label class="bf"><span class="bl">Qatorlar</span><span class="bf-row"><select v-model="b.settings.rowsMode" data-testid="batch-rows-mode"><option value="all">Hammasi</option><option value="custom">Soni</option></select>
+        <label class="bf"><span class="bl">Qatorlar</span><span class="bf-row"><select v-model="b.settings.rowsMode" data-testid="batch-rows-mode" aria-label="Qatorlar"><option value="all">Hammasi</option><option value="custom">Soni</option></select>
           <input v-if="b.settings.rowsMode === 'custom'" type="number" min="1" v-model.number="b.settings.count" style="width:80px" aria-label="Qatorlar soni" data-testid="batch-count"></span></label>
         <label class="bf"><span class="bl">Kechikish (s)</span><input type="number" min="0" step="0.1" v-model.number="b.settings.delay" data-testid="batch-delay"></label>
         <label class="bf"><span class="bl">Timeout (s)</span><input type="number" min="1" max="600" v-model.number="b.settings.timeout" data-testid="batch-timeout"></label>
@@ -82,10 +83,9 @@ void tabs
         <label class="bf"><span class="bl">Retry</span><input type="number" min="0" max="5" v-model.number="b.settings.retry" data-testid="batch-retry"></label>
       </div>
       <div class="batch-actions">
-        <label class="bf-check"><input type="checkbox" v-model="b.settings.ssl" data-testid="batch-ssl"> SSL tekshirish</label>
-        <span style="flex:1" />
         <button class="primary" data-testid="batch-run" :disabled="b.status === 'running'" @click="run">▶ RUN</button>
         <button data-testid="batch-stop" :disabled="b.status !== 'running'" @click="stopBatch(tab)">■ STOP</button>
+        <label class="bf-check"><input type="checkbox" v-model="b.settings.ssl" data-testid="batch-ssl"> SSL tekshirish</label>
       </div>
     </div>
 
@@ -117,7 +117,7 @@ void tabs
         <div style="display:flex;gap:4px;margin-bottom:8px" data-testid="filters">
           <button v-for="f in (['all', 'success', 'error'] as const)" :key="f" :class="{ primary: b.filter === f }" :data-filter="f" @click="b.filter = f">{{ { all: 'Hammasi', success: 'Muvaffaqiyatli', error: 'Xato' }[f] }}</button>
         </div>
-        <div v-for="r in visible" :key="r.index" class="result-card" data-testid="result-card" style="border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px">
+        <div v-for="r in visible" :key="r.index" class="result-card" data-testid="result-card" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;margin-bottom:6px">
           <div style="display:flex;gap:10px;align-items:center">
             <span class="status-pill" :class="badge(r.status)">{{ r.status }}</span><span>#{{ r.index }}</span><span>{{ fmtMs(r.time) }}</span><span>{{ fmtBytes(r.size) }}</span>
             <span v-if="r.retries" class="muted" data-testid="retry-badge">↻{{ r.retries }}</span>
@@ -135,25 +135,23 @@ void tabs
       </template>
     </div>
 
-    <div v-if="full" class="overlay" data-testid="result-full" @click.self="full = null" @keydown.esc="full = null" tabindex="0">
-      <div class="dialog" style="width:80vw;max-height:85vh;overflow:auto">
-        <div style="display:flex;gap:10px;align-items:center"><span class="status-pill" :class="badge(full.status)">{{ full.status }}</span><span>{{ fmtMs(full.time) }}</span><span class="muted" style="flex:1">{{ full.url }}</span>
-          <button @click="copy(body(full))">Nusxa</button><button data-testid="full-txt" @click="download('result.txt', body(full))">TXT</button><button data-testid="full-close" aria-label="Yopish" @click="full = null">×</button></div>
-        <pre style="margin-top:10px" data-testid="full-body" v-html="highlightJson(body(full).slice(0, 200_000))" />
-      </div>
-    </div>
+    <Dialog v-if="full" title="Javob" testid="result-full" width="min(960px,92vw)" @close="full = null">
+      <template #actions>
+        <span class="status-pill" :class="badge(full.status)">{{ full.status }}</span><span>{{ fmtMs(full.time) }}</span>
+        <button class="sm" @click="copy(body(full))">Nusxa</button><button class="sm" data-testid="full-txt" @click="download('result.txt', body(full))">TXT</button>
+      </template>
+      <p class="muted" style="margin:0 0 8px;overflow-wrap:anywhere">{{ full.url }}</p>
+      <pre style="margin:0" data-testid="full-body" v-html="highlightJson(body(full).slice(0, 200_000))" />
+    </Dialog>
 
-    <div v-if="showCmp" class="overlay" data-testid="cmp-modal" @click.self="showCmp = false">
-      <div class="dialog" style="min-width:560px">
-        <div style="display:flex;gap:10px"><b style="flex:1">Run'larni solishtirish</b><button aria-label="Yopish" @click="showCmp = false">×</button></div>
-        <p v-if="runs.length < 1" class="muted">Solishtirish uchun oldingi run kerak.</p>
-        <template v-else>
-          <select v-model="cmpId" data-testid="cmp-select"><option v-for="r in runs" :key="r.id" :value="r.id">{{ new Date(r.ts * 1000).toLocaleString() }} — {{ r.payload.label }} ({{ r.payload.count }})</option></select>
-          <table class="kv" style="margin-top:8px" data-testid="cmp-table"><thead><tr><th>#</th><th>Oldingi</th><th>Hozirgi</th><th>Δ vaqt</th></tr></thead>
-            <tbody><tr v-for="x in cmpRows" :key="x.i"><td>{{ x.i }}</td><td>{{ x.a ? x.a.status + ' · ' + fmtMs(x.a.time) : '—' }}</td><td>{{ x.b ? x.b.status + ' · ' + fmtMs(x.b.time) : '—' }}</td>
-              <td>{{ x.a && x.b ? ((x.b.time - x.a.time) >= 0 ? '+' : '') + fmtMs(x.b.time - x.a.time) : '—' }}</td></tr></tbody></table>
-        </template>
-      </div>
-    </div>
+    <Dialog v-if="showCmp" title="Run'larni solishtirish" testid="cmp-modal" width="min(720px,92vw)" @close="showCmp = false">
+      <p v-if="runs.length < 1" class="muted">Solishtirish uchun oldingi run kerak.</p>
+      <template v-else>
+        <select v-model="cmpId" data-testid="cmp-select" aria-label="Solishtiriladigan run"><option v-for="r in runs" :key="r.id" :value="r.id">{{ new Date(r.ts * 1000).toLocaleString() }} — {{ r.payload.label }} ({{ r.payload.count }})</option></select>
+        <table class="kv" style="margin-top:8px" data-testid="cmp-table"><thead><tr><th>#</th><th>Oldingi</th><th>Hozirgi</th><th>Δ vaqt</th></tr></thead>
+          <tbody><tr v-for="x in cmpRows" :key="x.i"><td>{{ x.i }}</td><td>{{ x.a ? x.a.status + ' · ' + fmtMs(x.a.time) : '—' }}</td><td>{{ x.b ? x.b.status + ' · ' + fmtMs(x.b.time) : '—' }}</td>
+            <td>{{ x.a && x.b ? ((x.b.time - x.a.time) >= 0 ? '+' : '') + fmtMs(x.b.time - x.a.time) : '—' }}</td></tr></tbody></table>
+      </template>
+    </Dialog>
   </div>
 </template>

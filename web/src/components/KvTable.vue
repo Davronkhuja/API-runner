@@ -160,7 +160,7 @@ function applyBulk() {
             <td v-if="formdata"><input type="text" :data-cell="`${i}:2`" :placeholder="ctPlaceholder(r)" aria-label="Content-Type" v-model="r.contentType" data-testid="fd-ct" draggable="false" @input="touch" @keydown="onKey($event, i, 2)"></td>
             <td v-else><input type="text" :data-cell="`${i}:2`" placeholder="Tavsif" aria-label="Tavsif" v-model="r.description" data-testid="kv-desc" draggable="false" @input="touch" @keydown="onKey($event, i, 2)"></td>
             <td style="text-align:right;padding-right:4px;white-space:nowrap">
-              <label v-if="quickAttach && !isGhost(i)" title="Fayl Body → form-data'ga qo'shiladi" aria-label="Fayl biriktirish" data-testid="params-attach" style="cursor:pointer;margin-right:4px"><Icon name="file" :size="14" /><input type="file" hidden tabindex="-1" @change="attachQuick(i, $event)"></label>
+              <label v-if="quickAttach && !isGhost(i)" title="Fayl Body → form-data'ga qo'shiladi" data-testid="params-attach" class="attach-lbl"><Icon name="file" :size="14" /><span class="sr-only">Fayl biriktirish</span><input type="file" hidden tabindex="-1" aria-label="Fayl biriktirish" @change="attachQuick(i, $event)"></label>
               <button v-if="!isGhost(i)" class="ghost" aria-label="Qatorni o'chirish" tabindex="-1" title="O'chirish (Alt+Backspace)" @click="remove(i)">×</button>
             </td>
           </tr>

@@ -5,7 +5,7 @@ import { useTree } from './stores/tree'
 import { useWorkspace } from './stores/workspace'
 import { useHistory } from './stores/history'
 import { put, get, keepalivePut } from './api/client'
-import { askClose, closeDialog, confirmDialog, toast } from './lib/ui'
+import { askClose, closeDialog, confirmDialog, importOpen, toast } from './lib/ui'
 import { suggestName } from './lib/rename'
 import { clamp, drag } from './lib/resize'
 import { createRequestIn, saveAsHandler, saveTab, sendTab, openRequest } from './lib/actions'
@@ -15,6 +15,8 @@ import RequestEditor from './components/RequestEditor.vue'
 import EnvTab from './components/EnvTab.vue'
 import RunnerTab from './components/RunnerTab.vue'
 import RunGuard from './components/RunGuard.vue'
+import Dialog from './components/Dialog.vue'
+import ImportDialog from './components/ImportDialog.vue'
 import CollectionTab from './components/CollectionTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
 import CookiesTab from './components/CookiesTab.vue'
@@ -142,7 +144,7 @@ async function handleFile(file: File) {
     showToast(`Import qilindi: ${r.name}`, 'success')
   } catch (err: any) { showToast(err.message, 'error') }
 }
-const clickImport = () => document.querySelector<HTMLInputElement>('[data-testid=import-file]')?.click()
+const clickImport = () => { importOpen.value = true }
 async function onWindowDrop(e: DragEvent) {
   dropping.value = false
   const dt = e.dataTransfer
@@ -192,22 +194,31 @@ function openRunnerWithData(name: string, text: string) {
     <ConsolePanel />
     <StatusBar />
 
-    <div v-if="closeDialog" class="overlay"><div class="dialog" role="dialog" aria-modal="true" data-testid="close-dialog">
-      <p>{{ closeDialog.title }}</p>
-      <div class="btns">
+    <Dialog v-if="closeDialog" title="Saqlanmagan o'zgarishlar" testid="close-dialog" width="440px" @close="closeDialog.resolve('cancel')">
+      <p style="margin:0">{{ closeDialog.title }}</p>
+      <template #footer>
         <button data-testid="dlg-cancel" @click="closeDialog.resolve('cancel')">Bekor qilish</button>
         <button data-testid="dlg-discard" @click="closeDialog.resolve('discard')">Saqlamaslik</button>
-        <button class="primary" data-testid="dlg-save" @click="closeDialog.resolve('save')">Saqlash</button>
-      </div></div></div>
-    <div v-if="confirmDialog" class="overlay overlay-top"><div class="dialog" role="dialog" aria-modal="true" data-testid="confirm-dialog">
-      <p>{{ confirmDialog.msg }}</p>
-      <div class="btns"><button @click="confirmDialog.resolve(false)">Bekor qilish</button><button class="primary" data-testid="confirm-ok" @click="confirmDialog.resolve(true)">{{ confirmDialog.ok }}</button></div></div></div>
+        <button class="primary" data-testid="dlg-save" data-autofocus @click="closeDialog.resolve('save')">Saqlash</button>
+      </template>
+    </Dialog>
+    <Dialog v-if="confirmDialog" title="Tasdiqlash" testid="confirm-dialog" width="460px" top @close="confirmDialog.resolve(false)">
+      <p style="margin:0;line-height:1.5">{{ confirmDialog.msg }}</p>
+      <template #footer>
+        <button @click="confirmDialog.resolve(false)">Bekor qilish</button>
+        <button class="primary" data-testid="confirm-ok" data-autofocus @click="confirmDialog.resolve(true)">{{ confirmDialog.ok }}</button>
+      </template>
+    </Dialog>
     <RunGuard />
-    <div v-if="saveAs" class="overlay"><div class="dialog" role="dialog" aria-modal="true" data-testid="saveas-dialog">
-      <b>So'rovni saqlash</b>
-      <p><input v-model="saveAs.name" style="width:100%" data-testid="saveas-name" @keydown.enter="confirmSaveAs"></p>
-      <p><select v-model="saveAs.target" style="width:100%" data-testid="saveas-target"><option v-for="o in saveTargets" :key="o.key" :value="o.key">{{ o.label }}</option></select></p>
-      <div class="btns"><button @click="saveAs.resolve(false); saveAs = null">Bekor qilish</button><button class="primary" data-testid="saveas-ok" @click="confirmSaveAs">Saqlash</button></div></div></div>
+    <ImportDialog v-if="importOpen" @close="importOpen = false" />
+    <Dialog v-if="saveAs" title="So'rovni saqlash" testid="saveas-dialog" width="460px" @close="saveAs.resolve(false); saveAs = null">
+      <label class="dlg-field"><span>Nomi</span><input v-model="saveAs.name" style="width:100%" data-testid="saveas-name" data-autofocus @keydown.enter="confirmSaveAs"></label>
+      <label class="dlg-field"><span>Qayerga</span><select v-model="saveAs.target" style="width:100%" data-testid="saveas-target"><option v-for="o in saveTargets" :key="o.key" :value="o.key">{{ o.label }}</option></select></label>
+      <template #footer>
+        <button @click="saveAs.resolve(false); saveAs = null">Bekor qilish</button>
+        <button class="primary" data-testid="saveas-ok" @click="confirmSaveAs">Saqlash</button>
+      </template>
+    </Dialog>
     <div v-if="toast" class="toast" data-testid="toast">{{ toast.msg }}</div>
   </div>
   <div v-else class="empty">Yuklanmoqda…</div>

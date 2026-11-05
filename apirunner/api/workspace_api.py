@@ -311,8 +311,42 @@ def import_any():
         col, kind = import_postman(doc), "postman"
     else:
         return jsonify({"error": "Format tanilmadi (Postman collection yoki OpenAPI JSON kerak)"}), 400
+    summary = _import_summary(col, kind)
+    if d.get("dry_run"):
+        return jsonify({"ok": True, "dry_run": True, **summary})
     cid = _ws().save_collection(col)
-    return jsonify({"ok": True, "kind": kind, "id": cid, "name": col["info"]["name"]})
+    return jsonify({"ok": True, "id": cid, **summary})
+
+
+def _import_summary(col, kind):
+    folders = requests_n = 0
+    stack = list(col.get("item", []))
+    while stack:
+        it = stack.pop()
+        if model.is_folder(it):
+            folders += 1
+            stack.extend(it.get("item", []))
+        else:
+            requests_n += 1
+    return {"kind": kind, "name": col["info"]["name"], "folders": folders, "requests": requests_n, "variables": len(col.get("variable", []))}
+
+
+@bp.post("/import/fetch")
+def import_fetch():
+    """URL'dan import uchun matnni yuklab beradi (faqat http/https, 15 s, 10 MB)."""
+    import httpx
+    url = str((request.get_json(silent=True) or {}).get("url") or "").strip()
+    if not url.lower().startswith(("http://", "https://")):
+        return jsonify({"error": "URL http:// yoki https:// bilan boshlanishi kerak"}), 400
+    try:
+        r = httpx.get(url, timeout=15, follow_redirects=True)
+    except httpx.HTTPError as exc:
+        return jsonify({"error": f"Yuklab bo'lmadi: {exc}"}), 400
+    if r.status_code >= 400:
+        return jsonify({"error": f"Server {r.status_code} qaytardi"}), 400
+    if len(r.content) > 10 * 1024 * 1024:
+        return jsonify({"error": "Fayl 10 MB dan katta"}), 400
+    return jsonify({"content": r.text})
 
 
 # ── holat / zaxiralar ──

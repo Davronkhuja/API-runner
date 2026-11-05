@@ -5,7 +5,7 @@ import { useTabs } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { useWorkspace } from '../stores/workspace'
 import { openRequest } from '../lib/actions'
-import { cmdkOpen, sidePanel } from '../lib/ui'
+import { cmdkOpen, importOpen, sidePanel } from '../lib/ui'
 import { toggleTheme } from '../lib/theme'
 import { isFolder, type RequestItem, type TreeItem } from '../types/model'
 import Icon from './Icon.vue'
@@ -34,7 +34,7 @@ const others = computed<Hit[]>(() => [
   { key: 'a:settings', kind: 'action', label: 'Sozlamalar', sub: '', run: () => { tabs.open('settings', 'settings', 'Sozlamalar', { permanent: true }) } },
   { key: 'a:cookies', kind: 'action', label: 'Cookie Manager', sub: '', run: () => { tabs.open('cookies', 'cookies', 'Cookie\'lar', { permanent: true }) } },
   { key: 'a:theme', kind: 'action', label: 'Temani almashtirish', sub: '', run: toggleTheme },
-  { key: 'a:import', kind: 'action', label: 'Import (Postman, OpenAPI)', sub: '.json', run: () => { document.querySelector<HTMLInputElement>('[data-testid=import-file]')?.click() } },
+  { key: 'a:import', kind: 'action', label: 'Import (Postman, OpenAPI)', sub: '.json', run: () => { importOpen.value = true } },
   { key: 'a:runner', kind: 'action', label: 'Runner', sub: 'Collection Runner', run: () => { sidePanel.value = 'runner'; const m = tree.metas[0]; if (m) tabs.open('runner', m.id, 'Runner: ' + m.name, { permanent: true }) } },
   ...ws.environments.map<Hit>(e => ({ key: 'e:' + e.id, kind: 'env', label: e.name, sub: 'Muhit', run: () => { tabs.open('environment', e.id, e.name, { permanent: true }) } })),
 ])
@@ -65,7 +65,7 @@ function key(e: KeyboardEvent) {
         <button v-for="(h, i) in hits" :id="'cmdk-' + i" :key="h.key" class="row" :class="{ sel: i === sel }" role="option" :aria-selected="i === sel" data-testid="cmdk-row" tabindex="-1" @mousemove="sel = i" @click="go(h)">
           <span v-if="h.method" class="m" :class="'m-' + h.method">{{ h.method }}</span>
           <span v-else class="ico"><Icon :name="h.kind === 'env' ? 'globe' : 'bolt'" :size="14" /></span>
-          <span class="name">{{ h.label }}</span><span class="muted" style="font-size:11.5px;max-width:48%;overflow:hidden;text-overflow:ellipsis">{{ h.sub }}</span>
+          <span class="name">{{ h.label }}</span><span class="muted" style="font-size:var(--fs-sm);max-width:48%;overflow:hidden;text-overflow:ellipsis">{{ h.sub }}</span>
         </button>
         <div v-if="!hits.length" class="empty" data-testid="cmdk-empty">Hech narsa topilmadi</div>
       </div>

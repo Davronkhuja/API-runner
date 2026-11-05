@@ -165,13 +165,13 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;align-items:center;justify-content:space-between"><span class="lbl">So'rovlar tartibi</span><span class="muted" style="font-size:12px" data-testid="runner-selcount">{{ enabled.length }} / {{ items.length }} tanlangan</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between"><span class="lbl">So'rovlar tartibi</span><span class="muted" style="font-size:var(--fs-sm)" data-testid="runner-selcount">{{ enabled.length }} / {{ items.length }} tanlangan</span></div>
         <div class="panel-box" style="padding:4px" role="list">
           <div v-for="(x, i) in items" :key="x.id" class="req" data-testid="runner-item" role="listitem" draggable="true" :class="{ 'drop-before': overIdx === i }"
                @dragstart="dragId = x.id" @dragover.prevent="overIdx = i" @dragleave="overIdx = null" @drop.prevent="drop(i)" @dragend="dragId = overIdx = null">
             <span class="grip" aria-hidden="true"><Icon name="grip" :size="14" /></span>
             <input type="checkbox" :checked="isOn(x.id)" :aria-label="`${x.name} — Runner'ga qo'shish`" @change="st.checked[x.id] = ($event.target as HTMLInputElement).checked; saveSel()">
-            <span class="m" :class="'m-' + x.method" style="width:46px;font:700 10.5px var(--font-mono)">{{ x.method }}</span>
+            <span class="m" :class="'m-' + x.method" style="width:46px;font:700 var(--fs-xs) var(--font-mono)">{{ x.method }}</span>
             <span class="name" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span class="muted">{{ x.path }}</span>{{ x.name }}</span>
           </div>
           <div v-if="!items.length" class="empty" style="padding:16px">Collection'da so'rov yo'q</div>
@@ -187,7 +187,7 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
         <span class="lbl">Ma'lumot fayli</span>
         <div v-if="st.data" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--subtle)">
           <span style="width:30px;height:30px;border-radius:7px;background:var(--ok-bg);color:var(--ok);display:flex;align-items:center;justify-content:center;font:700 9.5px var(--font-ui)">{{ /\.json$/i.test(st.data.name) ? 'JSON' : 'CSV' }}</span>
-          <span style="flex:1;min-width:0"><span style="display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis" data-testid="runner-data-info">{{ st.data.name }}: {{ st.data.rows.length }} qator</span><span class="muted" style="display:block;font-size:12px">{{ Object.keys(st.data.rows[0] ?? {}).join(', ') }}</span></span>
+          <span style="flex:1;min-width:0"><span style="display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis" data-testid="runner-data-info">{{ st.data.name }}: {{ st.data.rows.length }} qator</span><span class="muted" style="display:block;font-size:var(--fs-sm)">{{ Object.keys(st.data.rows[0] ?? {}).join(', ') }}</span></span>
           <button class="ib" aria-label="Faylni olib tashlash" data-testid="runner-data-clear" @click="st.data = null; tabs.touch(tab.id)"><Icon name="x" :size="15" /></button>
         </div>
         <div v-else class="drop-zone" :class="{ over: zone }" data-testid="runner-dropzone" @dragover.prevent="zone = true" @dragleave="zone = false" @drop="onZoneDrop">
@@ -207,10 +207,10 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
 
     <section class="out" aria-label="Natijalar">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div><h1 style="margin:0;font-size:18px;font-weight:700">{{ scopeName }} — Runner</h1><p class="muted" style="margin:2px 0 0;font-size:12.5px">{{ log.length ? `Bugun, ${when} · ${iterations} iteratsiya` : 'Hali ishga tushirilmagan' }}</p></div>
+        <div><h1 style="margin:0;font-size:var(--fs-2xl);font-weight:700">{{ scopeName }} — Runner</h1><p class="muted" style="margin:2px 0 0;font-size:var(--fs-md)">{{ log.length ? `Bugun, ${when} · ${iterations} iteratsiya` : 'Hali ishga tushirilmagan' }}</p></div>
       </div>
       <div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span data-testid="runner-progress-label">{{ running ? 'Bajarilmoqda…' : (log.length ? 'Tugadi' : 'Tayyor') }} · {{ done }} / {{ planned }}</span><span>{{ pct }}%</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);color:var(--muted);margin-bottom:6px"><span data-testid="runner-progress-label">{{ running ? 'Bajarilmoqda…' : (log.length ? 'Tugadi' : 'Tayyor') }} · {{ done }} / {{ planned }}</span><span>{{ pct }}%</span></div>
         <div class="progress" role="progressbar" :aria-valuenow="pct" aria-valuemin="0" aria-valuemax="100" aria-label="Bajarilish"><div :style="{ width: pct + '%' }" /></div>
       </div>
       <div class="stat-cards">
@@ -229,10 +229,10 @@ const when = new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' 
         <div class="scroll" style="flex:1;overflow-y:auto" data-testid="runner-results">
           <div v-for="(r, i) in filtered" :key="i" class="res" data-testid="runner-row">
             <span class="muted" style="font-family:var(--font-mono)">#{{ r.iter }}</span>
-            <span class="m" :class="'m-' + r.method" style="font:700 10.5px var(--font-mono)">{{ r.method }}</span>
+            <span class="m" :class="'m-' + r.method" style="font:700 var(--fs-xs) var(--font-mono)">{{ r.method }}</span>
             <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
             <span><span class="status-pill" :class="stat(r.status)" data-testid="runner-result">{{ r.status }}</span></span>
-            <span style="font:400 12.5px var(--font-mono)">{{ fmtMs(r.time) }}</span>
+            <span style="font:400 var(--fs-md) var(--font-mono)">{{ fmtMs(r.time) }}</span>
           </div>
           <div v-if="!filtered.length" class="empty" data-testid="runner-empty">{{ log.length ? 'Bu filtr bo\'yicha natija yo\'q' : 'Natijalar shu yerda chiqadi' }}</div>
         </div>

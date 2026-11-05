@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { runGuard } from '../lib/ui'
-import Icon from './Icon.vue'
+import Dialog from './Dialog.vue'
 
 const mode = ref<'get' | 'all'>('get')
 const typed = ref('')
@@ -18,15 +18,8 @@ function go() { if (!g.value) return; if (mode.value === 'all' && locked.value) 
 </script>
 
 <template>
-  <div v-if="g" class="overlay" @keydown.esc="g.resolve(null)">
-    <div class="dialog runguard" role="dialog" aria-modal="true" aria-labelledby="rg-title" data-testid="runguard">
-      <div style="display:flex;gap:14px">
-        <span class="rg-icon"><Icon name="alert" :size="20" /></span>
-        <div>
-          <h2 id="rg-title">Prod muhitida {{ g.total }} ta so'rov ishga tushadi</h2>
-          <p>«{{ g.envName }}» faol.{{ writes ? " Ma'lumotni o'zgartiradigan so'rovlar ham bor." : '' }}</p>
-        </div>
-      </div>
+  <Dialog v-if="g" :title="`Prod muhitida ${g.total} ta so'rov ishga tushadi`" testid="runguard" width="560px" @close="g.resolve(null)">
+    <p class="rg-sub">«{{ g.envName }}» faol.{{ writes ? " Ma'lumotni o'zgartiradigan so'rovlar ham bor." : '' }}</p>
       <div class="rg-counts">
         <div v-for="m in METHODS" :key="m" :class="'c-' + m.toLowerCase()" :data-testid="'rg-count-' + m"><span class="m" :class="'m-' + m">{{ m }}</span><b>{{ counts[m] ?? 0 }}</b></div>
       </div>
@@ -36,11 +29,10 @@ function go() { if (!g.value) return; if (mode.value === 'all' && locked.value) 
         <span><b>Hammasini ishga tushirish</b><span>{{ writes }} ta o'zgartiruvchi so'rov ham yuboriladi</span></span></label>
       <label v-if="mode === 'all'" class="rg-type">Tasdiqlash uchun muhit turini yozing: <b>prod</b>
         <input ref="input" v-model="typed" aria-label="Muhit nomi" data-testid="rg-type" autocomplete="off" spellcheck="false" @keydown.enter="go"></label>
-      <div class="btns">
+    <template #footer>
         <button data-testid="rg-cancel" @click="g.resolve(null)">Bekor qilish</button>
         <button v-if="mode === 'get'" class="primary" data-testid="rg-run" :disabled="!gets" @click="go">{{ gets }} ta GET'ni ishga tushirish</button>
         <button v-else class="danger" data-testid="rg-run-all" :disabled="locked" @click="go">{{ g.total }} tasini ishga tushirish</button>
-      </div>
-    </div>
-  </div>
+    </template>
+  </Dialog>
 </template>
