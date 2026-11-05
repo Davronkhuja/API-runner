@@ -20,7 +20,7 @@ function mset(v: string) { if (v === '' || Number.isNaN(Number(v))) delete props
   <table class="kv" style="max-width:720px" :data-testid="id('form')"><tbody>
     <tr v-for="[k, label] in BOOLS" :key="k">
       <td style="width:260px" class="muted">{{ label }}</td>
-      <td><select :value="bget(k)" :data-testid="id(k)" @change="bset(k, ($event.target as HTMLSelectElement).value)">
+      <td><select :value="bget(k)" :data-testid="id(k)" :aria-label="label" @change="bset(k, ($event.target as HTMLSelectElement).value)">
         <option value="">Sukut ({{ eff(k) }})</option><option value="true">Yoqilgan</option><option value="false">O'chirilgan</option></select></td>
     </tr>
     <tr>

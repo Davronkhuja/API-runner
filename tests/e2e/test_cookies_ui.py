@@ -116,8 +116,7 @@ def test_global_settings_apply_and_request_overrides(ui, echo_server, app):
     T(ui, "settings-btn").click()
     expect(T(ui, "gset-form")).to_be_visible()
     ui.select_option("[data-testid=gset-follow_redirects]", "false")
-    T(ui, "gset-save").click()
-    expect(T(ui, "gset-save")).to_be_disabled()
+    expect(T(ui, "gset-saved")).to_contain_text("Saqlandi")                           # avtosaqlash
     assert app.api("GET", "/api/workspace")["meta"]["settings"] == {"follow_redirects": False}
     new_tab(ui)
     run(ui, echo_server + "/redirect", status="302")                            # global ta'sir qiladi

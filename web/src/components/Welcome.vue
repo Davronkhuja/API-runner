@@ -41,18 +41,18 @@ const drop = (e: DragEvent) => { const f = e.dataTransfer?.files?.[0]; if (f) { 
     <div class="inner">
       <div style="display:flex;flex-direction:column;gap:8px">
         <h1>Nimadan boshlaymiz?</h1>
-        <p class="muted" style="margin:0;font-size:14px">Yangi so'rov yarating, cURL joylashtiring yoki mavjud collection'ni import qiling.</p>
+        <p class="muted" style="margin:0;font-size:var(--fs-lg)">Yangi so'rov yarating, cURL joylashtiring yoki mavjud collection'ni import qiling.</p>
       </div>
       <div class="cards">
         <button class="card" data-testid="wl-new" @click="tabs.openNew()"><span class="ci solid"><Icon name="plus" :size="18" /></span><span class="ct">Yangi so'rov</span><span class="cd">Bo'sh tab ochiladi</span><span style="display:flex;gap:4px;margin-top:auto"><span class="kbd">⌘</span><span class="kbd">T</span></span></button>
         <button class="card" data-testid="wl-curl" @click="pasteHint"><span class="ci">$_</span><span class="ct">cURL'dan</span><span class="cd">Buyruqni joylashtiring — maydonlar o'zi to'ladi</span><span style="display:flex;gap:4px;margin-top:auto"><span class="kbd">⌘</span><span class="kbd">V</span></span></button>
-        <button class="card" data-testid="wl-import" @click="emit('import')"><span class="ci"><Icon name="download" :size="18" /></span><span class="ct">Import</span><span class="cd">Postman, OpenAPI</span><span class="cd" style="margin-top:auto;font-size:11.5px">yoki ⌘K → «Import»</span></button>
-        <button class="card" data-testid="wl-runner" @click="runner"><span class="ci"><Icon name="play" :size="18" /></span><span class="ct">Runner</span><span class="cd">Collection yoki CSV bilan ko'p marta</span><span class="cd" style="margin-top:auto;font-size:11.5px">yoki ⌘K → «Runner»</span></button>
+        <button class="card" data-testid="wl-import" @click="emit('import')"><span class="ci"><Icon name="download" :size="18" /></span><span class="ct">Import</span><span class="cd">Postman, OpenAPI</span><span class="cd" style="margin-top:auto;font-size:var(--fs-sm)">yoki ⌘K → «Import»</span></button>
+        <button class="card" data-testid="wl-runner" @click="runner"><span class="ci"><Icon name="play" :size="18" /></span><span class="ct">Runner</span><span class="cd">Collection yoki CSV bilan ko'p marta</span><span class="cd" style="margin-top:auto;font-size:var(--fs-sm)">yoki ⌘K → «Runner»</span></button>
       </div>
       <label class="dz" data-testid="wl-dropzone" @dragover.prevent @drop="drop">
         <Icon name="upload" :size="22" />
         <span><b style="color:var(--text);font-weight:600">Faylni shu yerga tashlang</b> yoki <u style="color:var(--accent-text)">tanlang</u></span>
-        <span style="font-size:12px">.json · .csv</span>
+        <span style="font-size:var(--fs-sm)">.json · .csv</span>
         <input type="file" accept=".json,.csv" class="sr-only" aria-label="Import uchun fayl" data-testid="wl-file" @change="(e: any) => { const f = e.target.files?.[0]; if (f) emit('import-file', f); e.target.value = '' }">
       </label>
       <div class="two">

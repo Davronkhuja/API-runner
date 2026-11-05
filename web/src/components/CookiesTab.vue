@@ -48,7 +48,7 @@ onMounted(load)
       <table class="kv"><tbody>
         <tr v-for="c in cs" :key="c.path + c.name" data-testid="cookie-row">
           <td style="width:150px"><b>{{ c.name }}</b></td>
-          <td><input v-model="c.value" data-testid="cookie-value" style="width:100%" @change="save(c)"></td>
+          <td><input v-model="c.value" data-testid="cookie-value" :aria-label="`${c.name} — qiymat`" style="width:100%" @change="save(c)"></td>
           <td class="muted" style="width:60px">{{ c.path }}</td>
           <td class="muted" style="width:150px">{{ exp(c.expires) }}</td>
           <td class="muted" style="width:90px">{{ c.httponly ? 'HttpOnly ' : '' }}{{ c.secure ? 'Secure' : '' }}</td>

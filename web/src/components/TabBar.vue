@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useTabs, type Tab } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { askClose } from '../lib/ui'
@@ -46,9 +46,10 @@ async function act(a: string) {
 function onKey(e: KeyboardEvent) {
   const ids = tabs.tabs.map(t => t.id), i = ids.indexOf(tabs.activeId ?? '')
   const to = e.key === 'ArrowRight' ? ids[(i + 1) % ids.length] : e.key === 'ArrowLeft' ? ids[(i - 1 + ids.length) % ids.length] : e.key === 'Home' ? ids[0] : e.key === 'End' ? ids[ids.length - 1] : null
-  if (to) { e.preventDefault(); tabs.activate(to); nextTick(() => scroller.value?.querySelector<HTMLElement>(`[data-tab="${to}"]`)?.focus()) }
+  if (to) { e.preventDefault(); tabs.activate(to); nextTick(() => scroller.value?.querySelector<HTMLElement>(`[data-tab="${to}"] [role=tab]`)?.focus()) }
   else if (e.key === 'Delete' && tabs.activeId) { e.preventDefault(); closeTab(tabs.activeId) }
 }
+watch(() => tabs.activeId, async id => { await nextTick(); scroller.value?.querySelector(`[data-tab="${id}"]`)?.scrollIntoView({ inline: 'nearest', block: 'nearest' }) }, { immediate: true, flush: 'post' })
 async function pick(id: string) {
   tabs.activate(id); list.value = false
   await nextTick()
@@ -59,13 +60,15 @@ async function pick(id: string) {
 <template>
   <div class="tabbar" data-testid="tabbar" @click="menu = null">
     <div class="tabs-scroll" ref="scroller" role="tablist" aria-label="Ochiq tablar" @keydown="onKey">
-      <div v-for="t in tabs.tabs" :key="t.id" class="tab" :data-tab="t.id" data-testid="tab" role="tab" :aria-selected="t.id === tabs.activeId" :tabindex="t.id === tabs.activeId ? 0 : -1"
+      <div v-for="t in tabs.tabs" :key="t.id" class="tab" :data-tab="t.id" data-testid="tab"
            :class="{ active: t.id === tabs.activeId, preview: t.preview, 'drop-l': overId?.id === t.id && overId.side === 'l', 'drop-r': overId?.id === t.id && overId.side === 'r' }"
            draggable="true" @dragstart="dragId = t.id" @dragover.prevent="overTab($event, t.id)" @dragleave="overId = null" @drop.prevent="onDrop(t.id)" @dragend="dragId = overId = null"
            @click.stop="tabs.activate(t.id)" @dblclick="t.preview = false" @contextmenu.prevent="ctx($event, t.id)" @auxclick.middle="closeTab(t.id)">
-        <span v-if="t.kind === 'request' && t.draft" class="m" :class="'m-' + t.draft.method">{{ t.draft.method }}</span>
-        <span class="title">{{ t.title }}</span>
-        <span v-if="t.dirty" class="dot" data-testid="dirty-dot" role="img" aria-label="Saqlanmagan o'zgarishlar" title="Saqlanmagan o'zgarishlar" />
+        <div class="tab-body" role="tab" data-testid="tab-body" :aria-selected="t.id === tabs.activeId" :tabindex="t.id === tabs.activeId ? 0 : -1">
+          <span v-if="t.kind === 'request' && t.draft" class="m" :class="'m-' + t.draft.method">{{ t.draft.method }}</span>
+          <span class="title">{{ t.title }}</span>
+          <span v-if="t.dirty" class="dot" data-testid="dirty-dot" role="img" aria-label="Saqlanmagan o'zgarishlar" title="Saqlanmagan o'zgarishlar" />
+        </div>
         <button class="x" data-testid="tab-close" :aria-label="`${t.title} tabini yopish`" title="Yopish" tabindex="-1" @click.stop="closeTab(t.id)"><Icon name="x" :size="13" /></button>
       </div>
     </div>

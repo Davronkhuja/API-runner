@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { kindLabel } from '../lib/envkind'
+import Dialog from './Dialog.vue'
+import HistoryList from './HistoryList.vue'
+import NameCleanDialog from './NameCleanDialog.vue'
+import { dismissOffer, urlNamedItems } from '../lib/nameclean'
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { useTree, rowKey, dropPositionFor, type Row } from '../stores/tree'
 import { useTabs } from '../stores/tabs'
@@ -173,6 +177,8 @@ async function newCollection() { await tree.createCollection('Yangi collection')
 const loadHistory = openFromHistory
 const openEnv = (id: string, name: string) => tabs.open('environment', id, name, { permanent: true })
 async function delEnv(id: string, name: string) { if (await askConfirm(`'${name}' o'chirilsinmi?`, "O'chirish")) await ws.deleteEnv(id) }
+const cleanOpen = ref(false)
+const cleanCount = computed(() => urlNamedItems().length)
 async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(id, 'Yangi muhit') }
 </script>
 
@@ -193,6 +199,13 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
       </div>
     </div>
 
+    <div v-if="panel === 'collections' && cleanCount && !ws.nameCleanDismissed" class="nameclean" data-testid="nameclean-offer" role="status">
+      <span class="nc-text">{{ cleanCount }} ta so'rov nomi URL ko'rinishida.</span>
+      <button class="linkbtn" data-testid="nameclean-open" @click="cleanOpen = true">Ko'rish va tozalash…</button>
+      <button class="ib nc-x" aria-label="Taklifni yopish" title="Yopish" data-testid="nameclean-close" @click="dismissOffer()">×</button>
+    </div>
+    <NameCleanDialog v-if="cleanOpen" @close="cleanOpen = false" />
+
     <template v-if="panel === 'collections'">
       <div class="sb-search"><input v-model="tree.filter" placeholder="Filtr…" aria-label="Kolleksiyalarda qidirish" data-testid="sb-search"></div>
       <div class="sb-body" ref="body" data-testid="tree" role="tree" @dragover="onContainerDragOver" @dragend="reset" @drop="stopScroll">
@@ -210,7 +223,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
           <span v-if="r.isCollection" class="ico" style="width:18px;height:18px;border-radius:5px;background:var(--accent-weak);color:var(--accent-text);align-items:center;justify-content:center"><Icon name="layers" :size="12" /></span>
           <span v-else-if="r.folder" class="ico"><Icon name="folder" :size="15" /></span>
           <span v-else class="m" :class="'m-' + (r.item as any).request.method">{{ (r.item as any).request.method }}</span>
-          <input v-if="renaming === rowKey(r.collectionId, r.id)" v-model="renameVal" v-focus-select aria-label="Yangi nom" style="flex:1;height:24px;padding:0 6px" data-testid="rename-input"
+          <input v-if="renaming === rowKey(r.collectionId, r.id)" v-model="renameVal" v-focus-select aria-label="Yangi nom" style="flex:1;height:var(--ctl-xs);padding:0 6px" data-testid="rename-input"
                  @click.stop @keydown.stop @keydown.enter.prevent="commitRename(r, 'enter')" @keydown.esc.prevent="cancelRename" @blur="commitRename(r, 'blur')">
           <small v-if="renaming === rowKey(r.collectionId, r.id) && renameWarn(r)" class="name-warn name-warn-abs" data-testid="name-warn" role="status">{{ renameWarn(r) }}</small>
           <span v-else class="name" :style="{ fontWeight: r.folder ? 500 : 400 }">{{ r.name }}</span>
@@ -222,11 +235,11 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
 
     <div v-else-if="panel === 'environments'" class="sb-body" data-testid="env-list">
       <button class="row" style="height:44px" data-testid="globals-row" @click="tabs.open('environment', 'globals', 'Globals', { permanent: true })">
-        <span class="ico"><Icon name="globe" :size="15" /></span><span class="name"><b style="font-weight:500;display:block">Globals</b><span class="muted" style="font-size:11.5px">{{ ws.globals.length }} ta o'zgaruvchi</span></span>
+        <span class="ico"><Icon name="globe" :size="15" /></span><span class="name"><b style="font-weight:500;display:block">Globals</b><span class="muted" style="font-size:var(--fs-sm)">{{ ws.globals.length }} ta o'zgaruvchi</span></span>
       </button>
-      <div v-for="e in ws.environments" :key="e.id" class="row" :class="{ sel: ws.activeEnvId === e.id }" style="height:44px" data-testid="env-row" role="button" tabindex="0" @click="openEnv(e.id, e.name)" @keydown.enter="openEnv(e.id, e.name)">
+      <div v-for="e in ws.environments" :key="e.id" class="row" :class="{ sel: ws.activeEnvId === e.id }" style="height:44px" data-testid="env-row" @click="openEnv(e.id, e.name)">
         <span class="kind-dot" :class="e.kind ? 'kind-' + e.kind : ''" style="flex-shrink:0" :style="e.kind ? {} : { background: ws.activeEnvId === e.id ? 'var(--ok)' : 'var(--border-strong)' }" :data-kind="e.kind || undefined" aria-hidden="true" />
-        <span class="name"><b style="font-weight:500;display:block">{{ e.name }}</b><span class="muted" style="font-size:11.5px">{{ e.values.length }} ta o'zgaruvchi{{ e.kind ? ' · ' + kindLabel(e.kind) : '' }}{{ ws.activeEnvId === e.id ? ' · faol' : '' }}</span></span>
+        <button class="row-main name" @click.stop="openEnv(e.id, e.name)"><b style="font-weight:500;display:block">{{ e.name }}</b><span class="muted" style="font-size:var(--fs-sm)">{{ e.values.length }} ta o'zgaruvchi{{ e.kind ? ' · ' + kindLabel(e.kind) : '' }}{{ ws.activeEnvId === e.id ? ' · faol' : '' }}</span></button>
         <button class="ib x" :aria-label="ws.activeEnvId === e.id ? 'Faolsizlantirish' : 'Faollashtirish'" :title="ws.activeEnvId === e.id ? 'Faol ✓' : 'Faollashtirish'" @click.stop="ws.setActive(ws.activeEnvId === e.id ? null : e.id)"><Icon :name="ws.activeEnvId === e.id ? 'check' : 'play'" :size="14" /></button>
         <button class="ib x" aria-label="Muhitni o'chirish" title="O'chirish" @click.stop="delEnv(e.id, e.name)"><Icon name="x" :size="14" /></button>
       </div>
@@ -234,16 +247,11 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
       <div class="sb-note">Globals barcha muhitlarda amal qiladi. Eski “Default” o'zgaruvchilar shu yerga ko'chirilgan.</div>
     </div>
 
-    <div v-else-if="panel === 'history'" class="sb-body" data-testid="history-list">
-      <div class="sb-group">So'nggi so'rovlar</div>
-      <div v-for="h in hist.items" :key="h.id" class="row" data-testid="history-row" role="button" tabindex="0" @click="loadHistory(h)" @keydown.enter="loadHistory(h)">
-        <span class="m" :class="'m-' + h.payload.method">{{ h.payload.method }}</span><span class="name">{{ h.payload.url }}</span>
-        <button class="ib x" aria-label="Tarixdan o'chirish" @click.stop="hist.remove(h.id)"><Icon name="x" :size="14" /></button>
-      </div>
-      <div v-if="!hist.items.length" class="empty">Tarix bo'sh</div>
+    <div v-else-if="panel === 'history'" class="sb-body hist-panel" data-testid="history-list">
+      <HistoryList :entries="hist.items" tp="sh" row-testid="history-row" empty-text="Tarix bo'sh" @select="loadHistory" @remove="hist.remove" />
     </div>
 
-    <div v-else class="sb-body" style="padding:8px 16px;color:var(--muted);font-size:12.5px;line-height:1.6" data-testid="runner-panel">
+    <div v-else class="sb-body" style="padding:8px 16px;color:var(--muted);font-size:var(--fs-md);line-height:1.6" data-testid="runner-panel">
       <p style="margin:0 0 12px">Collection yoki papkani tanlab, uni ketma-ket yoki CSV/JSON ma'lumotlari bilan bir necha marta ishga tushiring.</p>
       <button class="primary" data-testid="open-runner" @click="openRunner"><Icon name="play" :size="14" />Runner'ni ochish</button>
     </div>
@@ -261,12 +269,12 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
       </div>
     </div>
 
-    <div v-if="moveDlg" class="overlay" @click.self="moveDlg = null">
-      <div class="dialog" data-testid="move-dialog">
-        <b>Ko'chirish…</b>
-        <p><select v-model="moveTarget" style="width:100%" data-testid="move-target"><option value="" disabled>Papka yoki collection tanlang</option><option v-for="o in moveOptions" :key="o.key" :value="o.key">{{ o.label }}</option></select></p>
-        <div class="btns"><button @click="moveDlg = null">Bekor qilish</button><button class="primary" :disabled="!moveTarget" data-testid="move-ok" @click="confirmMove">Ko'chirish</button></div>
-      </div>
-    </div>
+    <Dialog v-if="moveDlg" title="Ko'chirish…" testid="move-dialog" width="460px" @close="moveDlg = null">
+      <select v-model="moveTarget" style="width:100%" data-testid="move-target" aria-label="Qayerga ko'chirish" data-autofocus><option value="" disabled>Papka yoki collection tanlang</option><option v-for="o in moveOptions" :key="o.key" :value="o.key">{{ o.label }}</option></select>
+      <template #footer>
+        <button @click="moveDlg = null">Bekor qilish</button>
+        <button class="primary" :disabled="!moveTarget" data-testid="move-ok" @click="confirmMove">Ko'chirish</button>
+      </template>
+    </Dialog>
   </aside>
 </template>

@@ -46,19 +46,28 @@ def test_no_warning_when_versions_match_and_endpoint_returns_version(app, page):
     assert app.api("GET", "/api/version")["version"] == apirunner.__version__
 
 
-# ── A2 ──
-def test_response_after_reload_never_shows_an_empty_body(ui):
+# ── A2 (v2.3.12: javob matni serverda saqlanadi) ──
+def test_response_after_reload_is_restored_with_its_body(ui):
     open_alpha(ui)
     T(ui, "send").click()
     expect(T(ui, "resp-body")).to_contain_text("q")
     ui.reload()
     ui.wait_for_selector("[data-testid=app]")
-    expect(T(ui, "resp-status")).to_be_visible()                                  # holat/o'lcham saqlangan
-    expect(T(ui, "resp-not-saved")).to_be_visible()
-    expect(T(ui, "resp-body")).to_have_count(0)                                    # bo'sh <pre> qolmaydi
-    T(ui, "resp-resend").click()
-    expect(T(ui, "resp-body")).to_contain_text("q")
+    expect(T(ui, "resp-status")).to_have_text("200")
+    expect(T(ui, "resp-body")).to_contain_text('"q"')                              # matn to'liq tiklandi
     expect(T(ui, "resp-not-saved")).to_have_count(0)
+
+
+def test_not_saved_state_only_when_no_data_exists(ui, app):
+    state = app.api("GET", "/api/ui-state")
+    tab = {"id": "t1", "kind": "request", "ref": None, "title": "Eski", "preview": False, "dirty": False, "scroll": {"req": 0, "resp": 0},
+           "draft": {"name": "Eski", "method": "GET", "url": "http://x", "params": [{"key": "", "value": "", "enabled": True}], "headers": [{"key": "", "value": "", "enabled": True}]},
+           "response": {"status": 200, "time": 0.1, "size": 10, "resp_headers": {}, "url": "http://x", "truncated": True}}      # eski sessiya: matn ham, response_id ham yo'q
+    app.api("PUT", "/api/ui-state", {"tabs": {"v": 1, "activeId": "t1", "tabs": [tab]}})
+    ui.reload()
+    ui.wait_for_selector("[data-testid=app]")
+    expect(T(ui, "resp-not-saved")).to_be_visible()
+    expect(T(ui, "resp-body")).to_have_count(0)
 
 
 # ── A3 ──

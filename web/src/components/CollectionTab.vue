@@ -154,7 +154,7 @@ async function save() {
             <button class="ov-authline" data-testid="ov-auth" @click="section = 'auth'"><span class="pill">{{ authSummary.text }}</span></button>
             <div class="ov-bar" role="img" :aria-label="`${inheritCount} ta meros, ${ownAuthRequests} ta o'z auth'i`"><div :style="{ width: (reqs.length ? inheritCount / reqs.length * 100 : 0) + '%' }" /><div class="own" :style="{ width: (reqs.length ? ownAuthRequests / reqs.length * 100 : 0) + '%' }" /></div>
             <div class="ov-stats"><span data-testid="ov-inherit">{{ inheritCount }} ta so'rov meros oladi</span><span>{{ ownAuthRequests }} tasida o'z auth'i</span></div>
-            <p v-if="ownAuthRequests" class="muted" style="font-size:12.5px;margin:8px 0 0" data-testid="ov-own-auth">{{ ownAuthRequests }} ta so'rovning o'z auth'i bor (daraxtda 🔒 belgisi bilan ko'rinadi).</p>
+            <p v-if="ownAuthRequests" class="muted" style="font-size:var(--fs-md);margin:8px 0 0" data-testid="ov-own-auth">{{ ownAuthRequests }} ta so'rovning o'z auth'i bor (daraxtda 🔒 belgisi bilan ko'rinadi).</p>
             <div v-if="sameTokenCount" class="ov-warn" data-testid="ov-same-token">{{ sameTokenCount }} ta so'rovda shu {{ isFolder ? 'papkadagi' : 'collection\'dagi' }} bilan bir xil token qo'lda yozilgan.</div>
             <button v-if="hasRealAuth(node?.auth) && ownAuthRequests" class="ov-wide" data-testid="ov-to-inherit" @click="offerInherit">Ularni Meros'ga o'tkazish…</button>
           </section>
@@ -165,10 +165,10 @@ async function save() {
           <section class="ov-card" data-testid="ov-lastrun">
             <div class="lbl">Oxirgi run</div>
             <template v-if="lastRun">
-              <div class="ov-lr"><b data-testid="ov-lr-ok">{{ lastRunOk }}</b><span class="muted">/ {{ lastRun.items.length }} o'tdi</span><span class="muted" style="margin-left:auto;font-size:12px">{{ lastRunWhen }}</span></div>
+              <div class="ov-lr"><b data-testid="ov-lr-ok">{{ lastRunOk }}</b><span class="muted">/ {{ lastRun.items.length }} o'tdi</span><span class="muted" style="margin-left:auto;font-size:var(--fs-sm)">{{ lastRunWhen }}</span></div>
               <div class="ov-dots" data-testid="ov-dots"><span v-for="(it, i) in lastRun.items" :key="i" class="dot" :class="isOkStatus(it.status) ? 'ok' : 'err'" :title="`${nameOf(it.id)}: ${isOkStatus(it.status) ? 'o\'tdi' : 'xato (' + it.status + ')'}`" /></div>
             </template>
-            <p v-else class="muted" style="margin:8px 0 0;font-size:12.5px" data-testid="ov-lr-none">Hali ishga tushirilmagan.</p>
+            <p v-else class="muted" style="margin:8px 0 0;font-size:var(--fs-md)" data-testid="ov-lr-none">Hali ishga tushirilmagan.</p>
             <button class="linkbtn" style="margin-top:6px" data-testid="ov-history" @click="sidePanel = 'history'">Run tarixi →</button>
           </section>
         </aside>

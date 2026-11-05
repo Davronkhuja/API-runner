@@ -45,20 +45,33 @@ const fmt = (t: number | null) => (t ? new Date(t * 1000).toLocaleString() : '�
 const ws = useWorkspace()
 const lim = ref({ ...ws.scripts.limits })
 const limDirty = ref(false)
-async function saveLimits() { try { await ws.saveScriptLimits(lim.value); lim.value = { ...ws.scripts.limits }; limDirty.value = false; showToast('Skript chegaralari saqlandi', 'success') } catch (e: any) { showToast(e.message, 'error') } }
-function resetLimits() { lim.value = { ...ws.scripts.defaults }; limDirty.value = true }
+const limSaved = ref(false)
+let limTimer: ReturnType<typeof setTimeout> | undefined
+function queueLimits() { limDirty.value = true; limSaved.value = false; clearTimeout(limTimer); limTimer = setTimeout(saveLimits, 600) }
+async function saveLimits() { try { await ws.saveScriptLimits(lim.value); lim.value = { ...ws.scripts.limits }; limDirty.value = false; limSaved.value = true } catch (e: any) { showToast(e.message, 'error') } }
+function resetLimits() { lim.value = { ...ws.scripts.defaults }; queueLimits() }
 const copyCmd = () => { navigator.clipboard?.writeText(ws.scripts.install); showToast('Nusxalandi', 'success') }
 const gs = ref<ReqSettings>({ ...ws.settings })
 const gsDirty = ref(false)
-async function saveGlobal() { try { await ws.saveSettings(gs.value); gsDirty.value = false; showToast('Sozlamalar saqlandi', 'success') } catch (e: any) { showToast(e.message, 'error') } }
+const gsSaved = ref(false)
+let gsTimer: ReturnType<typeof setTimeout> | undefined
+async function saveGlobal() { try { await ws.saveSettings(gs.value); gsDirty.value = false; gsSaved.value = true } catch (e: any) { showToast(e.message, 'error') } }
+function queueGlobal() { gsDirty.value = true; gsSaved.value = false; clearTimeout(gsTimer); gsTimer = setTimeout(saveGlobal, 500) }
+const NAV = [['s-view', "Ko'rinish"], ['s-request', "So'rov"], ['s-scripts', 'Skriptlar'], ['s-files', 'Fayllar'], ['s-data', "Ma'lumotlar"], ['s-backups', 'Zaxiralar']] as const
+const sec = ref<string>('s-view'), mainEl = ref<HTMLElement>()
+function go(id: string) { sec.value = id; mainEl.value?.querySelector('#' + id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }
 onMounted(load)
 </script>
 
 <template>
-  <div class="page" data-testid="settings-tab">
-    <h3 style="margin-top:0">Sozlamalar</h3>
+  <div class="page settings-layout" data-testid="settings-tab">
+    <nav class="settings-nav" aria-label="Sozlamalar bo'limlari" data-testid="settings-nav">
+      <b>Sozlamalar</b>
+      <button v-for="n in NAV" :key="n[0]" :class="{ on: sec === n[0] }" :data-nav="n[0]" @click="go(n[0])">{{ n[1] }}</button>
+    </nav>
+    <div class="settings-main" ref="mainEl">
     <div class="muted" data-testid="settings-status" v-if="status">Versiya {{ status.version }} · sxema {{ status.schemaVersion }}</div>
-    <h4>Ko'rinish</h4>
+    <h4 id="s-view">Ko'rinish</h4>
     <div class="view-opts" data-testid="view-settings">
       <div role="radiogroup" aria-label="So'rov va javob joylashuvi" class="view-radio">
         <span class="lbl">So'rov va javob</span>
@@ -67,29 +80,29 @@ onMounted(load)
       </div>
       <label class="view-dense"><input v-model="dense" type="checkbox" data-testid="view-dense"><span><b>Zich rejim</b><br><span class="muted">Kichikroq qator balandligi — ekranga ko'proq qator sig'adi.</span></span></label>
     </div>
-    <h4>So'rov sozlamalari (global)</h4>
+    <h4 id="s-request">So'rov sozlamalari (global)</h4>
     <p class="muted">Barcha so'rovlar uchun sukut; har bir so'rov o'z Sozlamalar tabida qayta belgilashi mumkin.</p>
-    <SettingsForm :model="gs" prefix="gset" @change="gsDirty = true" />
-    <p><button class="primary" data-testid="gset-save" :disabled="!gsDirty" @click="saveGlobal">Saqlash</button></p>
-    <h4>Skriptlar</h4>
+    <SettingsForm :model="gs" prefix="gset" @change="queueGlobal" />
+    <p class="saved-note" role="status" data-testid="gset-saved"><template v-if="gsDirty">Saqlanmoqda…</template><template v-else-if="gsSaved">✓ Saqlandi</template><template v-else>O'zgarishlar avtomatik saqlanadi</template></p>
+    <h4 id="s-scripts">Skriptlar</h4>
     <p v-if="ws.scripts.available" class="muted" data-testid="script-status">Pre-request va Tests skriptlari yoqilgan (<code>quickjs-ng {{ ws.scripts.version }}</code>). Skriptlar fayl tizimi va tarmoqqa (<code>pm.sendRequest</code> dan tashqari) kira olmaydi; workspace'ni faqat <code>pm.environment/globals/collectionVariables</code> orqali o'zgartiradi.</p>
     <div v-else class="script-off" role="alert" data-testid="script-status"><b>Skriptlar o'chiq:</b> <code>quickjs-ng</code> o'rnatilmagan. Skript tablari ko'rinadi va matn saqlanadi, lekin bajarilmaydi. O'rnatish:
       <div style="margin-top:6px;display:flex;gap:8px;align-items:center"><code data-testid="script-install-cmd">{{ ws.scripts.install }}</code><button class="sm" @click="copyCmd">Nusxa</button></div></div>
     <table class="kv" style="max-width:720px" data-testid="script-limits"><tbody>
-      <tr><td style="width:260px" class="muted">Skript vaqt chegarasi (ms)</td><td><input type="number" min="100" max="300000" step="100" v-model.number="lim.timeout_ms" data-testid="script-limit-timeout" aria-label="Skript vaqt chegarasi, ms" @input="limDirty = true"></td></tr>
-      <tr><td class="muted">Xotira chegarasi (MB)</td><td><input type="number" min="8" max="1024" v-model.number="lim.memory_mb" data-testid="script-limit-memory" aria-label="Skript xotira chegarasi, MB" @input="limDirty = true"></td></tr>
-      <tr><td class="muted">pm.sendRequest soni (bir bajarishda)</td><td><input type="number" min="0" max="200" v-model.number="lim.max_requests" data-testid="script-limit-requests" aria-label="pm.sendRequest soni" @input="limDirty = true"></td></tr>
+      <tr><td style="width:260px" class="muted">Skript vaqt chegarasi (ms)</td><td><input type="number" min="100" max="300000" step="100" v-model.number="lim.timeout_ms" data-testid="script-limit-timeout" aria-label="Skript vaqt chegarasi, ms" @input="queueLimits"></td></tr>
+      <tr><td class="muted">Xotira chegarasi (MB)</td><td><input type="number" min="8" max="1024" v-model.number="lim.memory_mb" data-testid="script-limit-memory" aria-label="Skript xotira chegarasi, MB" @input="queueLimits"></td></tr>
+      <tr><td class="muted">pm.sendRequest soni (bir bajarishda)</td><td><input type="number" min="0" max="200" v-model.number="lim.max_requests" data-testid="script-limit-requests" aria-label="pm.sendRequest soni" @input="queueLimits"></td></tr>
     </tbody></table>
-    <p class="muted" style="font-size:12px">Chegaradan oshgan skript to'xtatiladi, xato Testlar tabida va Console'da ko'rinadi; so'rov baribir yuboriladi. Sukut: {{ ws.scripts.defaults.timeout_ms }} ms · {{ ws.scripts.defaults.memory_mb }} MB · {{ ws.scripts.defaults.max_requests }} so'rov.</p>
-    <p style="display:flex;gap:8px"><button class="primary" data-testid="script-limits-save" :disabled="!limDirty" @click="saveLimits">Saqlash</button><button data-testid="script-limits-reset" @click="resetLimits">Sukutga qaytarish</button></p>
-    <h4>Fayllar</h4>
+    <p class="muted" style="font-size:var(--fs-sm)">Chegaradan oshgan skript to'xtatiladi, xato Testlar tabida va Console'da ko'rinadi; so'rov baribir yuboriladi. Sukut: {{ ws.scripts.defaults.timeout_ms }} ms · {{ ws.scripts.defaults.memory_mb }} MB · {{ ws.scripts.defaults.max_requests }} so'rov.</p>
+    <p style="display:flex;gap:10px;align-items:center"><button data-testid="script-limits-reset" @click="resetLimits">Sukutga qaytarish</button><span class="saved-note" role="status" data-testid="limits-saved"><template v-if="limDirty">Saqlanmoqda…</template><template v-else-if="limSaved">✓ Saqlandi</template><template v-else>Avtomatik saqlanadi</template></span></p>
+    <h4 id="s-files">Fayllar</h4>
     <p class="muted">So'rovlarga biriktirilgan fayllar workspace ichida (<code>workspace/files</code>) saqlanadi — saqlangan so'rov keyin ham ishlaydi. Hech narsa havola qilmayotgan fayllarni shu yerda tozalash mumkin (yangi yuklanganlar 1 soat tegilmaydi).</p>
     <p data-testid="files-usage" v-if="fstat">Jami: <b data-testid="files-count">{{ fstat.count }}</b> ta, {{ fmtBytes(fstat.size) }} · ishlatilmayotgani: <b data-testid="files-unused">{{ fstat.unused_count }}</b> ta ({{ fmtBytes(fstat.unused_size) }})
       <button data-testid="files-cleanup" :disabled="!fstat.unused_count" @click="cleanFiles">Ishlatilmaganlarni tozalash</button></p>
-    <h4>Ma'lumotlar</h4>
+    <h4 id="s-data">Ma'lumotlar</h4>
     <p class="muted">Eski brauzer (localStorage) ma'lumotlarini serverga ko'chirish yoki <code>saved_requests.json</code> formatiga eksport (orqaga qaytish uchun).</p>
     <p style="display:flex;gap:8px"><button data-testid="ls-import" @click="importLocalStorage"><Icon name="upload" :size="14" />Brauzerdan ko'chirish</button><button data-testid="export-legacy" @click="exportLegacy"><Icon name="download" :size="14" />saved_requests.json eksport</button></p>
-    <h4>Zaxiralar</h4>
+    <h4 id="s-backups">Zaxiralar</h4>
     <p class="muted">Har bir migratsiyadan oldin avtomatik zaxira olinadi. Oxirgi 20 tasi saqlanadi. <code>saved_requests.json</code> tiklashda tegilmaydi.</p>
     <p><button class="primary" data-testid="backup-create" :disabled="busy" @click="create">Zaxira yaratish</button></p>
     <table class="kv" data-testid="backup-table">
@@ -102,5 +115,6 @@ onMounted(load)
       </tbody>
     </table>
     <div v-if="!backups.length" class="empty" data-testid="backup-empty">Hali zaxira yo'q</div>
+    </div>
   </div>
 </template>

@@ -1,0 +1,2 @@
+# fayl :: selektor/parcha   # sabab
+style.css :: .welcome .dz   # Welcome sahifasidagi sudrab tashlash maydoni: dekorativ, kontentga bog'liq emas

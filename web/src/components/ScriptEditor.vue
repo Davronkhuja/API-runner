@@ -5,7 +5,8 @@ import { EditorState, StateEffect, StateField, type Extension } from '@codemirro
 import { Decoration, EditorView, drawSelection, highlightActiveLine, keymap, lineNumbers, placeholder as cmPlaceholder, type DecorationSet } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap, type CompletionContext } from '@codemirror/autocomplete'
-import { HighlightStyle, bracketMatching, syntaxHighlighting } from '@codemirror/language'
+import { HighlightStyle, bracketMatching, foldGutter, foldKeymap, syntaxHighlighting } from '@codemirror/language'
+import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search'
 import { javascript } from '@codemirror/lang-javascript'
 import { tags as t } from '@lezer/highlight'
 import { PM_API } from '../lib/pmApi'
@@ -31,6 +32,7 @@ const theme = EditorView.theme({
   '.cm-content': { caretColor: 'var(--text)', padding: '6px 0' },
   '.cm-cursor': { borderLeftColor: 'var(--text)' },
   '.cm-gutters': { backgroundColor: 'transparent', color: 'var(--muted)', border: 'none' },
+  '.cm-foldGutter span': { cursor: 'pointer' }, '.cm-searchMatch': { backgroundColor: 'var(--mark)', color: 'var(--mark-text)' }, '.cm-panels': { backgroundColor: 'var(--panel)', color: 'var(--text)', borderColor: 'var(--border)' },
   '.cm-activeLine': { backgroundColor: 'transparent' }, '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--text)' },
   '.cm-err-line': { backgroundColor: 'var(--err-bg)', boxShadow: 'inset 3px 0 0 var(--err)' },
   '.cm-tooltip': { backgroundColor: 'var(--panel)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: 'var(--shadow)', fontFamily: 'var(--font-mono)' },
@@ -61,11 +63,11 @@ function complete(ctx: CompletionContext) {
 }
 
 const extensions = (): Extension[] => [
-  history(), drawSelection(), lineNumbers(), highlightActiveLine(), bracketMatching(), closeBrackets(), theme, syntaxHighlighting(style), javascript(), errField,
+  history(), drawSelection(), lineNumbers(), foldGutter(), highlightActiveLine(), bracketMatching(), closeBrackets(), highlightSelectionMatches(), search({ top: true }), theme, syntaxHighlighting(style), javascript(), errField,
   autocompletion({ override: [complete], maxRenderedOptions: 60, activateOnTyping: true }),
   EditorView.contentAttributes.of({ 'data-testid': props.testid, 'aria-label': 'Skript muharriri', role: 'textbox', 'aria-multiline': 'true' }),
   ...(props.placeholder ? [cmPlaceholder(props.placeholder)] : []),
-  keymap.of([indentWithTab, ...closeBracketsKeymap, ...completionKeymap, ...defaultKeymap, ...historyKeymap]),
+  keymap.of([indentWithTab, ...closeBracketsKeymap, ...completionKeymap, ...searchKeymap, ...foldKeymap, ...defaultKeymap, ...historyKeymap]),
   EditorView.updateListener.of(u => { if (u.docChanged) emit('update:modelValue', u.state.doc.toString()) }),
 ]
 onMounted(() => {

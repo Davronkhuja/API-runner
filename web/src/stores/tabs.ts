@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { hydrateResponse } from '../lib/responses'
 import { get, keepalivePut, put } from '../api/client'
 import { newDraft, normalizeDraft, type RequestDraft } from '../lib/draft'
 
@@ -50,7 +51,10 @@ export const useTabs = defineStore('tabs', () => {
   function snapshot() {
     return {
       v: 1, activeId: activeId.value,
-      tabs: tabs.value.map(t => ({ ...t, response: t.response && !t.response.loading ? { ...t.response, response: undefined, truncated: true } : null })),
+      tabs: tabs.value.map(t => ({ ...t, response: t.response && !t.response.loading
+        // javob matni serverda (SQLite, `response_id`); u bo'lmasa (eski sessiya) — "Javob saqlanmagan" holati
+        ? { ...t.response, response: t.response.binary ? t.response.response : undefined, restored: undefined, truncated: t.response.response_id ? undefined : true }
+        : null })),
     }
   }
   let pending = false
@@ -82,6 +86,7 @@ export const useTabs = defineStore('tabs', () => {
       if (s?.tabs?.length) {
         tabs.value = s.tabs.map((t: Tab) => (t.draft ? { ...t, draft: normalizeDraft(t.draft) } : t))
         activeId.value = tabs.value.some(t => t.id === s.activeId) ? s.activeId : tabs.value[0].id
+        await Promise.all(tabs.value.map(t => hydrateResponse(t.response)))      // javoblar SQLite'dan tiklanadi
       }
     } catch { /* birinchi ishga tushish */ }
   }

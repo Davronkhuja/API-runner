@@ -126,7 +126,7 @@ function applyBulk() {
 <template>
   <div ref="root" class="kv-wrap-outer">
     <div v-if="bulk" style="text-align:right;margin-bottom:6px"><button class="ghost" data-testid="kv-bulk" @click="toggleBulk">Key-Value Edit</button></div>
-    <textarea v-if="bulk" v-model="bulkText" :data-testid="(testid ?? 'kv') + '-bulk'" aria-label="Bulk Edit" placeholder="kalit:qiymat (har qatorda bittadan; // — o'chirilgan)" style="width:100%;height:160px;font-family:var(--font-mono)" @input="applyBulk" />
+    <textarea v-if="bulk" v-model="bulkText" :data-testid="(testid ?? 'kv') + '-bulk'" aria-label="Bulk Edit" placeholder="kalit:qiymat (har qatorda bittadan; // — o'chirilgan)" style="width:100%;min-height:160px;resize:vertical;font-family:var(--font-mono)" @input="applyBulk" />
     <div v-else class="kv-wrap" @dragover="quickAttach && dragFiles($event) && $event.preventDefault()" @drop="onTableDrop">
       <table class="kv kv-head" aria-hidden="false">
         <colgroup v-if="formdata"><col style="width:22px"><col style="width:26px"><col style="width:24%"><col style="width:96px"><col><col style="width:22%"><col style="width:112px"></colgroup>
@@ -160,7 +160,7 @@ function applyBulk() {
             <td v-if="formdata"><input type="text" :data-cell="`${i}:2`" :placeholder="ctPlaceholder(r)" aria-label="Content-Type" v-model="r.contentType" data-testid="fd-ct" draggable="false" @input="touch" @keydown="onKey($event, i, 2)"></td>
             <td v-else><input type="text" :data-cell="`${i}:2`" placeholder="Tavsif" aria-label="Tavsif" v-model="r.description" data-testid="kv-desc" draggable="false" @input="touch" @keydown="onKey($event, i, 2)"></td>
             <td style="text-align:right;padding-right:4px;white-space:nowrap">
-              <label v-if="quickAttach && !isGhost(i)" title="Fayl Body → form-data'ga qo'shiladi" aria-label="Fayl biriktirish" data-testid="params-attach" style="cursor:pointer;margin-right:4px"><Icon name="file" :size="14" /><input type="file" hidden tabindex="-1" @change="attachQuick(i, $event)"></label>
+              <label v-if="quickAttach && !isGhost(i)" title="Fayl Body → form-data'ga qo'shiladi" data-testid="params-attach" class="attach-lbl"><Icon name="file" :size="14" /><span class="sr-only">Fayl biriktirish</span><input type="file" hidden tabindex="-1" aria-label="Fayl biriktirish" @change="attachQuick(i, $event)"></label>
               <button v-if="!isGhost(i)" class="ghost" aria-label="Qatorni o'chirish" tabindex="-1" title="O'chirish (Alt+Backspace)" @click="remove(i)">×</button>
             </td>
           </tr>

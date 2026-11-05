@@ -82,7 +82,7 @@ async function save() {
       <button class="primary" data-testid="env-save" @click="save">Saqlash</button>
       <button v-if="!isGlobals" data-testid="env-activate" @click="ws.setActive(ws.activeEnvId === env!.id ? null : env!.id)">{{ ws.activeEnvId === env.id ? 'Faol ✓' : 'Faol qilish' }}</button>
     </div>
-    <div v-if="!isGlobals" class="kind-chips" data-testid="env-kind" role="group" aria-label="Muhit turi"><span class="muted" style="font-weight:600;font-size:12px">Turi:</span>
+    <div v-if="!isGlobals" class="kind-chips" data-testid="env-kind" role="group" aria-label="Muhit turi"><span class="muted" style="font-weight:600;font-size:var(--fs-sm)">Turi:</span>
       <button v-for="k in KINDS" :key="k.id" class="chip" :class="['kind-' + k.id, { on: env.kind === k.id }]" :aria-pressed="env.kind === k.id" :data-kind="k.id" @click="setKind(k.id)"><span class="kind-dot" :class="'kind-' + k.id" />{{ k.label }}</button>
       <label class="confirm"><input type="checkbox" data-testid="env-confirm-writes" :checked="confirmOn()" @change="setConfirm(($event.target as HTMLInputElement).checked)">POST / PUT / PATCH / DELETE yuborishdan oldin tasdiq so'ralsin</label>
     </div>

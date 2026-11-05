@@ -7,6 +7,7 @@ export const activity = reactive<Record<string, string>>({})
 export type SidePanel = 'collections' | 'environments' | 'history' | 'runner'
 export const sidePanel = ref<SidePanel>('collections')
 export const cmdkOpen = ref(false)
+export const importOpen = ref(false)
 
 export const toast = ref<{ msg: string; kind: string } | null>(null)
 let tt: ReturnType<typeof setTimeout>

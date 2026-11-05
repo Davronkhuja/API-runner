@@ -58,7 +58,7 @@ const copyTok = () => { navigator.clipboard?.writeText(tok.value?.access_token ?
 
 <template>
   <div data-testid="auth-panel">
-    <select v-model="auth.type" data-testid="auth-type" @change="onType">
+    <select v-model="auth.type" data-testid="auth-type" aria-label="Auth turi" @change="onType">
       <option v-if="allowInherit" value="inherit">Meros (Inherit)</option>
       <option value="none">Auth yo'q</option><option value="bearer">Bearer Token</option><option value="basic">Basic Auth</option><option value="custom">Custom</option>
       <option value="apikey">API Key</option><option value="digest">Digest Auth</option><option value="oauth2">OAuth 2.0</option><option value="awsv4">AWS Signature V4</option><option value="jwt">JWT Bearer</option>
@@ -68,7 +68,7 @@ const copyTok = () => { navigator.clipboard?.writeText(tok.value?.access_token ?
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="badge" style="background:var(--accent-weak);color:var(--accent-text)" data-testid="auth-inherit-type">{{ authName(source.pm) }}</span>
           <span data-testid="auth-inherit-src"><b>«{{ source.name }}»</b> {{ source.scope === 'folder' ? 'papkasidan' : "collection'dan" }}</span>
           <button class="sm" data-testid="auth-inherit-link" @click="openNodeTab(source.cid, source.scope === 'folder' ? source.id : null, 'auth')">{{ source.scope === 'folder' ? "Papkaga o'tish" : "Collection'ga o'tish" }}</button></div>
-        <p class="muted" style="margin:6px 0 0;font-size:12px" data-testid="auth-inherit-note">{{ inheritNote || `Meros: ${source.type} — «${source.name}» ${source.scope === 'folder' ? 'papkasi' : 'collection'} auth'i ishlatiladi.` }}</p>
+        <p class="muted" style="margin:6px 0 0;font-size:var(--fs-sm)" data-testid="auth-inherit-note">{{ inheritNote || `Meros: ${source.type} — «${source.name}» ${source.scope === 'folder' ? 'papkasi' : 'collection'} auth'i ishlatiladi.` }}</p>
       </template>
       <p v-else class="muted" style="margin:0" data-testid="auth-inherit-note">{{ inheritNote || "Meros: ota papka va collection'da auth yo'q — Auth yuborilmaydi." }}</p>
     </div>
@@ -80,8 +80,8 @@ const copyTok = () => { navigator.clipboard?.writeText(tok.value?.access_token ?
       <tr v-for="f in fields" :key="f.k">
         <td style="width:190px" class="muted">{{ f.label }}</td>
         <td>
-          <select v-if="f.options" v-model="auth.cfg[f.k]" :data-testid="'auth-f-' + f.k" @change="touch"><option v-for="o in f.options" :key="o[0]" :value="o[0]">{{ o[1] }}</option></select>
-          <textarea v-else-if="f.area" v-model="auth.cfg[f.k]" :data-testid="'auth-f-' + f.k" style="width:100%;height:90px;font-family:ui-monospace,monospace" @input="touch" />
+          <select v-if="f.options" v-model="auth.cfg[f.k]" :data-testid="'auth-f-' + f.k" :aria-label="f.label" @change="touch"><option v-for="o in f.options" :key="o[0]" :value="o[0]">{{ o[1] }}</option></select>
+          <textarea v-else-if="f.area" v-model="auth.cfg[f.k]" :data-testid="'auth-f-' + f.k" style="width:100%;min-height:90px;height:auto;font-family:ui-monospace,monospace" @input="touch" />
           <input v-else v-model="auth.cfg[f.k]" :type="f.secret ? 'password' : 'text'" :placeholder="f.ph" :data-testid="'auth-f-' + f.k" style="width:100%" @input="touch">
         </td>
       </tr>

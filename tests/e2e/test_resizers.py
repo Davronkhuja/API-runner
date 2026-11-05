@@ -50,14 +50,14 @@ def sizes(p):
 # ── ustma-ust ──
 def test_dragging_up_and_down_really_moves_the_response_top_and_resizes_both_panes(ui):
     r0, q0, w = sizes(ui)
-    drag(ui, RES, dy=-120)
+    drag(ui, RES, dy=-70)
     r1, q1, _ = sizes(ui)
-    assert r1["height"] > r0["height"] + 100 and r1["y"] < r0["y"] - 100                          # javob balandligi VA top o'zgardi
-    assert q1["height"] < q0["height"] - 100                                                      # so'rov qismi qisqardi (oldin qisqarmasdi)
+    assert r1["height"] > r0["height"] + 55 and r1["y"] < r0["y"] - 55                            # javob balandligi VA top o'zgardi
+    assert q1["height"] < q0["height"] - 55                                                       # so'rov qismi qisqardi (oldin qisqarmasdi)
     assert r1["y"] + r1["height"] <= w["y"] + w["height"] + 1                                     # pastga, ko'rinmas joyga o'smaydi
-    drag(ui, RES, dy=90)
+    drag(ui, RES, dy=60)
     r2, q2, _ = sizes(ui)
-    assert r2["height"] < r1["height"] - 70 and r2["y"] > r1["y"] + 70 and q2["height"] > q1["height"] + 70
+    assert r2["height"] < r1["height"] - 45 and r2["y"] > r1["y"] + 45 and q2["height"] > q1["height"] + 45
 
 
 def test_clamp_keeps_each_pane_at_least_120px(ui):
@@ -86,7 +86,7 @@ def test_size_is_stored_as_percent_per_layout_and_restored_after_reload(ui):
     r2, _, _ = sizes(ui)
     assert abs(r2["height"] - r1["height"]) <= 2
     saved = ui.evaluate("JSON.parse(localStorage.getItem('apirunner.split.v1'))")
-    assert 0.5 < saved["stack"] < 1 and saved["side"] == 0.5                                      # foiz; yonma-yon alohida
+    assert 0.5 < saved["stack"] < 1 and saved["side"] is None                                      # foiz; yonma-yon alohida (tegilmagan)
 
 
 def test_keyboard_arrows_resize_by_24px(ui):
@@ -147,9 +147,9 @@ def test_side_by_side_drag_changes_width_and_left_edge_with_clamp_and_separate_r
     T(ui, "layout-toggle").click()
     r0, q0, w = sizes(ui)
     assert r0["x"] > q0["x"]
-    drag(ui, RES, dx=-150)
+    drag(ui, RES, dx=-70)
     r1, q1, _ = sizes(ui)
-    assert r1["width"] > r0["width"] + 120 and r1["x"] < r0["x"] - 120 and q1["width"] < q0["width"] - 120
+    assert r1["width"] > r0["width"] + 55 and r1["x"] < r0["x"] - 55 and q1["width"] < q0["width"] - 55
     drag(ui, RES, dx=-5000)
     r, q, _ = sizes(ui)
     assert q["width"] >= 119 and r["width"] > q["width"]

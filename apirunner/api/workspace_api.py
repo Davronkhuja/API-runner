@@ -268,7 +268,7 @@ def put_ui_state():
 @bp.put("/workspace/meta")
 def put_meta():
     d = request.get_json(silent=True) or {}
-    allowed = {k: d[k] for k in ("active_environment_id", "legacy_default_notified") if k in d}
+    allowed = {k: d[k] for k in ("active_environment_id", "legacy_default_notified", "nameclean_dismissed") if k in d}
     if isinstance(d.get("settings"), dict):
         allowed["settings"] = d["settings"]
     if isinstance(d.get("script_limits"), dict):
@@ -311,8 +311,42 @@ def import_any():
         col, kind = import_postman(doc), "postman"
     else:
         return jsonify({"error": "Format tanilmadi (Postman collection yoki OpenAPI JSON kerak)"}), 400
+    summary = _import_summary(col, kind)
+    if d.get("dry_run"):
+        return jsonify({"ok": True, "dry_run": True, **summary})
     cid = _ws().save_collection(col)
-    return jsonify({"ok": True, "kind": kind, "id": cid, "name": col["info"]["name"]})
+    return jsonify({"ok": True, "id": cid, **summary})
+
+
+def _import_summary(col, kind):
+    folders = requests_n = 0
+    stack = list(col.get("item", []))
+    while stack:
+        it = stack.pop()
+        if model.is_folder(it):
+            folders += 1
+            stack.extend(it.get("item", []))
+        else:
+            requests_n += 1
+    return {"kind": kind, "name": col["info"]["name"], "folders": folders, "requests": requests_n, "variables": len(col.get("variable", []))}
+
+
+@bp.post("/import/fetch")
+def import_fetch():
+    """URL'dan import uchun matnni yuklab beradi (faqat http/https, 15 s, 10 MB)."""
+    import httpx
+    url = str((request.get_json(silent=True) or {}).get("url") or "").strip()
+    if not url.lower().startswith(("http://", "https://")):
+        return jsonify({"error": "URL http:// yoki https:// bilan boshlanishi kerak"}), 400
+    try:
+        r = httpx.get(url, timeout=15, follow_redirects=True)
+    except httpx.HTTPError as exc:
+        return jsonify({"error": f"Yuklab bo'lmadi: {exc}"}), 400
+    if r.status_code >= 400:
+        return jsonify({"error": f"Server {r.status_code} qaytardi"}), 400
+    if len(r.content) > 10 * 1024 * 1024:
+        return jsonify({"error": "Fayl 10 MB dan katta"}), 400
+    return jsonify({"content": r.text})
 
 
 # ── holat / zaxiralar ──
@@ -425,3 +459,26 @@ def files_usage():
 @bp.post("/files/cleanup")
 def files_cleanup():
     return jsonify(files.cleanup(_ws_root()))
+
+
+# ── saqlangan javoblar (SQLite; har tabning oxirgi javobi va tarix diff'i uchun) ──
+@bp.get("/responses/<int:rid>")
+def get_response(rid):
+    r = current_app.extensions["db"].get_response(rid)
+    if not r:
+        return jsonify({"error": "Javob saqlanmagan"}), 404
+    body = r.pop("body")
+    r["body"] = None if r["binary"] else body.decode("utf-8", "replace")
+    return jsonify(r)
+
+
+@bp.get("/responses/<int:rid>/raw")
+def get_response_raw(rid):
+    from flask import Response
+    r = current_app.extensions["db"].get_response(rid)
+    if not r:
+        return jsonify({"error": "Javob saqlanmagan"}), 404
+    resp = Response(r["body"], content_type=r["ctype"] or "application/octet-stream")
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["Content-Security-Policy"] = "sandbox"          # HTML javob (preview) skript bajara olmasin
+    return resp

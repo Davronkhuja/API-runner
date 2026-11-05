@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import Dialog from './Dialog.vue'
 /** Papka/collection'ga auth qo'yilgach: ichidagi o'z auth'i bor so'rovlarni "Meros"ga o'tkazishni taklif qiladi (zaxira bilan). */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { post } from '../api/client'
 import { useTabs } from '../stores/tabs'
 import { useTree } from '../stores/tree'
@@ -16,10 +17,6 @@ const checked = ref<Record<string, boolean>>(Object.fromEntries(props.candidates
 const sameCount = computed(() => props.candidates.filter(c => c.same).length)
 const picked = computed(() => props.candidates.filter(c => checked.value[c.id]))
 const busy = ref(false)
-const dlg = ref<HTMLElement>()
-const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') emit('close') }
-onMounted(() => { window.addEventListener('keydown', onEsc); dlg.value?.focus() })
-onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
 const setAll = (v: boolean) => props.candidates.forEach(c => { checked.value[c.id] = v })
 
 async function apply() {
@@ -39,10 +36,8 @@ async function apply() {
 </script>
 
 <template>
-  <div class="overlay" @click.self="emit('close')">
-    <div ref="dlg" class="dialog" role="dialog" aria-modal="true" aria-labelledby="bulk-title" tabindex="-1" style="width:640px;max-height:84vh;display:flex;flex-direction:column" data-testid="bulk-auth-dialog">
-      <b id="bulk-title">«{{ label }}» {{ scopeLabel }}ga auth qo'yildi: {{ authName(newAuth) }}</b>
-      <p style="margin:8px 0">Ichidagi <b data-testid="bulk-auth-count">{{ candidates.length }}</b> ta so'rovning o'z auth'i bor, shuning uchun bu auth ularga ta'sir qilmaydi. Ularni <b>«Meros»</b>ga o'tkazaymi?
+  <Dialog :title="`«${label}» ${scopeLabel}ga auth qo'yildi: ${authName(newAuth)}`" testid="bulk-auth-dialog" width="min(720px,92vw)" @close="emit('close')">
+            <p style="margin:8px 0">Ichidagi <b data-testid="bulk-auth-count">{{ candidates.length }}</b> ta so'rovning o'z auth'i bor, shuning uchun bu auth ularga ta'sir qilmaydi. Ularni <b>«Meros»</b>ga o'tkazaymi?
         <template v-if="sameCount"> <span class="muted">{{ sameCount }} tasida token/sozlama aynan shu bilan bir xil (ko'chirishdan qolgan) — ular avtomatik tanlandi.</span></template></p>
       <div class="scroll panel-box" style="overflow:auto;padding:4px;max-height:44vh" role="list">
         <label v-for="c in candidates" :key="c.id" class="row" style="height:auto;min-height:34px;padding:4px 8px" role="listitem" data-testid="bulk-auth-row">
@@ -52,12 +47,11 @@ async function apply() {
           <span v-if="c.same" class="badge" style="background:var(--ok-bg);color:var(--ok)" data-testid="bulk-auth-same">bir xil</span>
         </label>
       </div>
-      <p class="muted" style="font-size:12px;margin:8px 0" data-testid="bulk-auth-backup-note">O'zgartirishdan oldin ish maydonining zaxira nusxasi avtomatik olinadi (Sozlamalar → Zaxiralar'dan tiklash mumkin). «Auth yo'q» deb belgilangan so'rovlar sukut bo'yicha tanlanmaydi.</p>
-      <div class="btns" style="margin-top:4px;justify-content:space-between">
-        <span style="display:flex;gap:6px"><button class="sm" data-testid="bulk-auth-all" @click="setAll(true)">Hammasini tanlash</button><button class="sm" data-testid="bulk-auth-none" @click="setAll(false)">Hech birini</button></span>
-        <span style="display:flex;gap:6px"><button data-testid="bulk-auth-skip" @click="emit('close')">O'zgarishsiz qoldirish</button>
-          <button class="primary" data-testid="bulk-auth-apply" :disabled="busy || !picked.length" @click="apply">Meros'ga o'tkazish ({{ picked.length }})</button></span>
-      </div>
-    </div>
-  </div>
+      <p class="muted" style="font-size:var(--fs-sm);margin:8px 0" data-testid="bulk-auth-backup-note">O'zgartirishdan oldin ish maydonining zaxira nusxasi avtomatik olinadi (Sozlamalar → Zaxiralar'dan tiklash mumkin). «Auth yo'q» deb belgilangan so'rovlar sukut bo'yicha tanlanmaydi.</p>
+    <template #footer>
+      <span style="display:flex;gap:6px;margin-right:auto"><button class="sm" data-testid="bulk-auth-all" @click="setAll(true)">Hammasini tanlash</button><button class="sm" data-testid="bulk-auth-none" @click="setAll(false)">Hech birini</button></span>
+      <button data-testid="bulk-auth-skip" @click="emit('close')">O'zgarishsiz qoldirish</button>
+      <button class="primary" data-testid="bulk-auth-apply" :disabled="busy || !picked.length" @click="apply">Meros'ga o'tkazish ({{ picked.length }})</button>
+    </template>
+  </Dialog>
 </template>

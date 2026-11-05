@@ -165,5 +165,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt && .venv/
 .venv/bin/python -m pytest tests/e2e/test_redesign.py   # bitta fayl
 (cd web && npm ci && npx vitest run)    # frontend unit testlar (Node.js faqat frontend ishlab chiqish uchun)
 ```
+**UI sifat himoyasi (v2.4.0):** `tests/e2e/test_visual_regression.py` (15 ekran × light/dark `docs/screenshots/baseline/` bilan; ataylab dizayn o'zgargach `UPDATE_BASELINE=1 .venv/bin/python -m pytest tests/e2e/test_visual_regression.py`), `tests/e2e/test_layout_guards.py` (dialog viewport'dan oshmasligi, kesilgan matn, ≥24px nishon, axe serious/critical=0), `tools/check_fixed_heights.py` (kontent konteyneri uchun qat'iy `height:NNNpx` taqiqi; ruxsat — `tools/fixed_heights_allow.txt`). To'liq UI audit: `python3 tools/ui_audit.py --out /tmp/ui-audit` → `python3 tools/ui_audit_report.py /tmp/ui-audit > docs/ui-audit.md`.
+
 Skrinshotlar (light + dark, 1440×900) odatda vaqtinchalik papkaga yoziladi; `docs/screenshots/` ni yangilash: `SHOT_UPDATE=1 .venv/bin/python -m pytest tests/e2e/test_screenshots.py && .venv/bin/python tools/shots_readme.py`.
 Frontend o'zgargan bo'lsa build qiling (natija repoga kiritiladi): `cd web && npm run build`.
