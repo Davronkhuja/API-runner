@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { downloadBlob, extFor, fetchRawBlob, MAX_STORED } from '../lib/responses'
+import { fetchRawBlob, MAX_STORED, saveResponseFile } from '../lib/responses'
 import type { Tab } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { requestFromDraft } from '../lib/draft'
@@ -138,10 +138,7 @@ async function loadBlob() {
 watch(() => [r.value?.response_id, r.value?.binary], loadBlob, { immediate: true })
 onBeforeUnmount(() => { if (blobUrl.value) URL.revokeObjectURL(blobUrl.value) })
 const isImage = computed(() => blobType.value.startsWith('image/')), isPdf = computed(() => blobType.value === 'application/pdf')
-async function saveFile() {
-  if (r.value?.binary && r.value.response_id) { const b = await fetchRawBlob(r.value.response_id); if (b) downloadBlob(b, 'javob.' + extFor(ctype.value)) }
-  else downloadBlob(new Blob([text.value]), 'javob.' + (typeof r.value?.response === 'string' ? 'txt' : 'json'))
-}
+async function saveFile() { const n = await saveResponseFile(r.value, text.value); if (n) showToast('Saqlandi: ' + n, 'success') }
 const hq = ref('')
 const shownHeaders = computed(() => { const q = hq.value.trim().toLowerCase(); return q ? headers.value.filter(([k, v]) => (k + ' ' + v).toLowerCase().includes(q)) : headers.value })
 function copyHeaders(rows: [string, string][]) { navigator.clipboard?.writeText(rows.map(([k, v]) => `${k}: ${v}`).join('\n')); showToast(rows.length === 1 ? 'Header nusxalandi' : `${rows.length} ta header nusxalandi`, 'success') }

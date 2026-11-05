@@ -37,6 +37,11 @@ const d = computed(() => props.tab.draft!)
 const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
 const touch = () => tabs.touch(props.tab.id)
 const curlOpen = ref(false)
+const sendMenu = ref(false)
+const sendSplit = ref<HTMLElement>()
+function onDocDown(e: Event) { if (!sendSplit.value?.contains(e.target as Node)) sendMenu.value = false }
+watch(sendMenu, v => { if (v) document.addEventListener('pointerdown', onDocDown); else document.removeEventListener('pointerdown', onDocDown) })
+onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocDown))
 /** Skript xatolari + muvaffaqiyatsiz testlar (qator belgilash uchun). */
 const scriptIssues = computed(() => {
   const sc = props.tab.response?.scripts
@@ -236,7 +241,11 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       <div v-if="showHist && urlHist.length" class="menu" style="position:absolute;left:18px;top:42px;right:150px" data-testid="url-history" role="listbox" aria-label="URL tarixi">
         <button v-for="(h, i) in urlHist" :key="i" role="option" @mousedown.prevent="d.method = h.method; d.url = h.url; d.pathVars = syncPathVars(d.url, d.pathVars); touch()"><b class="m" :class="'m-' + h.method" style="font:700 var(--fs-xs) var(--font-mono);width:52px;text-align:left">{{ h.method }}</b> {{ h.url }}</button>
       </div>
-      <button class="primary" data-testid="send" :disabled="tab.response?.loading" aria-keyshortcuts="Control+Enter Meta+Enter" @click="sendTab(tab)"><Icon name="send" :size="15" />{{ tab.response?.loading ? 'Yuborilmoqda…' : 'Yuborish' }}</button>
+      <span ref="sendSplit" class="send-split" @keydown.esc="sendMenu = false">
+        <button class="primary" data-testid="send" :disabled="tab.response?.loading" aria-keyshortcuts="Control+Enter Meta+Enter" @click="sendTab(tab)"><Icon name="send" :size="15" />{{ tab.response?.loading ? 'Yuborilmoqda…' : 'Yuborish' }}</button>
+        <button class="primary send-caret" data-testid="send-menu" aria-label="Yuborish variantlari" aria-haspopup="menu" :aria-expanded="sendMenu" :disabled="tab.response?.loading" @click="sendMenu = !sendMenu"><Icon name="chevron-down" :size="14" /></button>
+        <div v-if="sendMenu" class="menu send-pop" role="menu"><button role="menuitem" data-testid="send-download" @click="sendMenu = false; sendTab(tab, { download: true })">Yuborish va yuklab olish</button></div>
+      </span>
     </div>
     <div v-if="chipTip" class="tip-pop" role="tooltip" data-testid="chip-tip" :style="{ left: chipTip.x + 'px', top: chipTip.y + 'px' }">{{ chipTip.text }}</div>
     <div v-if="extraVars.length" class="var-chips" data-testid="var-chips"><span>Boshqa o'zgaruvchilar:</span>

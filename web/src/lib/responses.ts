@@ -44,3 +44,33 @@ export function downloadBlob(blob: Blob, name: string) {
 
 const EXT: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'application/pdf': 'pdf', 'application/zip': 'zip', 'application/json': 'json', 'text/html': 'html', 'text/plain': 'txt' }
 export const extFor = (ctype: string) => EXT[(ctype || '').split(';')[0].trim().toLowerCase()] ?? 'bin'
+
+/** Fayl nomi: Content-Disposition → URL oxirgi qismi (kengaytma bilan) → `javob.<ext>`. */
+export function fileNameFor(headers: Record<string, string>, url: string, ctype: string, fallbackExt: string): string {
+  const h = Object.entries(headers ?? {}).find(([k]) => k.toLowerCase() === 'content-disposition')?.[1] ?? ''
+  const star = /filename\*\s*=\s*(?:UTF-8'')?([^;]+)/i.exec(h), plain = /filename\s*=\s*"?([^";]+)"?/i.exec(h)
+  const clean = (n: string) => n.replace(/[\\/:*?"<>|\x00-\x1f]+/g, '_').trim().slice(0, 150)
+  try { if (star) return clean(decodeURIComponent(star[1].trim())) || 'javob.' + fallbackExt } catch { /* noto'g'ri kodlash */ }
+  if (plain) return clean(plain[1]) || 'javob.' + fallbackExt
+  try {
+    const last = decodeURIComponent(new URL(url).pathname.split('/').filter(Boolean).pop() ?? '')
+    if (last) return clean(/\.[A-Za-z0-9]{1,6}$/.test(last) ? last : `${last}.${fallbackExt}`)
+  } catch { /* URL emas */ }
+  void ctype
+  return 'javob.' + fallbackExt
+}
+
+/** Javobni faylga saqlaydi (binary — serverdagi nusxadan, matn — joriy matndan). Qaytaradi: saqlangan nom. */
+export async function saveResponseFile(resp: any, text: string): Promise<string | null> {
+  const ctype = Object.entries(resp?.resp_headers ?? {}).find(([k]) => k.toLowerCase() === 'content-type')?.[1] as string ?? ''
+  if (resp?.binary && resp.response_id) {
+    const b = await fetchRawBlob(resp.response_id)
+    if (!b) return null
+    const name = fileNameFor(resp.resp_headers, resp.url ?? '', ctype, extFor(ctype))
+    downloadBlob(b, name)
+    return name
+  }
+  const name = fileNameFor(resp?.resp_headers, resp?.url ?? '', ctype, typeof resp?.response === 'string' ? (extFor(ctype) === 'bin' ? 'txt' : extFor(ctype)) : 'json')
+  downloadBlob(new Blob([text]), name)
+  return name
+}
