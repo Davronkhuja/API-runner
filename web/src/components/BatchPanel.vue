@@ -7,9 +7,9 @@ import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { newBatchState, startBatch, stopBatch, statsOf, toCSV, download, type BatchState } from '../lib/batch'
 import { activity, fmtBytes, fmtMs, showToast } from '../lib/ui'
-import { parseDataFile, isDataFile } from '../lib/datafile'
+import { parseDataFile } from '../lib/datafile'
 import { highlightJson } from '../lib/highlight'
-import DataPreview from './DataPreview.vue'
+import RunSettings from './RunSettings.vue'
 
 const props = defineProps<{ tab: Tab }>()
 const tabs = useTabs(), ws = useWorkspace(), hist = useHistory()
@@ -24,7 +24,6 @@ const cmpId = ref<number | null>(null)
 const hdrOpen = ref<Record<number, boolean>>({})
 const folded = ref<Record<number, boolean>>({})
 const foldAll = (v: boolean) => { folded.value = v ? Object.fromEntries(b.value.results.map(r => [r.index, true])) : {} }
-const fileInput = ref<HTMLInputElement>()
 const visible = computed(() => b.value.results.filter(r => b.value.filter === 'all' || (b.value.filter === 'error' ? r.error : !r.error)))
 const pct = computed(() => (b.value.total ? (b.value.results.length / b.value.total) * 100 : 0))
 const last60 = computed(() => b.value.results.slice(-60))
@@ -35,13 +34,6 @@ const body = (r: any) => (typeof r.response === 'string' ? r.response : JSON.str
 async function loadFile(f: File) {
   try { b.value.data = { name: f.name, rows: parseDataFile(f.name, await f.text()) } } catch (err: any) { showToast('Fayl o\'qilmadi: ' + err.message, 'error') }
 }
-const onFile = (e: Event) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) loadFile(f) }
-const zone = ref(false)
-function onZoneDrop(e: DragEvent) {
-  zone.value = false
-  const f = e.dataTransfer?.files?.[0]
-  if (f && isDataFile(f)) { e.preventDefault(); e.stopPropagation(); loadFile(f) }
-}
 function onEsc(e: KeyboardEvent) { if (e.key === 'Escape') { if (full.value) full.value = null; else if (showCmp.value) showCmp.value = false } }
 onMounted(() => window.addEventListener('keydown', onEsc))
 onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
@@ -50,7 +42,7 @@ async function run() {
   await tabs.flush()
   await startBatch(props.tab, {}, async done => {
     try { await hist.add('run', { ts: Date.now(), label: props.tab.draft!.url, count: done.results.length, results: done.results.map(r => ({ index: r.index, status: r.status, time: r.time, size: r.size, url: r.url })) }) } catch { /* tarix yozilmasa ham natija ko'rinadi */ }
-  })
+  }, ws.activeEnv?.name ?? '')
 }
 watch(() => [b.value.status, b.value.results.length, b.value.total], () => { if (b.value.status === 'running') activity[props.tab.id] = `Batch ${b.value.results.length}/${b.value.total}`; else delete activity[props.tab.id] }, { immediate: true })
 onBeforeUnmount(() => delete activity[props.tab.id])
@@ -69,28 +61,12 @@ void tabs
 <template>
   <div data-testid="batch-panel">
     <div class="batch-form" data-testid="batch-settings">
-      <div class="batch-grid" data-testid="batch-grid">
-        <div class="bf"><span class="bl">Data fayl (CSV/JSON)</span>
-          <span class="bf-row"><button data-testid="batch-file-btn" @click="fileInput?.click()">Tanlash…</button>
-            <button v-if="b.data" class="ghost" data-testid="batch-file-clear" @click="b.data = null">× tozalash</button></span>
-          <input ref="fileInput" type="file" accept=".csv,.json" hidden data-testid="batch-file" @change="onFile">
-          <span class="muted bf-info" data-testid="batch-data-info">{{ b.data ? `${b.data.name}: ${b.data.rows.length} qator` : 'faylsiz — 1 ta so\'rov' }}</span></div>
-        <label class="bf"><span class="bl">Qatorlar</span><span class="bf-row"><select v-model="b.settings.rowsMode" data-testid="batch-rows-mode" aria-label="Qatorlar"><option value="all">Hammasi</option><option value="custom">Soni</option></select>
-          <input v-if="b.settings.rowsMode === 'custom'" type="number" min="1" v-model.number="b.settings.count" style="width:80px" aria-label="Qatorlar soni" data-testid="batch-count"></span></label>
-        <label class="bf"><span class="bl">Kechikish (s)</span><input type="number" min="0" step="0.1" v-model.number="b.settings.delay" data-testid="batch-delay"></label>
-        <label class="bf"><span class="bl">Timeout (s)</span><input type="number" min="1" max="600" v-model.number="b.settings.timeout" data-testid="batch-timeout"></label>
-        <label class="bf"><span class="bl">Parallel</span><input type="number" min="1" max="10" v-model.number="b.settings.concurrency" data-testid="batch-concurrency"></label>
-        <label class="bf"><span class="bl">Retry</span><input type="number" min="0" max="5" v-model.number="b.settings.retry" data-testid="batch-retry"></label>
-      </div>
+      <RunSettings :model="b.settings" tid="batch" mode="batch" :data="b.data" v-model:rows-mode="b.settings.rowsMode" v-model:rows-count="b.settings.count" @data-file="loadFile" @data-clear="b.data = null" />
       <div class="batch-actions">
         <button class="primary" data-testid="batch-run" :disabled="b.status === 'running'" @click="run">▶ RUN</button>
         <button data-testid="batch-stop" :disabled="b.status !== 'running'" @click="stopBatch(tab)">■ STOP</button>
-        <label class="bf-check"><input type="checkbox" v-model="b.settings.ssl" data-testid="batch-ssl"> SSL tekshirish</label>
       </div>
     </div>
-
-    <div class="drop-zone" :class="{ over: zone }" data-testid="batch-dropzone" @dragover.prevent="zone = true" @dragleave="zone = false" @drop="onZoneDrop">CSV/JSON faylni shu yerga tashlang</div>
-    <DataPreview v-if="b.data?.rows.length" :rows="b.data.rows" />
 
     <div v-if="b.status !== 'idle'" style="margin-top:14px" data-testid="results-pane">
       <div style="display:flex;align-items:center;gap:8px">

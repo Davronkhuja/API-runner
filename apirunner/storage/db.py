@@ -29,6 +29,23 @@ CREATE TABLE IF NOT EXISTS responses (
     body      BLOB
 );
 """
+RUNS = """
+CREATE TABLE IF NOT EXISTS runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, scope TEXT NOT NULL, scope_name TEXT NOT NULL DEFAULT '', number INTEGER NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'runner', started REAL NOT NULL, finished REAL, status TEXT NOT NULL DEFAULT 'running',
+    env_name TEXT NOT NULL DEFAULT '', iterations INTEGER NOT NULL DEFAULT 1, config TEXT NOT NULL DEFAULT '{}', summary TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_runs_scope ON runs(scope, id);
+CREATE TABLE IF NOT EXISTS run_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, run_id INTEGER NOT NULL, iter INTEGER NOT NULL, seq INTEGER NOT NULL, item_id TEXT NOT NULL DEFAULT '',
+    name TEXT NOT NULL DEFAULT '', method TEXT NOT NULL DEFAULT '', url TEXT NOT NULL DEFAULT '', status TEXT, time REAL NOT NULL DEFAULT 0, size INTEGER NOT NULL DEFAULT 0,
+    error INTEGER NOT NULL DEFAULT 0, tests TEXT NOT NULL DEFAULT '[]', resp_headers TEXT, body TEXT, body_truncated INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_run_results_run ON run_results(run_id, id);
+CREATE TABLE IF NOT EXISTS last_results (ref TEXT PRIMARY KEY, status TEXT, time REAL, ts REAL NOT NULL);
+"""
+RUN_KEEP = 200            # eng ko'pi bilan shuncha run saqlanadi (eskilari o'chiriladi)
+RUN_BODY_LIMIT = 64 * 1024
 MAX_RESPONSE = 5 * 1024 * 1024          # har javob uchun saqlanadigan eng ko'p hajm
 RESPONSE_BUDGET = 300 * 1024 * 1024     # umumiy hajm chegarasi: eng eskilari o'chiriladi
 RESPONSE_KEEP = 400
@@ -57,6 +74,7 @@ class StateDB:
             c.execute("PRAGMA journal_mode=WAL")           # doimiy; bir vaqtda o'qish/yozish xavfsiz
             if self._fresh(c):
                 c.executescript(SCHEMA)               # yangi baza: hash ustuni bilan (schema 2)
+            c.executescript(RUNS)
             c.executescript(RESPONSES)                      # har qanday bazada (eski ham): IF NOT EXISTS
             c.commit()
             cols = [r[1] for r in c.execute("PRAGMA table_info(history)")]

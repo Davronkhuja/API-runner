@@ -3,7 +3,6 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
-import { useLastRun } from '../stores/lastrun'
 import { draftFromItem, eventsFromDraft, extFromDraft, requestFromDraft } from './draft'
 import { applyScriptResult, scriptsFor } from './scripts'
 import { logRequest, logResponse } from './console'
@@ -63,13 +62,13 @@ export async function sendTab(tab: Tab) {
     await prepareAuth(tab.draft, tab.ref)
     const spec = specFor(tab.draft, tab.ref)
     spec.timeout = 30
+    spec.ref = tab.ref                        // oxirgi natija serverda (SQLite last_results) — Folder Overview uchun
     spec.store_response = true               // javob serverda saqlanadi (sahifa yangilangach tiklash)
     const scripts = scriptsFor(tab.ref, tab.draft.scripts, tab.draft.name)
     if (scripts) Object.assign(spec, { scripts, ref: tab.ref, scripts_info: { requestName: tab.draft.name, requestId: tab.ref?.split(':')[1] ?? '' } })
     logRequest(spec.method, tab.draft.url, tab.id)
     const r = await post('/run_one', spec)
     tab.response = r
-    useLastRun().setResult(tab.ref, r.status, r.time)
     useTabs().persistSoon()          // holat/o'lcham/sarlavhalar sahifa yangilanganda ham qoladi (matn emas)
     logResponse(r, tab.id)
     await applyScriptResult(r.scripts, { tabId: tab.id, ref: tab.ref })

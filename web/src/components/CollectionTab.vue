@@ -7,7 +7,7 @@ import { useTabs, type Tab } from '../stores/tabs'
 import { authFromPm, authToPm, type AuthDraft } from '../lib/auth'
 import { fmtMs, showToast, sidePanel } from '../lib/ui'
 import { openRequest } from '../lib/actions'
-import { isOkStatus, useLastRun } from '../stores/lastrun'
+import { lastResults } from '../lib/runs'
 import { eventsFromText, lastErrors, textFromEvents, type ScriptSet } from '../lib/scripts'
 import { authSource, folderPath } from '../lib/scope'
 import { authName, hasRealAuth, openNodeTab, overridableRequests, requestsIn, sameAuth, type Section } from '../lib/nodes'
@@ -21,7 +21,9 @@ import VarsTable from './VarsTable.vue'
 import BulkAuthDialog, { type Candidate } from './BulkAuthDialog.vue'
 
 const props = defineProps<{ tab: Tab }>()
-const tree = useTree(), tabs = useTabs(), last = useLastRun()
+const tree = useTree(), tabs = useTabs()
+/** Status '200' / 'ERR' (SQLite'da matn) — muvaffaqiyat: 2xx/3xx. */
+const isOkStatus = (s: number | string) => /^\d+$/.test(String(s)) && Number(s) < 400
 const [cid, fid] = (props.tab.ref ?? '').split(':')
 const isFolder = !!fid
 const node = computed<any>(() => (isFolder ? tree.findItem(cid, fid) : tree.cols[cid]))
@@ -62,7 +64,7 @@ const filter = ref('')
 const rows = computed(() => reqs.value.map(r => {
   const a = r.item.request?.auth
   const own = !!a?.type && a.type !== 'noauth'
-  const res = last.results[`${cid}:${r.item.id}`]
+  const res = lastRes.value[`${cid}:${r.item.id}`]
   return {
     id: r.item.id, method: r.item.request.method, name: r.item.name, path: r.path,
     auth: a?.type === 'noauth' ? "Auth yo'q" : own ? `${authName(a)} (o'zi)` : '↑ Meros', own, none: a?.type === 'noauth',
@@ -73,9 +75,21 @@ const shownRows = computed(() => { const q = filter.value.trim().toLowerCase(); 
 const inheritCount = computed(() => rows.value.filter(r => !r.own && !r.none).length)
 const sameTokenCount = computed(() => (hasRealAuth(node.value?.auth) ? overridableRequests(cid, isFolder ? fid : null, node.value.auth).filter(c => c.same).length : 0))
 const scriptKinds = computed(() => [form.value?.scripts.pre.trim() ? 'Pre-request' : '', form.value?.scripts.test.trim() ? 'Tests' : ''].filter(Boolean).join(' · '))
-const lastRun = computed(() => last.runs[props.tab.ref!])
+// Oxirgi natijalar SQLite'dan (`/api/last-results`): Overview ochilganda va so'rovlar/Runner o'zgarganda yangilanadi
+const lastRes = ref<Record<string, { status: string; time: number; ts: number }>>({})
+const lastRun = ref<{ number: number; started: number; items: { id: string; status: string }[] } | null>(null)
+let lastSeq = 0
+async function refreshLast() {
+  const seq = ++lastSeq
+  try {
+    const d = await lastResults(reqs.value.map(r => `${cid}:${r.item.id}`), props.tab.ref!)
+    if (seq !== lastSeq) return
+    lastRes.value = d.results ?? {}; lastRun.value = d.run ?? null
+  } catch { /* server ulanmagan: oxirgi ma'lum holat qoladi */ }
+}
+watch([() => reqs.value.map(r => r.item.id).join(','), section, () => props.tab.ref], () => { if (section.value === 'overview') refreshLast() }, { immediate: true })
 const lastRunOk = computed(() => lastRun.value?.items.filter(i => isOkStatus(i.status)).length ?? 0)
-const lastRunWhen = computed(() => (lastRun.value ? new Date(lastRun.value.at).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''))
+const lastRunWhen = computed(() => (lastRun.value ? new Date(lastRun.value.started * 1000).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''))
 const nameOf = (id: string) => reqs.value.find(r => r.item.id === id)?.item.name ?? id
 function offerInherit() {
   const cands = overridableRequests(cid, isFolder ? fid : null, node.value.auth)

@@ -327,10 +327,11 @@ def run_item(spec, services, scripts=None, ref=None, row=None, info=None, ctx_kw
         base.update(kw)
         return ExecContext(variables=variables, keep_text=keep_text, **base)
 
+    plain_vars = {**(spec.get("env_vars") or {}), **{k: _s(v) for k, v in (row or {}).items()}}      # skriptsiz: data qatori o'zgaruvchi sifatida
     if not (pre or post):
-        return execute(spec, make_ctx(spec.get("env_vars") or {}))
+        return execute(spec, make_ctx(plain_vars))
     if not scripting.available():
-        r = execute(spec, make_ctx(spec.get("env_vars") or {}))
+        r = execute(spec, make_ctx(plain_vars))
         r["scripts"] = {"available": False, "message": "Skriptlar o'chiq: quickjs-ng o'rnatilmagan", "install": scripting.INSTALL_HINT, "tests": [], "console": [], "errors": []}
         return r
 
