@@ -1,12 +1,12 @@
 /** Nomi to'liq URL bo'lib qolgan so'rovlar uchun bir martalik "Nomlarni tozalash" taklifi (oldindan ko'rish + zaxira). */
 import { post } from '../api/client'
 import { useTabs } from '../stores/tabs'
+import { useWorkspace } from '../stores/workspace'
 import { useTree } from '../stores/tree'
 import { requestsIn } from './nodes'
 import { suggestName } from './rename'
 
 export interface CleanItem { cid: string; id: string; old: string; neu: string }
-const DISMISS_KEY = 'apirunner.nameclean.dismissed'
 
 export function urlNamedItems(): CleanItem[] {
   const tree = useTree(), out: CleanItem[] = []
@@ -18,8 +18,8 @@ export function urlNamedItems(): CleanItem[] {
   }
   return out
 }
-export const isDismissed = () => { try { return localStorage.getItem(DISMISS_KEY) === '1' } catch { return false } }
-export const dismissOffer = () => { try { localStorage.setItem(DISMISS_KEY, '1') } catch { /* bloklangan */ } }
+export const isDismissed = () => useWorkspace().nameCleanDismissed
+export const dismissOffer = () => { useWorkspace().dismissNameClean().catch(() => {}) }
 
 /** Avval to'liq zaxira, keyin tanlangan nomlar o'zgartiriladi (so'rov ichidagi hech narsa tegilmaydi). Qaytaradi: zaxira nomi. */
 export async function applyClean(items: CleanItem[]): Promise<string> {

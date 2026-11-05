@@ -565,3 +565,5 @@ body.resizing-row iframe,body.resizing-col iframe{pointer-events:none}
 .rp-headers{overflow:visible;border-radius:0}
 table.kv.rp-headers{overflow:visible;border-radius:0}
 .editor.fill{overflow-x:auto;overflow-y:hidden}
+.nameclean{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;margin:var(--sp-1) var(--sp-2) var(--sp-2);padding:var(--sp-2) var(--sp-3);border:1px solid var(--border);border-radius:var(--radius);background:var(--var-bg);color:var(--var);font-size:var(--fs-sm);width:auto}.nameclean .nc-text{flex:1 1 100%}.nameclean .nc-x{margin-left:auto;position:absolute;right:var(--sp-2);top:var(--sp-1)}.nameclean{position:relative;padding-right:var(--sp-6)}
+.code-view{height:auto}.code-view .cm-editor{height:auto!important;min-height:120px}.code-view .cm-scroller{min-height:120px;max-height:calc(100vh - 160px)}

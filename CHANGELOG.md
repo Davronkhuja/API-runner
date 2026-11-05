@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.4.1] — 2026-11-05 — Fix: nom tozalash banneri, Kod dialogi balandligi, skrinshotlar repodan
+### Fixed
+- "N ta so'rov nomi URL ko'rinishida" banneri sidebar sarlavhasiga siqilib qolardi — endi sarlavha ostida to'liq kenglikda, yopiladigan; yopilgach qayta chiqmaydi (workspace meta'da `nameclean_dismissed`, sahifa yangilanganda ham).
+- Kod dialogi tanasi balandligi kontentga qarab (min 120px, max `100vh − 64px`): qisqa kodda katta bo'sh maydon yo'q.
+### Changed
+- Audit/QA skrinshotlari (`docs/screenshots/before|after|qa|audit`) git'dan chiqarildi va `.gitignore` ga qo'shildi (tarix qayta yozilmadi); repoda faqat vizual regressiya baseline'lari. Qayta yaratish: `docs/screenshots/README.md`.
+### Added
+- Layout testlari: sidebar sarlavhasi va banner bir-birini siqmaydi; dialog tanasi kontentdan ortiq bo'sh joy qoldirmaydi; Kod dialogi balandligi kontentga mos.
+
 ## [2.4.0] — 2026-11-05 — UI audit: tizimli tuzatishlar va himoya
 Audit hisoboti: `docs/ui-audit.md` (har qator commit va oldin/keyin skrinshot bilan).
 ### Added

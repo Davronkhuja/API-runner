@@ -117,3 +117,50 @@ def test_axe_has_no_serious_or_critical_violations(page, name):
     page.add_script_tag(path=str(AXE))
     res = page.evaluate("() => axe.run({ exclude: [['.tabs-scroll']] }, { resultTypes: ['violations'] }).then(r => r.violations.filter(v => ['serious','critical'].includes(v.impact)).map(v => v.id + ' ×' + v.nodes.length + ' ' + v.nodes[0].target.join(' ')))")
     assert res == [], (name, res)
+
+
+def test_sidebar_title_and_banner_do_not_squeeze_each_other(page):
+    page.wait_for_selector("[data-testid=nameclean-offer]")                                          # seed'da URL nomli so'rov bor
+    sb = page.locator("[data-testid=sidebar]").bounding_box()
+    title = page.locator(".sb-title").bounding_box()
+    banner = T(page, "nameclean-offer").bounding_box()
+    assert title["height"] <= 56, title                                                              # sarlavha qatori bannerdan siqilib o'smaydi
+    assert banner["y"] >= title["y"] + title["height"] - 1, (title, banner)                           # banner sarlavha ostida
+    assert banner["width"] >= sb["width"] - 24, (sb, banner)                                          # to'liq kenglikda
+    for t in ("sb-new-request", "new-collection"):
+        b = T(page, t).bounding_box()
+        assert b["width"] >= 24 and b["x"] + b["width"] <= sb["x"] + sb["width"] + 1                  # sarlavha tugmalari ko'rinadi va kichraymagan
+    expect(T(page, "sb-title")).to_be_visible()
+    T(page, "nameclean-close").click()
+    expect(T(page, "nameclean-offer")).to_have_count(0)
+    page.reload()
+    page.wait_for_selector("[data-testid=app]")
+    page.wait_for_timeout(300)
+    expect(T(page, "nameclean-offer")).to_have_count(0)                                              # yopilgach qayta chiqmaydi (workspace'da saqlangan)
+    assert page.app.api("GET", "/api/workspace")["meta"].get("nameclean_dismissed") is True
+
+
+@pytest.mark.parametrize("name", ["dlg-code-long", "dlg-saveas", "dlg-move", "dlg-confirm", "dlg-import", "dlg-nameclean", "dlg-runguard"])
+def test_dialog_body_leaves_no_big_empty_space_below_its_content(page, name):
+    go(page, name)
+    gap = page.evaluate("""() => {
+      const b = document.querySelector('.dialog.dlg .dlg-body'); const bb = b.getBoundingClientRect()
+      const last = [...b.children].filter(e => e.getBoundingClientRect().height > 0).pop()
+      return Math.round(bb.bottom - parseFloat(getComputedStyle(b).paddingBottom) - last.getBoundingClientRect().bottom) }""")
+    assert gap <= 24, (name, gap)
+
+
+def test_code_dialog_height_follows_the_content(page):
+    page.click("[data-testid=new-tab]")
+    page.fill("[data-testid=url]", "http://h/x")
+    page.keyboard.press("Escape")
+    T(page, "curl-btn").click()
+    short = page.locator(".dialog.dlg").bounding_box()["height"]
+    page.keyboard.press("Escape")
+    page.click("[data-section=headers]")
+    for i in range(30):
+        page.locator("[data-testid=headers-table] [data-cell='%d:0']" % i).fill(f"X-H{i}")
+    T(page, "curl-btn").click()
+    tall = page.locator(".dialog.dlg").bounding_box()
+    assert short < 330 and tall["height"] > short + 200                                              # qisqa kodda katta oq maydon yo'q, uzunida o'sadi
+    assert tall["height"] <= page.viewport_size["height"] - 60

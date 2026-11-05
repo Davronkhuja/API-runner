@@ -1,5 +1,7 @@
 # UI audit
 
+> Skrinshot havolalari (`docs/screenshots/audit/...`) git'da saqlanmaydi (hajm) — `tools/ui_audit.py` + `tools/ui_audit_pack.py` bilan qayta yaratiladi (`docs/screenshots/README.md`). Tarixda v2.4.0 commit'larida bor.
+
 Avtomatik audit (`tools/ui_audit.py`): 5 oyna (1280×800, 1440×900, 1920×1080, 1440×900@80%, @125%) × light/dark × 41+ ekran/holat. Detektorlar: dialog viewport'dan oshishi, sahifa gorizontal scroll, kesilgan matn, <24px nishon, muharrir ostida bo'sh joy, axe (serious/critical). Qo'lda tasdiqlanganlar (MAN) va skrinshotlarni ko'zdan kechirish topilmalari alohida.
 
 Jami: bloklaydi: 12, xalaqit beradi: 33, kosmetik: 16 

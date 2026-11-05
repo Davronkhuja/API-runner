@@ -42,3 +42,9 @@ web/node_modules/
 web/.vite/
 _manual_backups/
 backups/
+
+# Audit/QA skrinshotlari repoga kirmaydi (qayta yaratish: docs/screenshots/README.md); faqat vizual regressiya baseline qoladi
+docs/screenshots/before/
+docs/screenshots/after/
+docs/screenshots/qa/
+docs/screenshots/audit/

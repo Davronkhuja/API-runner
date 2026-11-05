@@ -3,7 +3,7 @@ import { kindLabel } from '../lib/envkind'
 import Dialog from './Dialog.vue'
 import HistoryList from './HistoryList.vue'
 import NameCleanDialog from './NameCleanDialog.vue'
-import { dismissOffer, isDismissed, urlNamedItems } from '../lib/nameclean'
+import { dismissOffer, urlNamedItems } from '../lib/nameclean'
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { useTree, rowKey, dropPositionFor, type Row } from '../stores/tree'
 import { useTabs } from '../stores/tabs'
@@ -177,7 +177,7 @@ async function newCollection() { await tree.createCollection('Yangi collection')
 const loadHistory = openFromHistory
 const openEnv = (id: string, name: string) => tabs.open('environment', id, name, { permanent: true })
 async function delEnv(id: string, name: string) { if (await askConfirm(`'${name}' o'chirilsinmi?`, "O'chirish")) await ws.deleteEnv(id) }
-const cleanOpen = ref(false), cleanDismissed = ref(isDismissed())
+const cleanOpen = ref(false)
 const cleanCount = computed(() => urlNamedItems().length)
 async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(id, 'Yangi muhit') }
 </script>
@@ -187,13 +187,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
     <div class="sb-title">
       <b data-testid="sb-title">{{ titles[panel] }}</b>
       <div style="display:flex;gap:2px">
-        <div v-if="panel === 'collections' && cleanCount && !cleanDismissed" class="sb-note nameclean" data-testid="nameclean-offer">
-      <span>{{ cleanCount }} ta so'rov nomi URL ko'rinishida.</span>
-      <button class="linkbtn" data-testid="nameclean-open" @click="cleanOpen = true">Ko'rish va tozalash…</button>
-      <button class="ib" aria-label="Taklifni yopish" title="Yopish" @click="dismissOffer(); cleanDismissed = true">×</button>
-    </div>
-    <NameCleanDialog v-if="cleanOpen" @close="cleanOpen = false; cleanDismissed = isDismissed()" />
-    <template v-if="panel === 'collections'">
+        <template v-if="panel === 'collections'">
           <button class="ib" aria-label="Yangi so'rov" title="Yangi so'rov" data-testid="sb-new-request" @click="tabs.openNew()"><Icon name="plus" :size="16" /></button>
           <button class="ib" aria-label="Yangi collection" title="Yangi collection" data-testid="new-collection" @click="newCollection"><Icon name="folder-plus" :size="16" /></button>
         </template>
@@ -204,6 +198,13 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
         </template>
       </div>
     </div>
+
+    <div v-if="panel === 'collections' && cleanCount && !ws.nameCleanDismissed" class="nameclean" data-testid="nameclean-offer" role="status">
+      <span class="nc-text">{{ cleanCount }} ta so'rov nomi URL ko'rinishida.</span>
+      <button class="linkbtn" data-testid="nameclean-open" @click="cleanOpen = true">Ko'rish va tozalash…</button>
+      <button class="ib nc-x" aria-label="Taklifni yopish" title="Yopish" data-testid="nameclean-close" @click="dismissOffer()">×</button>
+    </div>
+    <NameCleanDialog v-if="cleanOpen" @close="cleanOpen = false" />
 
     <template v-if="panel === 'collections'">
       <div class="sb-search"><input v-model="tree.filter" placeholder="Filtr…" aria-label="Kolleksiyalarda qidirish" data-testid="sb-search"></div>

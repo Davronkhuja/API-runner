@@ -268,7 +268,7 @@ def put_ui_state():
 @bp.put("/workspace/meta")
 def put_meta():
     d = request.get_json(silent=True) or {}
-    allowed = {k: d[k] for k in ("active_environment_id", "legacy_default_notified") if k in d}
+    allowed = {k: d[k] for k in ("active_environment_id", "legacy_default_notified", "nameclean_dismissed") if k in d}
     if isinstance(d.get("settings"), dict):
         allowed["settings"] = d["settings"]
     if isinstance(d.get("script_limits"), dict):
