@@ -35,14 +35,17 @@ class Trash:
         atomic_write_json(os.path.join(self.dir, tid + ".json"), doc)
         return tid
 
-    def add_item(self, col, item_id):
-        """So'rov/papkani savatga qo'yadi (collection'dan O'CHIRMAYDI — chaqiruvchi o'chiradi)."""
+    def add_item(self, col, item_id, shallow=False):
+        """So'rov/papkani savatga qo'yadi (collection'dan O'CHIRMAYDI — chaqiruvchi o'chiradi). `shallow` — papka bolalarisiz (qobiq)."""
         hit = tree_ops.find(col["item"], item_id)
         if not hit:
             raise tree_ops.TreeError("Element topilmadi")
         node, siblings, parent = hit
         origin = {"collection_id": model.collection_id(col), "collection_name": col["info"]["name"], "parent_id": parent["id"] if parent else None,
                   "parent_name": parent["name"] if parent else None, "index": siblings.index(node), "folder": model.is_folder(node), "requests": _count_requests(node)}
+        if shallow and model.is_folder(node):
+            node = {**node, "item": []}
+            origin["requests"] = 0
         return self._put("item", node.get("name", ""), node, origin)
 
     def add_collection(self, col):

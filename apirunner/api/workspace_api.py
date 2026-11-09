@@ -83,11 +83,7 @@ def put_collection(cid):
 
 @bp.delete("/collections/<cid>")
 def delete_collection(cid):
-    ws = _ws()
-    with ws.lock:
-        tid = _trash().add_collection(ws.get_collection(cid))          # avval savatga, keyin o'chirish
-        ws.delete_collection(cid)
-    return jsonify({"ok": True, "trash_id": tid})
+    return jsonify({"ok": True, "trash_id": _ws().delete_collection(cid)})
 
 
 # environments
@@ -139,11 +135,7 @@ def put_environment(eid):
 
 @bp.delete("/environments/<eid>")
 def delete_environment(eid):
-    ws = _ws()
-    with ws.lock:
-        tid = _trash().add_environment(ws.get_environment(eid))
-        ws.delete_environment(eid)
-    return jsonify({"ok": True, "trash_id": tid})
+    return jsonify({"ok": True, "trash_id": _ws().delete_environment(eid)})
 
 
 # globals
@@ -241,12 +233,10 @@ def patch_item(cid, iid):
 
 @bp.delete("/collections/<cid>/items/<iid>")
 def delete_item(cid, iid):
-    ws = _ws()
-    with ws.lock:
-        col = ws.get_collection(cid)
-        tid = _trash().add_item(col, iid)
-        tree_ops.delete_item(col, iid)
-        ws.save_collection(col)
+    try:
+        tid = _ws().delete_item(cid, iid)
+    except tree_ops.TreeError as e:
+        return jsonify({"error": str(e)}), 400
     return jsonify({"ok": True, "trash_id": tid})
 
 

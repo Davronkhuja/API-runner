@@ -133,6 +133,16 @@ async function menuAct(a: string) {
   else if (a === 'newfolder') { await tree.addItem(r.collectionId, { name: 'Yangi papka', item: [] }, r.isCollection ? null : r.id) }
   else if (a === 'move') { moveDlg.value = { keys: tree.selection.length ? [...tree.selection] : [keyOf(r)] }; moveTarget.value = '' }
   else if (a === 'dup') await duplicate(r)
+  else if (a === 'delete-collection') {
+    const n = tree.metas.find(m => m.id === r.collectionId)?.requests ?? 0
+    if (!(await askConfirm(`«${r.name}» collection'i va ichidagi ${n} ta so'rov Savatga o'tkazilsinmi? 30 kun ichida Savatdan tiklash mumkin.`, "Savatga o'tkazish"))) return
+    try {
+      await tree.removeCollection(r.collectionId)
+      tabs.tabs.filter(t => t.ref && (t.ref === r.collectionId || t.ref.startsWith(r.collectionId + ':'))).forEach(t => tabs.dropRef(t.ref!))
+      tree.clearSelection()
+      showToast(`«${r.name}» Savatga o'tkazildi`, 'success')
+    } catch (e: any) { showToast(e.message, 'error') }
+  }
   else if (a === 'delete') {
     const keys = tree.selection.includes(keyOf(r)) ? [...tree.selection] : [keyOf(r)]
     if (!(await askConfirm(`${keys.length} ta element Savatga o'tkazilsinmi? (30 kun ichida tiklash mumkin)`, 'O\'chirish'))) return
@@ -303,6 +313,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
         <button v-if="!menu.row.isCollection" data-act="dup" @click="menuAct('dup')">Dublikat</button>
         <button v-if="!menu.row.isCollection" data-act="move" @click="menuAct('move')">Ko'chirish…</button>
         <button v-if="!menu.row.isCollection" data-act="delete" @click="menuAct('delete')">O'chirish</button>
+        <button v-else data-act="delete-collection" @click="menuAct('delete-collection')">O'chirish (Savatga)</button>
         </template>
       </div>
     </div>
