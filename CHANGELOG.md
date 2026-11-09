@@ -2,6 +2,19 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.7.0] — 2026-11-09 — Bosqich 5: Import / Export (+ Savat qoldiqlari)
+### Fixed
+- **Savat chetlab o'tilmaydi:** eski `/saved` endpointlari (so'rov o'chirish; papka o'chirish — papka qobig'i auth/skriptlari bilan) va barcha o'chirish yo'llari endi faqat `Workspace.delete_collection/delete_environment/delete_item` orqali, ya'ni avval savatga yoziladi. Strukturaviy test (`tests/test_no_hard_delete.py`) boshqa yo'l qolmaganini tekshiradi.
+### Added
+- **Collection'ni o'chirish** kontekst menyuda ("O'chirish (Savatga)"): tasdiqda ichidagi so'rovlar soni ko'rsatiladi, ochiq tablar yopiladi.
+- **Import:** Postman Collection **v2.0 va v2.1** to'liq (ichma-ich papkalar, auth, skriptlar, o'zgaruvchilar, example'lar, tavsif; v2.0 shakllari normallashtiriladi), Postman **environment** va **globals**, **OpenAPI 3.x / Swagger 2.0** (JSON/YAML, fayl yoki URL; `$ref`, misol generatsiyasi, tag→papka, `{{baseUrl}}`, xavfsizlik→auth, javob→example), **Insomnia v4** (papkalar, `{{ _.x }}`→`{{x}}`, Base/sub muhitlar), **HAR** (host bo'yicha papkalar, javob→example, Cookie import qilinmaydi), **cURL** (bir nechta buyruq, bash `\`, `$'..'`), **workspace zip**.
+- **Import dialogi:** bir nechta manba, har element uchun oldindan ko'rish (papka/so'rov/o'zgaruvchi/namuna/skript soni, ogohlantirishlar) va **konflikt holati**: Yangi nusxa / Birlashtirish (+N so'rov) / Almashtirish (eskisi Savatga) / O'tkazib yuborish.
+- **Export:** Postman v2.1 collection, Postman environment/globals (**faqat Initial**, secret'lar bo'sh), **OpenAPI 3.0** (JSON/YAML), **butun workspace zaxirasi (.zip)**; UI: collection menyusi va Overview "Eksport", muhit tabi, Sozlamalar → Import / Eksport, ⌘K.
+- ADR 0008; real namunalar `tests/fixtures/{postman,openapi,insomnia,har,curl}`; testlar: `test_import_export_formats` (31, round-trip), `test_import_conflicts` (14), `test_no_hard_delete` (5), e2e `test_import_export_ui` (8); vizual baseline 23–25.
+### Changed
+- OpenAPI importi endi `{{baseUrl}}` collection o'zgaruvchisini yaratadi (oldin server URL so'rovga yozilgan edi). `requirements.txt`: `PyYAML`.
+- Tashqi qaramlik: Insomnia v5 qo'llab-quvvatlanmaydi (aniq xabar bilan).
+
 ## [2.6.0] — 2026-11-09 — Bosqich 4b: Kundalik qulayliklar
 ### Added
 - **`{{` avtoto'ldirish**: URL, Body (CodeMirror), Params/Headers/form-data va Auth maydonlarida; scope (Environment/Collection/Papka/Globals/Dinamik `$…`) va qiymat ko'rsatiladi, maxfiy qiymatlar `••••`; ↑↓ Enter/Tab Esc.

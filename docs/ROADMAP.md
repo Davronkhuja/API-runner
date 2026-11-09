@@ -72,7 +72,8 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] Fayl biriktirish Postman uslubida (Body → form-data Turi/Content-Type, ko'p fayl, drop, topilmadi, binary, `workspace/files`, sxema 3 migratsiyasi, Sozlamalar → Fayllar) — v2.3.7
 - [x] C: Folder/Collection Overview, Env (Initial/Current, secret, tur), Tarix (kunlar, ×N, filtr, diff), Ko'rinish (yonma-yon/ustma-ust, zich rejim), Body segmentlari (POST/PUT — raw JSON), Batch formasi 2 qatorli grid — v2.3.8
 - [x] **Batch formasini Runner tabiga ko'chirish** (v2.5.0: yagona `RunSettings`) (ko'rib chiqildi: Runner v2 sozlamalari — parallel, kechikish, retry, timeout, data fayl — Batch bilan bir xil, shuning uchun Bosqich 4 da yagona "Run sozlamalari" paneliga birlashtiriladi; so'rov tabidagi "Batch / Runner" esa shu panelni bitta so'rov uchun ochuvchi qisqa yo'l bo'lib qoladi)
-- [ ] Folder Overview: "Hujjat yaratish" va "Eksport" tugmalari (maketda bor; Bosqich 5 — Export bilan birga)
+- [x] Folder Overview: "Eksport" tugmasi — v2.7.0
+- [ ] Folder Overview: "Hujjat yaratish" tugmasi (Bosqich 7 — hujjatlar generatsiyasi)
 
 - [x] **UI audit va tuzatishlar** (v2.4.0): `docs/ui-audit.md`; yagona Dialog, Import dialogi, muhit popover, muharrirlar (qator raqami/fold/qidiruv/JSON xatosi), Headers tabi, Sozlamalar avtosaqlash, umumiy Tarix komponenti, nomlarni tozalash, dizayn tokenlari; himoya: vizual regressiya, layout, axe, fixed-height lint
 - [ ] UI audit qoldiqlari: javob ko'rinishida fold (hozir qator raqami va ⌘F-siz qidiruv paneli), `.tabs-scroll` axe istisnosi
@@ -90,7 +91,7 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] Auth: **JWT RS\*/ES\*** (`cryptography` bilan), **NTLM**, **Hawk** — v2.6.0
 
 ## Bosqich 5 — Import/Export
-- [ ] Postman v2.0/2.1, env/globals, OpenAPI/Swagger, Insomnia, HAR, cURL; export; round-trip testlar
+- [x] Postman v2.0/2.1, env/globals, OpenAPI/Swagger, Insomnia, HAR, cURL; export (Postman, OpenAPI, workspace zip); round-trip testlar — v2.7.0 (`docs/adr/0008-import-export.md`)
 
 ## Bosqich 6 — Boshqa protokollar
 - [ ] GraphQL, WebSocket, SSE, Socket.IO (ixtiyoriy), gRPC (ixtiyoriy)

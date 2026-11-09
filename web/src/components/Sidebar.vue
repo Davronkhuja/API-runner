@@ -315,7 +315,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
         <button v-if="!menu.row.isCollection" data-act="move" @click="menuAct('move')">Ko'chirish…</button>
         <button v-if="!menu.row.isCollection" data-act="delete" @click="menuAct('delete')">O'chirish</button>
         <button v-if="menu.row.isCollection" data-act="export" @click="menuAct('export')">Eksport…</button>
-        <button v-else data-act="delete-collection" @click="menuAct('delete-collection')">O'chirish (Savatga)</button>
+        <button v-if="menu.row.isCollection" data-act="delete-collection" @click="menuAct('delete-collection')">O'chirish (Savatga)</button>
         </template>
       </div>
     </div>

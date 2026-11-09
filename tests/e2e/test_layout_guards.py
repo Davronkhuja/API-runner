@@ -40,7 +40,7 @@ def page(request, world, browser):
 
 SCENES = ["welcome", "editor-empty", "editor-simple-response", "heavy-params", "heavy-headers", "heavy-auth", "heavy-body", "heavy-scripts", "heavy-settings", "heavy-batch",
           "body-graphql", "body-formdata", "resp-400", "resp-headers-tab", "resp-cookies-tab", "resp-tests-tab", "dlg-code-long", "dlg-saveas", "dlg-move", "dlg-confirm",
-          "env-tab", "env-eye", "folder-overview-80", "history-drawer", "sidebar-history", "settings", "tree-examples", "example-tab", "docs-panel", "docs-panel-edit", "trash-dialog", "find-replace", "setvar-dialog", "var-autocomplete-url", "var-autocomplete-kv", "send-menu", "auth-jwt-rs", "auth-hawk", "auth-ntlm", "server-stale", "server-stale-hint", "new-build", "restarting", "runner", "runner-results", "runner-compare", "runner-export-menu", "cookies", "console", "cmdk", "tabs-30", "long-name-request",
+          "env-tab", "env-eye", "folder-overview-80", "history-drawer", "sidebar-history", "settings", "tree-examples", "example-tab", "docs-panel", "docs-panel-edit", "trash-dialog", "find-replace", "setvar-dialog", "var-autocomplete-url", "var-autocomplete-kv", "send-menu", "auth-jwt-rs", "auth-hawk", "auth-ntlm", "import-openapi", "import-multi", "import-warnings", "import-conflict", "import-error", "export-dialog", "settings-io", "server-stale", "server-stale-hint", "new-build", "restarting", "runner", "runner-results", "runner-compare", "runner-export-menu", "cookies", "console", "cmdk", "tabs-30", "long-name-request",
           "layout-side", "layout-dense", "dlg-import", "dlg-nameclean"]
 
 
@@ -59,7 +59,7 @@ def EXTRA(page):
     return {"dlg-import": imp, "dlg-nameclean": clean}
 
 
-@pytest.mark.parametrize("name", ["dlg-code-long", "dlg-saveas", "dlg-move", "dlg-confirm", "dlg-import", "dlg-nameclean", "dlg-runguard", "runner-compare", "trash-dialog", "find-replace", "setvar-dialog"])
+@pytest.mark.parametrize("name", ["dlg-code-long", "dlg-saveas", "dlg-move", "dlg-confirm", "dlg-import", "dlg-nameclean", "dlg-runguard", "runner-compare", "import-multi", "import-conflict", "export-dialog", "trash-dialog", "find-replace", "setvar-dialog"])
 def test_dialogs_never_exceed_the_viewport_and_keep_header_and_footer_visible(page, name):
     go(page, name)
     vw, vh = page.viewport_size["width"], page.viewport_size["height"]

@@ -655,3 +655,8 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 .imp-iname{display:flex;flex-direction:column;min-width:0;flex:1}.imp-iname b,.imp-iname small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .imp-conflict{display:flex;align-items:center;gap:var(--sp-2);margin-left:auto}.warn-txt{color:var(--var);font-size:var(--fs-sm);font-weight:600}
 .imp-warn{list-style:none;margin:0;padding:0;font-size:var(--fs-sm);color:var(--var)}
+.exp-fmt{display:flex;flex-direction:column;gap:var(--sp-2);border:0;margin:0;padding:0}
+.exp-opt{display:flex;align-items:flex-start;gap:var(--sp-3);padding:var(--sp-3);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer}
+.exp-opt.on{border-color:var(--accent);background:var(--accent-weak)}
+.exp-opt input{margin-top:3px}.exp-opt span{display:flex;flex-direction:column;gap:2px;min-width:0}.exp-opt small{font-size:var(--fs-sm)}
+.exp-sec{display:flex;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3);font-size:var(--fs-md)}
