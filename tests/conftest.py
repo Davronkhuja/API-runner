@@ -229,3 +229,41 @@ def run_batch(client):
         return results, summary
 
     return _run
+
+
+@pytest.fixture(scope="session")
+def ws_srv():
+    from tests.servers import WsServer
+    s = WsServer().start()
+    yield s
+    s.stop()
+
+
+@pytest.fixture
+def ws_server(ws_srv):
+    ws_srv.connections = 0
+    ws_srv.received.clear()
+    return ws_srv
+
+
+@pytest.fixture(scope="session")
+def sse_srv():
+    from tests.servers import FlaskServer, build_sse_app
+    s = FlaskServer(build_sse_app())
+    yield s
+    s.stop()
+
+
+@pytest.fixture
+def sse_server(sse_srv):
+    import requests
+    requests.get(sse_srv.url + "/sse/reset")
+    return sse_srv.url
+
+
+@pytest.fixture(scope="session")
+def gql_server():
+    from tests.servers import FlaskServer, build_graphql_app
+    s = FlaskServer(build_graphql_app())
+    yield s.url
+    s.stop()
