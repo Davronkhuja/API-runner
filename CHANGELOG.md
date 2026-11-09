@@ -2,6 +2,21 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.6.0] — 2026-11-09 — Bosqich 4b: Kundalik qulayliklar
+### Added
+- **`{{` avtoto'ldirish**: URL, Body (CodeMirror), Params/Headers/form-data va Auth maydonlarida; scope (Environment/Collection/Papka/Globals/Dinamik `$…`) va qiymat ko'rsatiladi, maxfiy qiymatlar `••••`; ↑↓ Enter/Tab Esc.
+- **"Set as variable"**: so'rov maydonida matn belgilansa `{{ }} O'zgaruvchi qilish` chiqadi; nom (taklif), scope (Environment / Globals / Collection) va qiymat tanlanadi, matn `{{nom}}` ga almashadi.
+- **Example'lar daraxtda**: so'rov ostida (chevron), ochish → Example tabi (nom, status kodi/matni, headers, body, tur), saqlash, dublikat, o'chirish; "Save as Example" id beradi; eski id'siz example'lar ochilganda id oladi. Tahrirlar tab almashganda yo'qolmaydi.
+- **Docs paneli**: so'rov o'ng tomonida Markdown tavsif (`request.description`, Postman obyekt shakli ham o'qiladi); collection/papka Overview'da ham. Xavfsiz renderer (xom HTML va `javascript:` o'tmaydi).
+- **Savat (Trash)**: o'chirilgan so'rov/papka/collection/muhit `workspace/trash/` da 30 kun saqlanadi; Savat dialogi (sidebar, ⌘K): tiklash (o'z o'rniga; ota yo'q bo'lsa ildizga; collection yo'q bo'lsa yangisiga), butunlay o'chirish, bo'shatish. Avval savatga yoziladi, keyin o'chiriladi.
+- **Workspace bo'ylab Find & Replace**: URL/params/headers/body/auth/skript/tavsif/nom/o'zgaruvchi/muhit; Aa, so'z, regex; collection bo'yicha toraytirish; oldindan ko'rish (del/ins), har maydonni tanlash; almashtirishdan oldin avtomatik zaxira (`pre-find-replace`); maxfiy qiymatlar ko'rsatilmaydi.
+- **Send and Download**: Yuborish yonidagi menyu; fayl nomi Content-Disposition → URL → tur bo'yicha, binary serverdagi nusxadan.
+- **Auth**: JWT **RS256/384/512, PS256/384/512, ES256/384/512** (`cryptography`; PEM private key, passphrase; ES — JOSE r‖s), **Hawk** (rasmiy test vektori bilan mos; Postman kalitlari authId/authKey/extraData/appId), **NTLM** (NTLMv2, MS-NLMP vektorlari; MD4 sof Python zaxirasi bilan).
+- Tekshirildi va ROADMAP'da belgilandi: Initial/Current qiymatlar (v2.3.8) va header "ko'z" quick-look (v2.4.0), so'rov javoblari tarixi/diff (v2.3.8).
+### Changed
+- `requirements.txt`: `cryptography>=42`. AuthEditor maydonlariga `aria-label` (axe `label`). Tab holati `tab.state.form` (Example).
+- Testlar: pytest +`test_auth_hawk_ntlm_jwt_asym` (17), `test_trash` (8), `test_find_replace` (7); vitest +13; e2e: `test_var_autocomplete`, `test_set_as_variable`, `test_examples_tree`, `test_docs_panel`, `test_trash_ui`, `test_find_replace_ui`; vizual baseline 19–22; layout/axe sahnalari.
+
 ## [2.5.1] — 2026-11-05 — Server yangilanishi avtomatlashtirildi
 ### Added
 - **Qayta ishga tushirish tugmasi**: "Server eski" ogohlantirishida (PM2 ostida) `POST /api/admin/restart` — sessiya tokeni va Host/Origin tekshiruvi bilan; faol run/batch bo'lmasa (yoki `force`) ularni to'xtatadi, workspace yozuvlari tugashini kutadi, SQLite WAL'ni flush qiladi va `os._exit(0)`; PM2 (`autorestart`) yangi kod bilan qayta ko'taradi. UI "Server yangilanmoqda…" overlay'i bilan `/api/version`'ni kutadi va sahifani o'zi yangilaydi (vaqt tugasa — xato va "Sahifani yangilash").

@@ -77,17 +77,17 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] **UI audit va tuzatishlar** (v2.4.0): `docs/ui-audit.md`; yagona Dialog, Import dialogi, muhit popover, muharrirlar (qator raqami/fold/qidiruv/JSON xatosi), Headers tabi, Sozlamalar avtosaqlash, umumiy Tarix komponenti, nomlarni tozalash, dizayn tokenlari; himoya: vizual regressiya, layout, axe, fixed-height lint
 - [ ] UI audit qoldiqlari: javob ko'rinishida fold (hozir qator raqami va ⌘F-siz qidiruv paneli), `.tabs-scroll` axe istisnosi
 
-## Bosqich 4b — Kundalik qulayliklar (Bosqich 4 dan keyin bajariladi)
+## Bosqich 4b — Kundalik qulayliklar (v2.6.0)
 - [x] Muhit o'zgaruvchilarida **Initial / Current** qiymatlar (eksportga faqat Initial ketadi; skriptlar faqat Current'ni o'zgartiradi) — v2.3.8
-- [ ] Headerdagi "ko'z" quick-look (faol muhit + global qiymatlarni tez ko'rish va tahrirlash)
-- [ ] **`{{` avtoto'ldirish** (URL, params, headers, body, auth maydonlarida; scope va qiymat ko'rsatiladi) va belgilangan matndan o'zgaruvchi yaratish ("Set as variable")
-- [ ] **Example'lar ro'yxati** daraxtda so'rov ostida; ochish va tahrirlash (status, header, body)
-- [ ] **Docs paneli**: Markdown tavsif so'rov o'ng tomonida (collection/papka/so'rov)
-- [ ] **Trash**: o'chirilganlarni 30 kun saqlash va tiklash
-- [ ] **Workspace bo'ylab Find & Replace** (oldindan ko'rish va avtomatik zaxira bilan)
+- [x] Headerdagi "ko'z" quick-look (faol muhit + global qiymatlarni tez ko'rish va tahrirlash) — v2.4.0
+- [x] **`{{` avtoto'ldirish** (URL, params, headers, body, auth maydonlarida; scope va qiymat ko'rsatiladi) va belgilangan matndan o'zgaruvchi yaratish ("Set as variable") — v2.6.0
+- [x] **Example'lar ro'yxati** daraxtda so'rov ostida; ochish va tahrirlash (status, header, body)
+- [x] **Docs paneli**: Markdown tavsif so'rov o'ng tomonida (collection/papka/so'rov)
+- [x] **Trash**: o'chirilganlarni 30 kun saqlash va tiklash
+- [x] **Workspace bo'ylab Find & Replace** (oldindan ko'rish va avtomatik zaxira bilan)
 - [x] **So'rov javoblari tarixi** va ikki javobni solishtirish (diff) — v2.3.8 (javob matni tarixga 100 KB gacha saqlanadi)
-- [ ] **"Send and Download"** (javobni faylga saqlab yuborish)
-- [ ] Auth: **JWT RS\*/ES\*** (`cryptography` bilan), **NTLM**, **Hawk**
+- [x] **"Send and Download"** (javobni faylga saqlab yuborish)
+- [x] Auth: **JWT RS\*/ES\*** (`cryptography` bilan), **NTLM**, **Hawk** — v2.6.0
 
 ## Bosqich 5 — Import/Export
 - [ ] Postman v2.0/2.1, env/globals, OpenAPI/Swagger, Insomnia, HAR, cURL; export; round-trip testlar
