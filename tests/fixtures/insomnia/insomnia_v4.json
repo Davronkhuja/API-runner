@@ -1,0 +1,23 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2024-04-02T09:12:41.133Z",
+  "__export_source": "insomnia.desktop.app:v8.6.1",
+  "resources": [
+    {"_id": "wrk_1", "_type": "workspace", "parentId": null, "name": "Shop API", "description": "Do'kon API (Insomnia)", "scope": "collection"},
+    {"_id": "env_base", "_type": "environment", "parentId": "wrk_1", "name": "Base Environment", "data": {"base_url": "https://shop.example.test", "auth": {"token": "base-token"}, "retries": 3}, "metaSortKey": 1},
+    {"_id": "env_prod", "_type": "environment", "parentId": "env_base", "name": "Production", "data": {"base_url": "https://shop.prod.example.test"}, "metaSortKey": 2},
+    {"_id": "fld_1", "_type": "request_group", "parentId": "wrk_1", "name": "Products", "description": "Mahsulotlar", "metaSortKey": 10},
+    {"_id": "fld_2", "_type": "request_group", "parentId": "fld_1", "name": "Admin", "metaSortKey": 5},
+    {"_id": "req_1", "_type": "request", "parentId": "fld_1", "name": "List products", "method": "GET", "url": "{{ _.base_url }}/products", "parameters": [{"name": "page", "value": "1"}, {"name": "debug", "value": "1", "disabled": true}],
+     "headers": [{"name": "Accept", "value": "application/json"}], "authentication": {"type": "bearer", "token": "{{ _.auth.token }}"}, "metaSortKey": 20, "description": "Ro'yxat"},
+    {"_id": "req_2", "_type": "request", "parentId": "fld_2", "name": "Create product", "method": "POST", "url": "{{ _.base_url }}/admin/products",
+     "body": {"mimeType": "application/json", "text": "{\n  \"name\": \"Chair\",\n  \"price\": {{ _.retries }}\n}"}, "headers": [{"name": "Content-Type", "value": "application/json"}],
+     "authentication": {"type": "basic", "username": "admin", "password": "pw"}, "metaSortKey": 1},
+    {"_id": "req_3", "_type": "request", "parentId": "wrk_1", "name": "Login form", "method": "POST", "url": "{{ _.base_url }}/login",
+     "body": {"mimeType": "application/x-www-form-urlencoded", "params": [{"name": "user", "value": "u"}, {"name": "pass", "value": "p"}]}, "metaSortKey": 30},
+    {"_id": "req_4", "_type": "request", "parentId": "wrk_1", "name": "GraphQL", "method": "POST", "url": "{{ _.base_url }}/graphql",
+     "body": {"mimeType": "application/graphql", "text": "{\"query\": \"{ products { id } }\", \"variables\": {\"a\": 1}}"}, "metaSortKey": 40},
+    {"_id": "jar_1", "_type": "cookie_jar", "parentId": "wrk_1", "name": "Default Jar", "cookies": []}
+  ]
+}

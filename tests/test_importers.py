@@ -46,7 +46,8 @@ def test_import_openapi(client):
     by_name = {i["name"]: i for i in col["item"]}      # Flask test client JSON kalitlarni saralaydi → tartibga tayanmaymiz
     folder = by_name["pets"]
     assert folder["name"] == "pets" and [i["name"] for i in folder["item"]] == ["List", "POST /pets"]
-    assert folder["item"][0]["request"]["url"]["raw"] == "http://api.test/v1/pets"
+    assert folder["item"][0]["request"]["url"]["raw"] == "{{baseUrl}}/pets"
+    assert {v["key"]: v["value"] for v in col["variable"]}["baseUrl"] == "http://api.test/v1"
     assert folder["item"][0]["request"]["url"]["query"][0]["key"] == "limit"
     assert folder["item"][1]["request"]["body"]["mode"] == "raw"
     assert "GET /health" in by_name
@@ -55,7 +56,7 @@ def test_import_openapi(client):
 def test_import_swagger2(client):
     spec = {"swagger": "2.0", "info": {"title": "Old"}, "host": "h.io", "basePath": "/api", "schemes": ["http"], "paths": {"/x": {"get": {}}}}
     r = client.post("/api/import", json={"content": json.dumps(spec)}).get_json()
-    assert client.get(f"/api/collections/{r['id']}").get_json()["item"][0]["request"]["url"]["raw"] == "http://h.io/api/x"
+    assert client.get(f"/api/collections/{r['id']}").get_json()["item"][0]["request"]["url"]["raw"] == "{{baseUrl}}/x"
 
 
 def test_import_rejects_garbage(client):

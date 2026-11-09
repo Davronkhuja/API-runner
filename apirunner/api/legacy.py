@@ -92,6 +92,7 @@ def delete_folder(fid):
         hit = _find(col["item"], fid)
         if hit and model.is_folder(hit[0]):
             node, siblings, _ = hit
+            ws.trash.add_item(col, fid, shallow=True)             # papka qobig'i savatga (auth/skriptlari bilan); ichidagi so'rovlar saqlanadi
             siblings.remove(node)
             # ichidagi so'rovlar ildizga chiqadi (eski xatti-harakat)
             col["item"].extend(it for it, _p in model.iter_requests(node["item"]))
@@ -170,6 +171,7 @@ def delete_request(rid):
         col = _load_col(ws)
         hit = _find(col["item"], rid)
         if hit and not model.is_folder(hit[0]):
+            ws.trash.add_item(col, rid)                           # savatga, keyin o'chirish
             hit[1].remove(hit[0])
             ws.save_collection(col)
     return jsonify({"ok": True})

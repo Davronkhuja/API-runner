@@ -79,6 +79,11 @@ Node.js kerak emas — frontend build natijasi (`apirunner/static/app/`) repoga 
 2. Kerak bo'lsa **Params**, **Headers**, **Auth** yoki **Body** tablarini to'ldiring
 3. **▶ RUN** tugmasini bosing
 
+### Import / Eksport (v2.7.0)
+- **Import** (header, Sozlamalar → Import / Eksport, ⌘K): Postman collection v2.0/v2.1, Postman environment/globals, OpenAPI 3.x / Swagger 2.0 (JSON/YAML, fayl yoki URL), Insomnia v4, HAR, cURL (bir nechta), workspace zip. Oldindan ko'rish va nom to'qnashuvi: **Yangi nusxa / Birlashtirish / Almashtirish (eskisi Savatga) / O'tkazib yuborish**.
+- **Eksport:** collection (sidebar menyusi yoki Overview → Eksport) — Postman v2.1 yoki OpenAPI 3.0 (JSON/YAML); muhit/globals — Postman (faqat Initial, maxfiylar bo'sh); butun workspace — zip zaxira (Sozlamalar → Import / Eksport): sukut bo'yicha maxfiy va Current qiymatlarsiz; ularni qo'shsangiz parol bilan shifrlash (AES-256) taklif etiladi, import paytida parol so'raladi.
+- O'chirilgan hamma narsa (collection ham) **Savat**ga tushadi — 30 kun saqlanadi.
+
 ### Kundalik qulayliklar (v2.6.0)
 - **`{{`** yozsangiz o'zgaruvchilar ro'yxati chiqadi (URL, Params, Headers, Body, Auth); matn belgilasangiz **{{ }} O'zgaruvchi qilish** tugmasi paydo bo'ladi.
 - **Example'lar** so'rov ostida (chevron); **Docs** tugmasi — Markdown tavsif paneli.

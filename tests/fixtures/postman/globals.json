@@ -1,0 +1,9 @@
+{
+  "id": "7d9a1b34-4b7a-4a0e-8d21-3f0d5c1aa001",
+  "name": "My Workspace Globals",
+  "values": [
+    {"key": "tenant", "value": "acme", "type": "default", "enabled": true},
+    {"key": "global_secret", "value": "g-123", "type": "secret", "enabled": true}
+  ],
+  "_postman_variable_scope": "globals"
+}

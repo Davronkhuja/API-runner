@@ -9,6 +9,8 @@ export const sidePanel = ref<SidePanel>('collections')
 export const cmdkOpen = ref(false)
 export const importOpen = ref(false)
 export const findOpen = ref(false)
+export const wsExportOpen = ref(false)
+export const exportOf = ref<{ cid: string; name: string; requests?: number } | null>(null)
 export const trashOpen = ref(false)
 
 export const toast = ref<{ msg: string; kind: string } | null>(null)

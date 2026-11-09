@@ -77,3 +77,26 @@ def test_deleted_environment_goes_to_trash_and_comes_back(ui):
     ui.click("[data-testid=trash-dialog] button.primary")
     ui.click("[data-testid=sb-environments]")
     expect(T(ui, "env-row").filter(has_text="Temp env")).to_be_visible()
+
+
+def test_collection_delete_from_context_menu_shows_request_count_and_goes_to_trash(ui, world):
+    ui.locator("[data-name='Alpha']").dblclick()                              # ichidagi tab ham yopilishi kerak
+    expect(T(ui, "request-editor")).to_be_visible()
+    ui.locator("[data-testid=tree-row][data-name='Col']").click(button="right")
+    ui.click("[data-act=delete-collection]")
+    expect(T(ui, "confirm-dialog")).to_contain_text("3 ta so'rov")
+    expect(T(ui, "confirm-dialog")).to_contain_text("Savatga")
+    ui.keyboard.press("Escape")
+    expect(ui.locator("[data-testid=tree-row][data-name='Col']")).to_have_count(1)         # bekor qilindi
+    ui.locator("[data-testid=tree-row][data-name='Col']").click(button="right")
+    ui.click("[data-act=delete-collection]")
+    T(ui, "confirm-ok").click()
+    expect(ui.locator("[data-testid=tree-row][data-name='Col']")).to_have_count(0)
+    expect(T(ui, "request-editor")).to_have_count(0)
+    T(ui, "trash-open").click()
+    expect(T(ui, "trash-row")).to_contain_text("Col")
+    expect(T(ui, "trash-row")).to_contain_text("3 ta so'rov")
+    T(ui, "trash-restore").click()
+    expect(T(ui, "trash-empty")).to_be_visible()
+    ui.click("[data-testid=trash-dialog] button.primary")
+    expect(ui.locator("[data-testid=tree-row][data-name='Col']")).to_have_count(1)

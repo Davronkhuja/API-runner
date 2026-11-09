@@ -255,6 +255,28 @@ def scenes(base, echo):
     S["auth-jwt-rs"] = auth_sel("jwt", algorithm="RS256")
     S["auth-hawk"] = auth_sel("hawk")
     S["auth-ntlm"] = auth_sel("ntlm")
+    FXD = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
+    def imp_file(p, *path):
+        p.click("[data-testid=import-btn]"); p.wait_for_selector("[data-testid=import-dialog]")
+        p.set_input_files("[data-testid=import-dlg-file]", str(FXD.joinpath(*path))); p.wait_for_selector("[data-testid=import-preview],[data-testid=import-error]")
+    S["import-openapi"] = lambda p: imp_file(p, "openapi", "petstore3.yaml")
+    S["import-multi"] = lambda p: (imp_file(p, "insomnia", "insomnia_v4.json"), p.wait_for_selector("[data-testid=import-item]"))
+    S["import-warnings"] = lambda p: (imp_file(p, "har", "sample.har"), p.wait_for_selector("[data-testid=import-warnings]"))
+    def imp_conflict(p):
+        imp_file(p, "postman", "newman_reporter_sample.json"); p.click("[data-testid=import-confirm]"); p.wait_for_selector("[data-testid=import-dialog]", state="detached")
+        imp_file(p, "postman", "newman_reporter_sample.json"); p.wait_for_selector("[data-testid=import-conflict]")
+    S["import-conflict"] = imp_conflict
+    S["import-error"] = lambda p: (p.click("[data-testid=import-btn]"), p.fill("[data-testid=import-text]", "") if False else None, imp_file_err(p))
+    def imp_file_err(p):
+        p.click("[data-tab=text]"); p.fill("[data-testid=import-text]", '{"hello": "world"}'); p.click("[data-testid=import-add-text]"); p.wait_for_selector("[data-testid=import-error]")
+    def export_dlg(p):
+        p.locator("[data-name=\"Katta collection\"]").first.click(button="right"); p.click("[data-act=export]"); p.wait_for_selector("[data-testid=export-dialog]")
+    S["export-dialog"] = export_dlg
+    S["settings-io"] = lambda p: (p.click("[data-testid=settings-btn]"), p.click("[data-testid=settings-nav] button:has-text('Import')"), p.wait_for_selector("[data-testid=io-workspace-zip]"))
+    def wsexp(p):
+        p.click("[data-testid=settings-btn]"); p.click("[data-testid=io-workspace-zip]"); p.wait_for_selector("[data-testid=wsexport-dialog]")
+        p.check("[data-testid=wsexport-secrets]"); p.check("[data-testid=wsexport-encrypt]"); p.fill("[data-testid=wsexport-password]", "abc"); p.wait_for_selector("[data-testid=wsexport-pwerror]")
+    S["wsexport-dialog"] = wsexp
     S["cookies"] = lambda p: p.click("[data-testid=cookies-btn]")
     def console(p):
         open_req(p, "Oddiy so'rov"); send(p); p.click("[data-testid=console-btn]"); p.wait_for_selector("[data-testid=console]")

@@ -1,0 +1,14 @@
+{
+  "variables": [],
+  "info": {"name": "Legacy v2.0", "_postman_id": "11111111-2222-3333-4444-555555555555", "description": "v2.0 shaklidagi eski collection", "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"},
+  "auth": {"type": "bearer", "bearer": {"token": "{{tok}}"}},
+  "item": [
+    {"name": "Folder", "description": "Papka tavsifi", "item": [
+      {"name": "Get with string url", "request": {"url": "https://api.example.test/v1/items?limit=5", "method": "GET", "header": "Accept: application/json\nX-Trace: 1", "description": {"content": "**Qalin** tavsif", "type": "text/markdown"}},
+       "response": [{"name": "OK", "originalRequest": {"url": "https://api.example.test/v1/items", "method": "GET"}, "status": "OK", "code": 200, "header": "Content-Type: application/json", "body": "{\"items\": []}"}]}
+    ]},
+    {"name": "Plain string request", "request": "https://api.example.test/ping"},
+    {"name": "Events", "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": "pm.test('ok', function () { pm.response.to.have.status(200); });"}}],
+     "request": {"url": {"host": ["api", "example", "test"], "path": ["v1", "items", ":id"], "protocol": "https", "variable": [{"key": "id", "value": "7"}]}, "method": "DELETE"}}
+  ]
+}

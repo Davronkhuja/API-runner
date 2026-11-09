@@ -2,6 +2,29 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.7.1] — 2026-11-09 — Workspace zip: sukut bo'yicha maxfiysiz, ixtiyoriy shifrlash
+### Changed
+- **Workspace zip eksporti sukut bo'yicha** maxfiy (secret) o'zgaruvchi qiymatlari, **Current** qiymatlar (muhit, globals, collection) va auth hisob ma'lumotlari (token, parol, secret kalitlar; login nomi qoladi) **bo'sh** ketadi. Tarix/javoblar/cookie bazasi (`state.db`) ham sukut bo'yicha kirmaydi (ularda token bo'lishi mumkin) va faqat maxfiylar yoqilganda qo'shilishi mumkin.
+- Workspace eksport tugmasi endi dialog ochadi: **"Maxfiy va Current qiymatlarni ham qo'shish"** (yoqilsa qizil ogohlantirish), tarix bazasi, va tavsiya etilgan **parol bilan shifrlash (AES-256-GCM, scrypt)** — takroriy parol, kamida 8 belgi, fayl `.zip.enc`.
+### Added
+- Shifrlangan zip importida parol so'raladi (Import dialogida parol maydoni; noto'g'ri parol/buzilgan fayl aniq xabar bilan rad etiladi). `POST /api/workspace/export` (parol URL'ga tushmasin); `GET` faqat sukut (maxfiysiz) variantni beradi.
+- Manifest: `secrets_included`, `encrypted`.
+- Avtomatik zaxiralar (`backups/`) o'zgarmadi — lokal va to'liq (testi bor).
+- Testlar: `tests/test_workspace_zip_secrets.py` (7: sukut zipda secret/Current/auth yo'q; shifrlangan zip parolsiz ochilmaydi, noto'g'ri parol va buzilgan fayl rad etiladi, to'g'ri parol bilan to'liq tiklanadi; backups to'liq), e2e `test_workspace_zip_dialog_default_warning_and_encrypted_roundtrip`; vizual baseline `26-wsexport-dialog`.
+
+## [2.7.0] — 2026-11-09 — Bosqich 5: Import / Export (+ Savat qoldiqlari)
+### Fixed
+- **Savat chetlab o'tilmaydi:** eski `/saved` endpointlari (so'rov o'chirish; papka o'chirish — papka qobig'i auth/skriptlari bilan) va barcha o'chirish yo'llari endi faqat `Workspace.delete_collection/delete_environment/delete_item` orqali, ya'ni avval savatga yoziladi. Strukturaviy test (`tests/test_no_hard_delete.py`) boshqa yo'l qolmaganini tekshiradi.
+### Added
+- **Collection'ni o'chirish** kontekst menyuda ("O'chirish (Savatga)"): tasdiqda ichidagi so'rovlar soni ko'rsatiladi, ochiq tablar yopiladi.
+- **Import:** Postman Collection **v2.0 va v2.1** to'liq (ichma-ich papkalar, auth, skriptlar, o'zgaruvchilar, example'lar, tavsif; v2.0 shakllari normallashtiriladi), Postman **environment** va **globals**, **OpenAPI 3.x / Swagger 2.0** (JSON/YAML, fayl yoki URL; `$ref`, misol generatsiyasi, tag→papka, `{{baseUrl}}`, xavfsizlik→auth, javob→example), **Insomnia v4** (papkalar, `{{ _.x }}`→`{{x}}`, Base/sub muhitlar), **HAR** (host bo'yicha papkalar, javob→example, Cookie import qilinmaydi), **cURL** (bir nechta buyruq, bash `\`, `$'..'`), **workspace zip**.
+- **Import dialogi:** bir nechta manba, har element uchun oldindan ko'rish (papka/so'rov/o'zgaruvchi/namuna/skript soni, ogohlantirishlar) va **konflikt holati**: Yangi nusxa / Birlashtirish (+N so'rov) / Almashtirish (eskisi Savatga) / O'tkazib yuborish.
+- **Export:** Postman v2.1 collection, Postman environment/globals (**faqat Initial**, secret'lar bo'sh), **OpenAPI 3.0** (JSON/YAML), **butun workspace zaxirasi (.zip)**; UI: collection menyusi va Overview "Eksport", muhit tabi, Sozlamalar → Import / Eksport, ⌘K.
+- ADR 0008; real namunalar `tests/fixtures/{postman,openapi,insomnia,har,curl}`; testlar: `test_import_export_formats` (31, round-trip), `test_import_conflicts` (14), `test_no_hard_delete` (5), e2e `test_import_export_ui` (8); vizual baseline 23–25.
+### Changed
+- OpenAPI importi endi `{{baseUrl}}` collection o'zgaruvchisini yaratadi (oldin server URL so'rovga yozilgan edi). `requirements.txt`: `PyYAML`.
+- Tashqi qaramlik: Insomnia v5 qo'llab-quvvatlanmaydi (aniq xabar bilan).
+
 ## [2.6.0] — 2026-11-09 — Bosqich 4b: Kundalik qulayliklar
 ### Added
 - **`{{` avtoto'ldirish**: URL, Body (CodeMirror), Params/Headers/form-data va Auth maydonlarida; scope (Environment/Collection/Papka/Globals/Dinamik `$…`) va qiymat ko'rsatiladi, maxfiy qiymatlar `••••`; ↑↓ Enter/Tab Esc.

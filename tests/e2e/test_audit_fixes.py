@@ -190,7 +190,7 @@ def test_response_tabs_keep_the_toolbar_row_so_content_does_not_jump(ui):
 def test_settings_autosave_left_nav_and_narrow_text_column(ui, app):
     T(ui, "settings-btn").click()
     expect(T(ui, "settings-nav")).to_be_visible()
-    assert [b.strip() for b in ui.locator("[data-testid=settings-nav] button").all_inner_texts()] == ["Ko'rinish", "So'rov", "Skriptlar", "Fayllar", "Ma'lumotlar", "Zaxiralar"]
+    assert [b.strip() for b in ui.locator("[data-testid=settings-nav] button").all_inner_texts()] == ["Ko'rinish", "So'rov", "Skriptlar", "Fayllar", "Ma'lumotlar", "Import / Eksport", "Zaxiralar"]
     assert ui.locator(".settings-main").bounding_box()["width"] <= 722
     ui.select_option("[data-testid=gset-follow_redirects]", "false")
     expect(T(ui, "gset-saved")).to_contain_text("Saqlandi")

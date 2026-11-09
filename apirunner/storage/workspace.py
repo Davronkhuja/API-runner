@@ -36,6 +36,8 @@ class Workspace:
         self.lock = WorkspaceLock(os.path.join(self.root, ".lock"))
         for sub in ("collections", "environments", "imports"):
             os.makedirs(os.path.join(self.root, sub), exist_ok=True)
+        from .trash import Trash                                   # savat Workspace'ning bir qismi: o'chirish yo'llari uni chetlab o'tolmaydi
+        self.trash = Trash(self)
         if not os.path.exists(self._p("workspace.json")):
             # yangi workspace — hozirgi sxema; mavjud (eski) workspace.json'da schemaVersion yo'q = 1
             self._write(self._p("workspace.json"), {"version": model.MODEL_VERSION, "schemaVersion": CURRENT_SCHEMA})
@@ -119,11 +121,24 @@ class Workspace:
         return cid
 
     def delete_collection(self, cid):
+        """Collection faqat SAVAT orqali o'chiriladi: avval savatga yoziladi, keyin fayl olib tashlanadi. Qaytaradi: trash_id."""
         path = self._p("collections", self._check_id(cid) + ".json")
         with self.lock:
             if not os.path.exists(path):
                 raise NotFound(cid)
+            tid = self.trash.add_collection(self._read(path))
             os.remove(path)
+            return tid
+
+    def delete_item(self, cid, item_id, shallow=False):
+        """So'rov/papkani savat orqali o'chiradi (`shallow` — papka qobig'i: ichidagilar boshqa joyga ko'chiriladigan eski xatti-harakat)."""
+        with self.lock:
+            col = self.get_collection(cid)
+            tid = self.trash.add_item(col, item_id, shallow=shallow)
+            from . import tree_ops
+            tree_ops.delete_item(col, item_id)
+            self.save_collection(col)
+            return tid
 
     # ── environments ──
     def list_environments(self):
@@ -156,7 +171,9 @@ class Workspace:
         with self.lock:
             if not os.path.exists(path):
                 raise NotFound(eid)
+            tid = self.trash.add_environment(self._read(path))
             os.remove(path)
+            return tid
 
     # ── globals ──
     def get_globals(self):

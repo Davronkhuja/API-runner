@@ -163,6 +163,7 @@ export const useTree = defineStore('tree', () => {
   async function renameItem(cid: string, id: string, name: string) { await patch(`/api/collections/${cid}/items/${id}`, { name }); await reloadCollection(cid) }
   async function updateItem(cid: string, id: string, p: object) { await patch(`/api/collections/${cid}/items/${id}`, p); await reloadCollection(cid) }
   async function removeItem(cid: string, id: string) { await del(`/api/collections/${cid}/items/${id}`); await reloadCollection(cid) }
+  async function removeCollection(cid: string) { await del(`/api/collections/${cid}`); await load() }
   async function createCollection(name: string) { const r = await post('/api/collections', { name }); await load(); return r.id as string }
 
   function findItem(cid: string, id: string): TreeItem | undefined {
@@ -180,5 +181,5 @@ export const useTree = defineStore('tree', () => {
     return true
   }
 
-  return { metas, cols, expandedOverride, filter, selection, rows, load, reloadCollection, isExpanded, toggle, setExpanded, select, clearSelection, dragSet, canDrop, move, duplicate, siblings, renameCollection, addItem, renameItem, updateItem, removeItem, createCollection, findItem, reveal }
+  return { metas, cols, expandedOverride, filter, selection, rows, load, reloadCollection, isExpanded, toggle, setExpanded, select, clearSelection, dragSet, canDrop, move, duplicate, siblings, renameCollection, addItem, renameItem, updateItem, removeItem, removeCollection, createCollection, findItem, reveal }
 })

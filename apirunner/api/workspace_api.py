@@ -83,11 +83,7 @@ def put_collection(cid):
 
 @bp.delete("/collections/<cid>")
 def delete_collection(cid):
-    ws = _ws()
-    with ws.lock:
-        tid = _trash().add_collection(ws.get_collection(cid))          # avval savatga, keyin o'chirish
-        ws.delete_collection(cid)
-    return jsonify({"ok": True, "trash_id": tid})
+    return jsonify({"ok": True, "trash_id": _ws().delete_collection(cid)})
 
 
 # environments
@@ -139,11 +135,7 @@ def put_environment(eid):
 
 @bp.delete("/environments/<eid>")
 def delete_environment(eid):
-    ws = _ws()
-    with ws.lock:
-        tid = _trash().add_environment(ws.get_environment(eid))
-        ws.delete_environment(eid)
-    return jsonify({"ok": True, "trash_id": tid})
+    return jsonify({"ok": True, "trash_id": _ws().delete_environment(eid)})
 
 
 # globals
@@ -241,12 +233,10 @@ def patch_item(cid, iid):
 
 @bp.delete("/collections/<cid>/items/<iid>")
 def delete_item(cid, iid):
-    ws = _ws()
-    with ws.lock:
-        col = ws.get_collection(cid)
-        tid = _trash().add_item(col, iid)
-        tree_ops.delete_item(col, iid)
-        ws.save_collection(col)
+    try:
+        tid = _ws().delete_item(cid, iid)
+    except tree_ops.TreeError as e:
+        return jsonify({"error": str(e)}), 400
     return jsonify({"ok": True, "trash_id": tid})
 
 
@@ -335,43 +325,6 @@ def clear_history():
 
 
 # ── import (fayl tashlash / Import tugmasi). Bosqich 5 da to'liq round-trip testlar bilan kengayadi ──
-@bp.post("/import")
-def import_any():
-    import json as _json
-    d = request.get_json(silent=True) or {}
-    content = d.get("content")
-    try:
-        doc = _json.loads(content) if isinstance(content, str) else content
-    except _json.JSONDecodeError:
-        return jsonify({"error": "JSON o'qib bo'lmadi (YAML hali qo'llab-quvvatlanmaydi)"}), 400
-    from ..importers.openapi import import_openapi, looks_like_openapi
-    from ..importers.postman import import_postman, looks_like_postman
-    if looks_like_openapi(doc):
-        col, kind = import_openapi(doc), "openapi"
-    elif looks_like_postman(doc):
-        col, kind = import_postman(doc), "postman"
-    else:
-        return jsonify({"error": "Format tanilmadi (Postman collection yoki OpenAPI JSON kerak)"}), 400
-    summary = _import_summary(col, kind)
-    if d.get("dry_run"):
-        return jsonify({"ok": True, "dry_run": True, **summary})
-    cid = _ws().save_collection(col)
-    return jsonify({"ok": True, "id": cid, **summary})
-
-
-def _import_summary(col, kind):
-    folders = requests_n = 0
-    stack = list(col.get("item", []))
-    while stack:
-        it = stack.pop()
-        if model.is_folder(it):
-            folders += 1
-            stack.extend(it.get("item", []))
-        else:
-            requests_n += 1
-    return {"kind": kind, "name": col["info"]["name"], "folders": folders, "requests": requests_n, "variables": len(col.get("variable", []))}
-
-
 @bp.post("/import/fetch")
 def import_fetch():
     """URL'dan import uchun matnni yuklab beradi (faqat http/https, 15 s, 10 MB)."""

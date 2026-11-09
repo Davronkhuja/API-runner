@@ -261,3 +261,43 @@ def test_22_find_replace(vp):
     T(vp, "fr-replacement").fill("api.new.test")
     expect(T(vp, "fr-row").first).to_be_visible()
     snap(vp, "22-find-replace")
+
+
+def test_23_import_preview_with_conflict(vp):
+    vp.add_style_tag(content=".toast,[data-testid=toast],[data-testid=tree]{visibility:hidden!important}")            # collection tartibi (fayl nomi = uuid) har safar boshqacha
+    for _ in range(2):
+        T(vp, "import-btn").click()
+        T(vp, "import-dlg-file").set_input_files(str(ROOT / "tests" / "fixtures" / "insomnia" / "insomnia_v4.json"))
+        expect(T(vp, "import-item")).to_have_count(2)
+        if _ == 0:
+            T(vp, "import-confirm").click()
+            expect(T(vp, "import-dialog")).to_have_count(0)
+    expect(T(vp, "import-conflict").first).to_be_visible()
+    snap(vp, "23-import-conflict")
+
+
+def test_24_export_dialog(vp):
+    vp.locator("[data-testid=tree-row][data-kind=collection]").first.click(button="right")
+    vp.click("[data-act=export]")
+    expect(T(vp, "export-dialog")).to_be_visible()
+    snap(vp, "24-export-dialog")
+
+
+def test_25_settings_import_export(vp):
+    vp.add_style_tag(content="#s-backups ~ *{display:none!important}*{scroll-behavior:auto!important}")                  # zaxiralar ro'yxatida vaqt tamg'alari bor
+    T(vp, "settings-btn").click()
+    expect(T(vp, "io-workspace-zip")).to_be_attached()
+    expect(vp.locator("text=Jami:")).to_be_visible()                                          # asinxron bo'limlar (Fayllar, Skriptlar) yuklangach
+    vp.wait_for_timeout(500)
+    snap(vp, "25-settings-io")
+
+
+def test_26_workspace_export_dialog(vp):
+    T(vp, "settings-btn").click()
+    expect(vp.locator("text=Jami:")).to_be_visible()                                          # fon (Sozlamalar) asinxron yuklanib bo'lsin
+    vp.wait_for_timeout(500)
+    T(vp, "io-workspace-zip").click()
+    T(vp, "wsexport-secrets").check()
+    T(vp, "wsexport-encrypt").check()
+    expect(T(vp, "wsexport-warning")).to_be_visible()
+    snap(vp, "26-wsexport-dialog")
