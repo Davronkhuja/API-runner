@@ -11,8 +11,8 @@ Hujjatlar (ishdan oldin tegishlisini o'qi): `docs/AGENT_PROMPT_postman_level.md`
 
 ## Git
 - Har vazifa — **feature branch** (`feature/...`, `fix/...`), `master` dan. Kichik, mazmunli commit'lar (inglizcha xabar, oxirida `Co-Authored-By` qatori).
-- **SemVer** (`apirunner/__init__.py` — yagona manba; `tests/test_workspace_api.py` dagi literal ham): bosqich tugashi = MINOR, funksiya/tuzatish ichida = PATCH. Har versiyada: veb qayta build, `CHANGELOG.md` yozuvi, `docs/ROADMAP.md` belgilari, README, versiya **tegi** (`vX.Y.Z`, versiya commit'iga).
-- Push → `gh pr create` (**base doim `master`**; poydevor branch hali merge bo'lmagan bo'lsa — istisno, PR tavsifida aytiladi). PR tavsifi CHANGELOG'dan, birinchi qatorda **"Versiya: vX.Y.Z"**, oxirida Claude Code qatori.
+- **SemVer** (`apirunner/__init__.py` — yagona manba; `tests/test_workspace_api.py` dagi literal ham): bosqich tugashi = MINOR, funksiya/tuzatish ichida = PATCH. Har versiyada: veb qayta build, `CHANGELOG.md` yozuvi, `docs/ROADMAP.md` belgilari, README, versiya **tegi**: versiya commit'iga annotated teg (`git tag -a vX.Y.Z <commit> -m "vX.Y.Z — <CHANGELOG sarlavhasi>"`) qo'yilib, push qilinadi (`git push origin vX.Y.Z` yoki `--tags`) — buni agent o'zi bajaradi (foydalanuvchi ruxsat bergan). Teg faqat commit master'ga tushishi kafolatlangan tarixda (merge-commit) qo'yiladi; squash-merge bo'lsa SHA o'zgaradi — shunda teg merge'dan keyin yangilanmaydi, foydalanuvchi bilan kelishiladi.
+- Push → `gh pr create` (**base doim `master`**). PR tavsifi CHANGELOG'dan, birinchi qatorda **"Versiya: vX.Y.Z"**, oxirida Claude Code qatori.
 - **Merge'ni faqat foydalanuvchi qiladi.** `git push --force`, `reset --hard` ulashilgan tarixda, `filter-branch`/rebase bilan tarixni qayta yozish **taqiqlangan** (faqat hali push qilinmagan o'z lokal commit'larida mumkin).
 
 ## Ma'lumot xavfsizligi (muqaddas)
