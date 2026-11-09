@@ -698,3 +698,14 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 .proto-compose-box .code-editor,.proto-compose-box .proto-ta{flex:1;min-width:0;height:96px;min-height:96px}
 .proto-ta{font-family:var(--font-mono);font-size:var(--fs-md);padding:var(--sp-2) var(--sp-3);resize:vertical}
 .proto-send{align-self:flex-end;flex:none}.proto-send .kb{font-size:var(--fs-xs)}
+
+/* ── GraphQL ── */
+.gql-panel2{display:flex;flex-direction:column;gap:var(--sp-2);flex:1;min-height:0}
+.gql-bar{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}.gql-bar button.on{background:var(--accent-weak);border-color:var(--accent);color:var(--accent-text)}
+.gql-body{display:flex;gap:var(--sp-3);flex:1;min-height:0}
+.gql-explorer{flex:none;width:260px;border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-2);overflow:auto;display:flex;flex-direction:column;gap:2px}
+.gql-explorer h4{margin:var(--sp-2) 0 2px;font-size:var(--fs-sm);color:var(--muted)}
+.gql-f{display:flex;flex-direction:column;align-items:flex-start;height:auto;min-height:var(--ctl-sm);padding:2px var(--sp-2);border:0;background:transparent;text-align:left;font-size:var(--fs-md);width:100%}
+.gql-f:hover:not(.static){background:var(--hover)}.gql-f small{font-size:var(--fs-xs);overflow-wrap:anywhere}
+.gql-edit{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-1)}.gql-edit .gql-q{flex:2;min-height:120px}.gql-edit .gql-v{flex:1;min-height:80px}
+.gql-issues{list-style:none;margin:0;padding:var(--sp-2) var(--sp-3);background:var(--var-bg);color:var(--var);border-radius:var(--radius);font-size:var(--fs-sm)}

@@ -10,6 +10,7 @@ import { clampPane, drag, HANDLE, loadJSON, MIN_PANE, MIN_REQ, MIN_REQ_SIDE, MIN
 import KvTable from './KvTable.vue'
 import DocsPanel from './DocsPanel.vue'
 import ProtocolPanel from './ProtocolPanel.vue'
+import GraphqlPanel from './GraphqlPanel.vue'
 import { useProtocols } from '../stores/protocols'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
@@ -329,10 +330,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
           <template v-else><span class="muted">Faylni shu yerga tashlang yoki</span><button data-testid="binary-pick" @click="binInput?.click()">Fayl tanlash…</button></template>
           <input ref="binInput" type="file" hidden data-testid="binary-file" @change="pickBinary">
         </div>
-        <div v-else-if="d.body.mode === 'graphql'" data-testid="graphql-panel" class="gql-panel">
-          <b>Query</b><CodeEditor v-model="d.body.gql.query" lang="raw" testid="gql-query" label="GraphQL query" placeholder="query { users { id name } }" class="body-editor gql-q" @update:model-value="touch" />
-          <b>Variables (JSON)</b><CodeEditor v-model="d.body.gql.variables" lang="json" testid="gql-vars" label="GraphQL variables" placeholder='{ "id": 1 }' class="body-editor gql-v" @update:model-value="touch" />
-        </div>
+        <GraphqlPanel v-else-if="d.body.mode === 'graphql'" :tab="tab" />
         <KvTable v-else-if="d.body.mode === 'form'" :rows="d.body.fields" testid="form-table" @change="touch" />
         <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" formdata testid="formdata-table" @change="touch" />
       </div>
