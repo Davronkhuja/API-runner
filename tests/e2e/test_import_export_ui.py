@@ -111,8 +111,9 @@ def test_har_warning_and_zip_file_are_shown(ui, app, tmp_path):
     expect(T(ui, "import-dialog")).to_have_count(0)
     # workspace zaxirasi: eksport → qayta import (hammasi konflikt)
     ui.click("[data-testid=settings-btn]")
+    T(ui, "io-workspace-zip").click()
     with ui.expect_download() as d:
-        T(ui, "io-workspace-zip").click()
+        T(ui, "wsexport-go").click()
     assert d.value.suggested_filename.startswith("api-runner-workspace-") and d.value.suggested_filename.endswith(".zip")
     z = tmp_path / "ws.zip"
     d.value.save_as(str(z))
@@ -169,3 +170,52 @@ def test_environment_and_globals_export_buttons(ui, app):
     assert d.value.suggested_filename == "My_Env.postman_environment.json"
     out = json.loads(pathlib.Path(d.value.path()).read_text())
     assert [v["value"] for v in out["values"]] == ["init", ""] and "cur" not in json.dumps(out) and "sec" not in [v["value"] for v in out["values"]]
+
+
+def test_workspace_zip_dialog_default_warning_and_encrypted_roundtrip(ui, app, tmp_path):
+    import zipfile
+    eid = app.api("POST", "/api/environments", {"name": "Sec env"})["id"]
+    e = app.api("GET", f"/api/environments/{eid}")
+    e["values"] = [{"key": "s", "value": "UI-SECRET-VALUE", "current": "UI-CURRENT", "enabled": True, "type": "secret"}]
+    app.api("PUT", f"/api/environments/{eid}", e)
+    ui.reload()
+    ui.wait_for_selector("[data-testid=app]")
+    ui.click("[data-testid=settings-btn]")
+    T(ui, "io-workspace-zip").click()
+    expect(T(ui, "wsexport-dialog")).to_be_visible()
+    expect(T(ui, "wsexport-warning")).to_have_count(0)                                        # sukut: ogohlantirish yo'q, maxfiy kirmaydi
+    with ui.expect_download() as d:
+        T(ui, "wsexport-go").click()
+    plain = tmp_path / "plain.zip"
+    d.value.save_as(str(plain))
+    z = zipfile.ZipFile(plain)
+    assert b"UI-SECRET-VALUE" not in b"".join(z.read(n) for n in z.namelist()) and "state.db" not in z.namelist()
+    # maxfiylar + parol
+    T(ui, "io-workspace-zip").click()
+    T(ui, "wsexport-secrets").check()
+    expect(T(ui, "wsexport-warning")).to_be_visible()
+    T(ui, "wsexport-encrypt").check()
+    T(ui, "wsexport-password").fill("short")
+    expect(T(ui, "wsexport-pwerror")).to_contain_text("8 belgi")
+    expect(T(ui, "wsexport-go")).to_be_disabled()
+    T(ui, "wsexport-password").fill("long enough pw")
+    T(ui, "wsexport-password2").fill("different pw!!")
+    expect(T(ui, "wsexport-pwerror")).to_contain_text("mos kelmadi")
+    T(ui, "wsexport-password2").fill("long enough pw")
+    with ui.expect_download() as d:
+        T(ui, "wsexport-go").click()
+    assert d.value.suggested_filename.endswith(".zip.enc")
+    enc = tmp_path / "ws.zip.enc"
+    d.value.save_as(str(enc))
+    assert b"UI-SECRET-VALUE" not in enc.read_bytes()
+    # import: parol so'raladi
+    open_import(ui)
+    T(ui, "import-dlg-file").set_input_files(str(enc))
+    expect(T(ui, "import-error")).to_contain_text("parol")
+    T(ui, "import-password").fill("wrong password")
+    T(ui, "import-password-ok").click()
+    expect(T(ui, "import-error")).to_contain_text("noto'g'ri")
+    T(ui, "import-password").fill("long enough pw")
+    T(ui, "import-password-ok").click()
+    expect(T(ui, "import-preview")).to_contain_text("API Runner workspace")
+    expect(T(ui, "import-error")).to_have_count(0)

@@ -273,6 +273,10 @@ def scenes(base, echo):
         p.locator("[data-name=\"Katta collection\"]").first.click(button="right"); p.click("[data-act=export]"); p.wait_for_selector("[data-testid=export-dialog]")
     S["export-dialog"] = export_dlg
     S["settings-io"] = lambda p: (p.click("[data-testid=settings-btn]"), p.click("[data-testid=settings-nav] button:has-text('Import')"), p.wait_for_selector("[data-testid=io-workspace-zip]"))
+    def wsexp(p):
+        p.click("[data-testid=settings-btn]"); p.click("[data-testid=io-workspace-zip]"); p.wait_for_selector("[data-testid=wsexport-dialog]")
+        p.check("[data-testid=wsexport-secrets]"); p.check("[data-testid=wsexport-encrypt]"); p.fill("[data-testid=wsexport-password]", "abc"); p.wait_for_selector("[data-testid=wsexport-pwerror]")
+    S["wsexport-dialog"] = wsexp
     S["cookies"] = lambda p: p.click("[data-testid=cookies-btn]")
     def console(p):
         open_req(p, "Oddiy so'rov"); send(p); p.click("[data-testid=console-btn]"); p.wait_for_selector("[data-testid=console]")

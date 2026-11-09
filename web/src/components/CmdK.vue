@@ -5,8 +5,7 @@ import { useTabs } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { useWorkspace } from '../stores/workspace'
 import { openRequest } from '../lib/actions'
-import { downloadFrom } from '../lib/exporter'
-import { cmdkOpen, findOpen, importOpen, sidePanel, trashOpen } from '../lib/ui'
+import { cmdkOpen, findOpen, wsExportOpen, importOpen, sidePanel, trashOpen } from '../lib/ui'
 import { toggleTheme } from '../lib/theme'
 import { isFolder, type RequestItem, type TreeItem } from '../types/model'
 import Icon from './Icon.vue'
@@ -35,7 +34,7 @@ const others = computed<Hit[]>(() => [
   { key: 'a:settings', kind: 'action', label: 'Sozlamalar', sub: '', run: () => { tabs.open('settings', 'settings', 'Sozlamalar', { permanent: true }) } },
   { key: 'a:cookies', kind: 'action', label: 'Cookie Manager', sub: '', run: () => { tabs.open('cookies', 'cookies', 'Cookie\'lar', { permanent: true }) } },
   { key: 'a:find', kind: 'action', label: 'Find & Replace', sub: 'Workspace bo\'ylab', run: () => { findOpen.value = true } },
-  { key: 'a:export-ws', kind: 'action', label: 'Eksport: workspace zaxirasi (zip)', sub: '', run: () => { downloadFrom('/api/workspace/export') } },
+  { key: 'a:export-ws', kind: 'action', label: 'Eksport: workspace zaxirasi (zip)', sub: '', run: () => { wsExportOpen.value = true } },
   { key: 'a:trash', kind: 'action', label: 'Savat', sub: '30 kun', run: () => { trashOpen.value = true } },
   { key: 'a:theme', kind: 'action', label: 'Temani almashtirish', sub: '', run: toggleTheme },
   { key: 'a:import', kind: 'action', label: 'Import (Postman, OpenAPI)', sub: '.json', run: () => { importOpen.value = true } },

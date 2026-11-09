@@ -11,7 +11,11 @@ MAX_BYTES = 20 * 1024 * 1024
 
 
 class ImportErr(ValueError):
-    """Foydalanuvchiga ko'rsatiladigan import xatosi."""
+    """Foydalanuvchiga ko'rsatiladigan import xatosi. `code` — mijoz uchun mashina o'qiydigan sabab (masalan password_required)."""
+
+    def __init__(self, msg, code=None):
+        super().__init__(msg)
+        self.code = code
 
 
 def parse_structured(text):

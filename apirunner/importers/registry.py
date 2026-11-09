@@ -13,14 +13,18 @@ from .postman import import_postman, import_postman_env, import_postman_globals
 KIND_LABEL = {"postman": "Postman Collection", "postman-env": "Postman Environment", "postman-globals": "Postman Globals", "openapi": "OpenAPI", "insomnia": "Insomnia", "har": "HAR", "curl": "cURL", "workspace": "API Runner workspace"}
 
 
-def parse_source(content, name="", encoding=None):
+def parse_source(content, name="", encoding=None, password=None):
     """-> {kind, label, collections[], environments[], globals: [rows]|None, files{}, warnings[]}. Xato — ImportErr."""
     warn = []
     out = {"kind": None, "collections": [], "environments": [], "globals": None, "files": {}, "warnings": warn}
     if encoding == "base64" or (isinstance(name, str) and name.lower().endswith(".zip") and encoding != "text"):
         try:
             data = base64.b64decode(content) if isinstance(content, str) else content
-            z = wsexp.read_zip(data)
+            z = wsexp.read_zip(data, password)
+        except wsexp.PasswordRequired as e:
+            raise ImportErr(str(e), code="password_required") from e
+        except wsexp.BadPassword as e:
+            raise ImportErr(str(e), code="bad_password") from e
         except ValueError as e:
             raise ImportErr(str(e)) from e
         out.update(kind="workspace", collections=z["collections"], environments=z["environments"], files=z["files"], zip_manifest=z["manifest"])

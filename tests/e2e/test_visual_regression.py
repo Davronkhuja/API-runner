@@ -290,3 +290,14 @@ def test_25_settings_import_export(vp):
     expect(vp.locator("text=Jami:")).to_be_visible()                                          # asinxron bo'limlar (Fayllar, Skriptlar) yuklangach
     vp.wait_for_timeout(500)
     snap(vp, "25-settings-io")
+
+
+def test_26_workspace_export_dialog(vp):
+    T(vp, "settings-btn").click()
+    expect(vp.locator("text=Jami:")).to_be_visible()                                          # fon (Sozlamalar) asinxron yuklanib bo'lsin
+    vp.wait_for_timeout(500)
+    T(vp, "io-workspace-zip").click()
+    T(vp, "wsexport-secrets").check()
+    T(vp, "wsexport-encrypt").check()
+    expect(T(vp, "wsexport-warning")).to_be_visible()
+    snap(vp, "26-wsexport-dialog")

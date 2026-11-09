@@ -660,3 +660,5 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 .exp-opt.on{border-color:var(--accent);background:var(--accent-weak)}
 .exp-opt input{margin-top:3px}.exp-opt span{display:flex;flex-direction:column;gap:2px;min-width:0}.exp-opt small{font-size:var(--fs-sm)}
 .exp-sec{display:flex;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3);font-size:var(--fs-md)}
+.wsx-warn{text-align:left;justify-content:flex-start;margin:var(--sp-2) 0;padding:var(--sp-3);font-size:var(--fs-md);line-height:1.45;align-items:flex-start;display:block}
+.imp-pw{display:flex;gap:var(--sp-2)}.imp-pw input{flex:1}

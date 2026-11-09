@@ -14,7 +14,7 @@ const tree = useTree(), tabs = useTabs(), ws = useWorkspace()
 type Action = 'import' | 'copy' | 'replace' | 'merge' | 'skip'
 interface Stats { folders?: number; requests?: number; variables?: number; examples?: number; scripts?: number }
 interface Item { type: 'collection' | 'environment' | 'globals'; name: string; stats: Stats; conflict: { id: string; name: string; merge: Record<string, number> } | null; default_action: Action; action: Action }
-interface Entry { id: number; name: string; content: string; encoding?: 'base64'; curl?: boolean; preview?: { kind: string; name: string; folders: number; requests: number; variables: number }; label?: string; items?: Item[]; warnings?: string[]; error?: string }
+interface Entry { id: number; password?: string; needsPassword?: boolean; pwInput?: string; name: string; content: string; encoding?: 'base64'; curl?: boolean; preview?: { kind: string; name: string; folders: number; requests: number; variables: number }; label?: string; items?: Item[]; warnings?: string[]; error?: string }
 const entries = ref<Entry[]>([])
 const tab = ref<'file' | 'text' | 'url'>('file')
 const text = ref(''), url = ref(''), busy = ref(false), over = ref(false)
@@ -25,10 +25,16 @@ const curlCount = (t: string) => (t.match(/(^|\n)\s*(\$\s*)?curl\b/gi) ?? []).le
 async function add(name: string, content: string, encoding?: 'base64') {
   const e = reactive<Entry>({ id: ++seq, name, content, encoding })          // reaktiv: preview keyin to'ldiriladi
   entries.value.push(e)
+  await load(e)
+}
+async function load(e: Entry) {
+  const { name, content, encoding } = e
+  e.error = undefined
   const c = encoding ? null : parseCurl(content)
   if (c && /^\s*curl\b/i.test(content) && curlCount(content) === 1) { e.curl = true; e.label = 'cURL'; e.preview = { kind: 'cURL', name: `${c.method} ${c.url}`.slice(0, 80), folders: 0, requests: 1, variables: 0 }; return }
   try {
-    const r = (await post('/api/import/preview', { sources: [{ name, content, encoding }] })).sources[0]
+    const r = (await post('/api/import/preview', { sources: [{ name, content, encoding, password: e.password }] })).sources[0]
+    e.needsPassword = !r.ok && (r.code === 'password_required' || r.code === 'bad_password')
     if (!r.ok) { e.error = r.error; return }
     e.label = r.label; e.warnings = r.warnings
     e.items = r.items.map((i: any) => ({ ...i, action: i.default_action }))
@@ -44,7 +50,7 @@ async function toBase64(f: File) {
 }
 async function onFiles(files: FileList | File[] | null) {
   for (const f of [...(files ?? [])]) {
-    if (/\.zip$/i.test(f.name)) await add(f.name, await toBase64(f), 'base64')
+    if (/\.zip(\.enc)?$/i.test(f.name)) await add(f.name, await toBase64(f), 'base64')
     else if (/\.(json|txt|curl|sh|ya?ml|har)$/i.test(f.name) || f.type.includes('json')) await add(f.name, await f.text())
   }
 }
@@ -68,7 +74,7 @@ async function run() {
     let results: any[] = []
     if (server.length) {
       const r = await post('/api/import/apply', {
-        sources: server.map(e => ({ name: e.name, content: e.content, encoding: e.encoding })),
+        sources: server.map(e => ({ name: e.name, content: e.content, encoding: e.encoding, password: e.password })),
         decisions: server.flatMap((e, si) => (e.items ?? []).map((i, ii) => ({ source: si, item: ii, action: i.action }))),
       })
       if (r.errors?.length) throw new Error(r.errors[0].error)
@@ -100,7 +106,7 @@ defineExpose({ add })
     <div v-if="tab === 'file'" class="imp-drop" :class="{ over }" data-testid="import-drop" @dragover.prevent="over = true" @dragleave="over = false" @drop="onDrop">
       <b>Fayl yoki papkani shu yerga tashlang</b><span class="muted">Postman, OpenAPI/Swagger (JSON, YAML), Insomnia v4, HAR, cURL (.sh/.txt), workspace zaxirasi (.zip)</span>
       <span style="display:flex;gap:8px"><button data-autofocus data-testid="import-pick-file" @click="fileEl?.click()">Fayl tanlash…</button><button data-testid="import-pick-dir" @click="dirEl?.click()">Papka tanlash…</button></span>
-      <input ref="fileEl" type="file" multiple accept=".json,.txt,.yaml,.yml,.har,.sh,.curl,.zip" hidden data-testid="import-dlg-file" @change="onFiles(($event.target as HTMLInputElement).files)">
+      <input ref="fileEl" type="file" multiple accept=".json,.txt,.yaml,.yml,.har,.sh,.curl,.zip,.enc" hidden data-testid="import-dlg-file" @change="onFiles(($event.target as HTMLInputElement).files)">
       <input ref="dirEl" type="file" webkitdirectory multiple hidden @change="onFiles(($event.target as HTMLInputElement).files)">
     </div>
     <div v-else-if="tab === 'text'" class="dlg-field">
@@ -120,6 +126,7 @@ defineExpose({ add })
           <span v-else class="imp-sum" data-testid="import-preview"><span class="badge">{{ e.preview?.kind }}</span> {{ summary(e.preview) }}</span>
           <button class="ib" aria-label="Olib tashlash" @click="remove(e.id)">×</button>
         </div>
+        <form v-if="e.needsPassword" class="imp-pw" @submit.prevent="e.password = e.pwInput; load(e)"><input type="password" v-model="e.pwInput" placeholder="Zip paroli" autocomplete="off" aria-label="Zip paroli" data-testid="import-password"><button type="submit" data-testid="import-password-ok" :disabled="!e.pwInput">Ochish</button></form>
         <ul v-if="e.items && (e.items.length > 1 || e.items.some(i => i.conflict))" class="imp-items" data-testid="import-items">
           <li v-for="(i, k) in e.items" :key="k" data-testid="import-item" :class="{ skipped: i.action === 'skip' }">
             <span class="badge">{{ TYPE_LABEL[i.type] }}</span>

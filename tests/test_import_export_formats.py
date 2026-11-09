@@ -312,12 +312,12 @@ def test_workspace_zip_roundtrip_through_api(make_client, tmp_path):
     env["values"] = [{"key": "k", "value": "init", "current": "cur", "enabled": True, "type": "secret"}]
     src.put(f"/api/environments/{eid}", json=env)
     src.put("/api/globals", json={"values": [{"key": "g", "value": "1", "enabled": True, "type": "default"}]})
-    r = src.get("/api/workspace/export")
+    r = src.post("/api/workspace/export", json={"secrets": True, "state": True})              # to'liq zaxira (maxfiylar bilan)
     assert r.status_code == 200 and r.mimetype == "application/zip" and "attachment" in r.headers["Content-Disposition"]
     z = zipfile.ZipFile(io.BytesIO(r.data))
     assert {"manifest.json", "globals.json", "workspace.json", f"collections/{cid}.json", f"environments/{eid}.json"} <= set(z.namelist())
     assert json.loads(z.read("manifest.json"))["kind"] == "api-runner-workspace" and "state.db" in z.namelist()
-    assert "state.db" not in zipfile.ZipFile(io.BytesIO(src.get("/api/workspace/export?state=0").data)).namelist()
+    assert "state.db" not in zipfile.ZipFile(io.BytesIO(src.get("/api/workspace/export").data)).namelist()          # sukut: bazasiz
     # toza workspace'ga import
     dst = make_client.__wrapped__(make_client) if False else None
     payload = {"sources": [{"name": "ws.zip", "content": base64.b64encode(r.data).decode(), "encoding": "base64"}]}

@@ -22,7 +22,7 @@ def _ws():
 
 
 def _parse(src):
-    return parse_source(src.get("content"), src.get("name", ""), src.get("encoding"))
+    return parse_source(src.get("content"), src.get("name", ""), src.get("encoding"), src.get("password"))
 
 
 # ── import ──
@@ -61,7 +61,7 @@ def import_preview():
         try:
             parsed = _parse(src)
         except ImportErr as e:
-            out.append({**row, "ok": False, "error": str(e)})
+            out.append({**row, "ok": False, "error": str(e), **({"code": e.code} if getattr(e, "code", None) else {})})
             continue
         items = []
         for it in items_of(parsed):
@@ -146,8 +146,22 @@ def export_globals():
     return _download(pm_export.export_globals(_ws().get_globals()), "globals.postman_globals.json", "application/json")
 
 
+def _zip_response(secrets, state, password):
+    data, manifest = ws_export.export_zip(_ws(), include_state=state, include_secrets=secrets, password=password or None)
+    name = f"api-runner-workspace-{manifest['exported_at'][:10]}.zip" + (".enc" if password else "")
+    return _download(data, name, "application/octet-stream" if password else "application/zip")
+
+
 @bp.get("/workspace/export")
 def export_workspace():
-    data, manifest = ws_export.export_zip(_ws(), include_state=request.args.get("state", "1") != "0")
-    name = f"api-runner-workspace-{manifest['exported_at'][:10]}.zip"
-    return _download(data, name, "application/zip")
+    """Sukut: maxfiy/Current qiymatlarsiz, bazasiz. Maxfiylar va parol uchun POST (parol URL'ga tushmasin)."""
+    return _zip_response(False, False, None)
+
+
+@bp.post("/workspace/export")
+def export_workspace_post():
+    d = request.get_json(silent=True) or {}
+    pw = d.get("password") or None
+    if pw is not None and (not isinstance(pw, str) or len(pw) < 8):
+        return jsonify({"error": "Parol kamida 8 belgi bo'lsin"}), 400
+    return _zip_response(bool(d.get("secrets")), bool(d.get("state")), pw)

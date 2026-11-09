@@ -2,9 +2,9 @@
 import { token } from '../api/client'
 import { showToast } from './ui'
 
-export async function downloadFrom(path: string, fallback = 'export'): Promise<string | null> {
+export async function downloadFrom(path: string, fallback = 'export', body?: unknown): Promise<string | null> {
   try {
-    const r = await fetch(path, { headers: { 'X-Session-Token': token() } })
+    const r = await fetch(path, body === undefined ? { headers: { 'X-Session-Token': token() } } : { method: 'POST', headers: { 'X-Session-Token': token(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error((j as any).error ?? `HTTP ${r.status}`) }
     const m = /filename="?([^";]+)"?/i.exec(r.headers.get('Content-Disposition') ?? '')
     const name = m ? decodeURIComponent(m[1]) : fallback

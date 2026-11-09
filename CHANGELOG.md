@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.7.1] — 2026-11-09 — Workspace zip: sukut bo'yicha maxfiysiz, ixtiyoriy shifrlash
+### Changed
+- **Workspace zip eksporti sukut bo'yicha** maxfiy (secret) o'zgaruvchi qiymatlari, **Current** qiymatlar (muhit, globals, collection) va auth hisob ma'lumotlari (token, parol, secret kalitlar; login nomi qoladi) **bo'sh** ketadi. Tarix/javoblar/cookie bazasi (`state.db`) ham sukut bo'yicha kirmaydi (ularda token bo'lishi mumkin) va faqat maxfiylar yoqilganda qo'shilishi mumkin.
+- Workspace eksport tugmasi endi dialog ochadi: **"Maxfiy va Current qiymatlarni ham qo'shish"** (yoqilsa qizil ogohlantirish), tarix bazasi, va tavsiya etilgan **parol bilan shifrlash (AES-256-GCM, scrypt)** — takroriy parol, kamida 8 belgi, fayl `.zip.enc`.
+### Added
+- Shifrlangan zip importida parol so'raladi (Import dialogida parol maydoni; noto'g'ri parol/buzilgan fayl aniq xabar bilan rad etiladi). `POST /api/workspace/export` (parol URL'ga tushmasin); `GET` faqat sukut (maxfiysiz) variantni beradi.
+- Manifest: `secrets_included`, `encrypted`.
+- Avtomatik zaxiralar (`backups/`) o'zgarmadi — lokal va to'liq (testi bor).
+- Testlar: `tests/test_workspace_zip_secrets.py` (7: sukut zipda secret/Current/auth yo'q; shifrlangan zip parolsiz ochilmaydi, noto'g'ri parol va buzilgan fayl rad etiladi, to'g'ri parol bilan to'liq tiklanadi; backups to'liq), e2e `test_workspace_zip_dialog_default_warning_and_encrypted_roundtrip`; vizual baseline `26-wsexport-dialog`.
+
 ## [2.7.0] — 2026-11-09 — Bosqich 5: Import / Export (+ Savat qoldiqlari)
 ### Fixed
 - **Savat chetlab o'tilmaydi:** eski `/saved` endpointlari (so'rov o'chirish; papka o'chirish — papka qobig'i auth/skriptlari bilan) va barcha o'chirish yo'llari endi faqat `Workspace.delete_collection/delete_environment/delete_item` orqali, ya'ni avval savatga yoziladi. Strukturaviy test (`tests/test_no_hard_delete.py`) boshqa yo'l qolmaganini tekshiradi.
