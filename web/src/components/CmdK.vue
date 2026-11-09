@@ -5,6 +5,7 @@ import { useTabs } from '../stores/tabs'
 import { useTree } from '../stores/tree'
 import { useWorkspace } from '../stores/workspace'
 import { openRequest } from '../lib/actions'
+import { methodOf } from '../lib/draft'
 import { cmdkOpen, findOpen, wsExportOpen, importOpen, sidePanel, trashOpen } from '../lib/ui'
 import { toggleTheme } from '../lib/theme'
 import { isFolder, type RequestItem, type TreeItem } from '../types/model'
@@ -22,7 +23,7 @@ const requests = computed<Hit[]>(() => {
       if (isFolder(it)) walk(cid, it.item, path + it.name + ' / ')
       else {
         const r = it as RequestItem
-        out.push({ key: `r:${cid}:${r.id}`, kind: 'request', label: r.name, sub: path + (r.request.url?.raw ?? ''), method: r.request.method, run: () => { openRequest(cid, r.id, true) } })
+        out.push({ key: `r:${cid}:${r.id}`, kind: 'request', label: r.name, sub: path + (r.request.url?.raw ?? ''), method: methodOf(r), run: () => { openRequest(cid, r.id, true) } })
       }
     }
   }
