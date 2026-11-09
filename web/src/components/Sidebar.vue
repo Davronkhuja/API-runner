@@ -11,10 +11,11 @@ import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { openFromHistory } from '../lib/history'
 import { openRequest } from '../lib/actions'
-import { askConfirm, showToast, sidePanel } from '../lib/ui'
+import { askConfirm, findOpen, showToast, sidePanel, trashOpen } from '../lib/ui'
 import Icon from './Icon.vue'
 import { authName, hasRealAuth, openNodeTab } from '../lib/nodes'
 import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
+import { exId, ensureExampleIds, openExample } from '../lib/examples'
 import { isFolder, type DropPosition, type RequestItem, type TreeItem } from '../types/model'
 import { draftFromItem } from '../lib/draft'
 
@@ -100,11 +101,31 @@ function onDbl(r: Row) {
 }
 void clickTimer
 
+// ── Example'lar ──
+function onExample(r: Row, permanent: boolean) { tree.select(keyOf(r)); openExample(r.collectionId, r.parentId!, r.exampleId ?? '', r.name, permanent) }
+async function dupExample(r: Row) {
+  const list = await ensureExampleIds(r.collectionId, r.parentId!)
+  const i = list.findIndex(e => (r.exampleId ? e.id === r.exampleId : e.name === r.name))
+  if (i < 0) return
+  const copy = { ...JSON.parse(JSON.stringify(list[i])), id: exId(), name: list[i].name + ' Copy' }
+  await tree.updateItem(r.collectionId, r.parentId!, { response: [...list.slice(0, i + 1), copy, ...list.slice(i + 1)] })
+}
+async function delExample(r: Row) {
+  if (!(await askConfirm(`«${r.name}» namunasi o'chirilsinmi?`, "O'chirish"))) return
+  const list = await ensureExampleIds(r.collectionId, r.parentId!)
+  const gone = list.find(e => (r.exampleId ? e.id === r.exampleId : e.name === r.name))
+  await tree.updateItem(r.collectionId, r.parentId!, { response: list.filter(e => e !== gone) })
+  if (gone) tabs.dropRef(`${r.collectionId}:${r.parentId}:${gone.id}`)
+}
+
 // ── Kontekst menyu ──
 function ctx(e: MouseEvent, r: Row) { menu.value = { x: e.clientX, y: e.clientY, row: r }; if (!tree.selection.includes(keyOf(r))) tree.select(keyOf(r)) }
 async function menuAct(a: string) {
   const r = menu.value!.row; menu.value = null
-  if (a === 'rename') startRename(r)
+  if (a === 'ex-open') onExample(r, true)
+  else if (a === 'ex-dup') await dupExample(r)
+  else if (a === 'ex-delete') await delExample(r)
+  else if (a === 'rename') startRename(r)
   else if (a === 'runner') tabs.open('runner', r.isCollection ? r.collectionId : `${r.collectionId}:${r.id}`, 'Runner: ' + r.name, { permanent: true })
   else if (a === 'open') openNodeTab(r.collectionId, null, 'overview')
   else if (a === 'settings') openNodeTab(r.collectionId, r.id, 'overview')
@@ -114,7 +135,7 @@ async function menuAct(a: string) {
   else if (a === 'dup') await duplicate(r)
   else if (a === 'delete') {
     const keys = tree.selection.includes(keyOf(r)) ? [...tree.selection] : [keyOf(r)]
-    if (!(await askConfirm(`${keys.length} ta element o'chirilsinmi?`, 'O\'chirish'))) return
+    if (!(await askConfirm(`${keys.length} ta element Savatga o'tkazilsinmi? (30 kun ichida tiklash mumkin)`, 'O\'chirish'))) return
     for (const k of keys) { const [c, i] = k.split(':'); await tree.removeItem(c, i); tabs.dropRef(k) }
     tree.clearSelection()
   }
@@ -161,6 +182,7 @@ function openRunner() {
 }
 /** Klaviatura: ↑↓ qatorlar orasida, ←/→ papkani yopish/ochish, Enter ochish, F2 — nomini o'zgartirish. */
 function onKey(e: KeyboardEvent, r: Row) {
+  if (r.isExample) return
   const rows = [...(body.value?.querySelectorAll<HTMLElement>('[data-testid=tree-row]') ?? [])]
   const i = rows.indexOf(e.currentTarget as HTMLElement)
   if (e.key === 'ArrowDown') { e.preventDefault(); rows[i + 1]?.focus() }
@@ -176,7 +198,7 @@ async function newCollection() { await tree.createCollection('Yangi collection')
 // ── Environments / History ──
 const loadHistory = openFromHistory
 const openEnv = (id: string, name: string) => tabs.open('environment', id, name, { permanent: true })
-async function delEnv(id: string, name: string) { if (await askConfirm(`'${name}' o'chirilsinmi?`, "O'chirish")) await ws.deleteEnv(id) }
+async function delEnv(id: string, name: string) { if (await askConfirm(`'${name}' Savatga o'tkazilsinmi? (30 kun ichida tiklash mumkin)`, "O'chirish")) await ws.deleteEnv(id) }
 const cleanOpen = ref(false)
 const cleanCount = computed(() => urlNamedItems().length)
 async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(id, 'Yangi muhit') }
@@ -190,6 +212,8 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
         <template v-if="panel === 'collections'">
           <button class="ib" aria-label="Yangi so'rov" title="Yangi so'rov" data-testid="sb-new-request" @click="tabs.openNew()"><Icon name="plus" :size="16" /></button>
           <button class="ib" aria-label="Yangi collection" title="Yangi collection" data-testid="new-collection" @click="newCollection"><Icon name="folder-plus" :size="16" /></button>
+          <button class="ib" aria-label="Savat (o'chirilganlar)" title="Savat — 30 kun saqlanadi" data-testid="trash-open" @click="trashOpen = true"><Icon name="trash" :size="16" /></button>
+          <button class="ib" aria-label="Find &amp; Replace" title="Workspace bo'ylab qidirish va almashtirish" data-testid="find-open" @click="findOpen = true"><Icon name="search" :size="16" /></button>
         </template>
         <template v-else-if="panel === 'environments'"><button class="ib" aria-label="Yangi muhit" title="Yangi muhit" data-testid="new-env" @click="newEnv"><Icon name="plus" :size="16" /></button></template>
         <template v-else-if="panel === 'history'">
@@ -210,7 +234,12 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
       <div class="sb-search"><input v-model="tree.filter" placeholder="Filtr…" aria-label="Kolleksiyalarda qidirish" data-testid="sb-search"></div>
       <div class="sb-body" ref="body" data-testid="tree" role="tree" @dragover="onContainerDragOver" @dragend="reset" @drop="stopScroll">
         <div v-if="!tree.rows.length" class="empty">{{ tree.filter ? 'Hech narsa topilmadi' : 'Collection yo\'q. ＋ bosing.' }}</div>
-        <div v-for="r in tree.rows" :key="rowKey(r.collectionId, r.id)" class="row" :class="{ root: r.isCollection, sel: tree.selection.includes(rowKey(r.collectionId, r.id)), dragging: dragKeys.includes(rowKey(r.collectionId, r.id)),
+        <template v-for="r in tree.rows" :key="rowKey(r.collectionId, r.id)">
+        <div v-if="r.isExample" class="row ex-row" :class="{ sel: tree.selection.includes(keyOf(r)) }" data-testid="example-row" role="treeitem" tabindex="0" :aria-level="r.depth + 1" :data-name="r.name" :data-key="keyOf(r)"
+             :style="{ paddingLeft: 8 + r.depth * 14 + 'px' }" @click="onExample(r, false)" @dblclick="onExample(r, true)" @contextmenu.prevent="ctx($event, r)" @keydown.enter.prevent="onExample(r, true)">
+          <span class="ex-tag" aria-hidden="true">EX</span><span class="name">{{ r.name }}</span>
+        </div>
+        <div v-else class="row" :class="{ root: r.isCollection, sel: tree.selection.includes(rowKey(r.collectionId, r.id)), dragging: dragKeys.includes(rowKey(r.collectionId, r.id)),
                        'drop-inside': drop?.key === rowKey(r.collectionId, r.id) && drop.pos === 'inside',
                        'drop-before': drop?.key === rowKey(r.collectionId, r.id) && drop.pos === 'before',
                        'drop-after': drop?.key === rowKey(r.collectionId, r.id) && drop.pos === 'after' }"
@@ -220,6 +249,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
              @click="onClick($event, r)" @dblclick="onDbl(r)" @contextmenu.prevent="ctx($event, r)" @keydown="onKey($event, r)"
              @dragstart="onDragStart($event, r)" @dragover="onDragOver($event, r)" @drop="onDrop($event)">
           <span v-if="r.folder" class="ico" data-testid="row-chevron" :style="{ transform: r.expanded ? 'rotate(90deg)' : 'none' }" @click.stop="tree.toggle(keyOf(r), r.item)"><Icon name="chevron-right" :size="14" /></span>
+          <span v-if="r.hasExamples" class="ico ex-chev" data-testid="ex-chevron" role="button" :aria-label="r.expanded ? 'Namunalarni yopish' : 'Namunalarni ochish'" :style="{ transform: r.expanded ? 'rotate(90deg)' : 'none' }" @click.stop="tree.setExpanded(keyOf(r), !r.expanded)"><Icon name="chevron-right" :size="12" /></span>
           <span v-if="r.isCollection" class="ico" style="width:18px;height:18px;border-radius:5px;background:var(--accent-weak);color:var(--accent-text);align-items:center;justify-content:center"><Icon name="layers" :size="12" /></span>
           <span v-else-if="r.folder" class="ico"><Icon name="folder" :size="15" /></span>
           <span v-else class="m" :class="'m-' + (r.item as any).request.method">{{ (r.item as any).request.method }}</span>
@@ -230,6 +260,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
           <span v-if="ownAuth(r)" class="lock" data-testid="auth-lock" role="img" :aria-label="`O'z auth'i bor: ${authName(ownAuth(r))}`" :title="`Auth: ${authName(ownAuth(r))} (o'z auth'i)`"><Icon name="lock" :size="12" /></span>
           <span v-if="r.folder && !r.isCollection" class="cnt">{{ reqCount(r.item) }}</span>
         </div>
+        </template>
       </div>
     </template>
 
@@ -258,6 +289,12 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
 
     <div v-if="menu" class="overlay" style="background:none" @click="menu = null" @contextmenu.prevent="menu = null">
       <div class="menu" :style="{ left: menu.x + 'px', top: menu.y + 'px' }" data-testid="tree-menu" @click.stop>
+        <template v-if="menu.row.isExample">
+          <button data-act="ex-open" @click="menuAct('ex-open')">Ochish</button>
+          <button data-act="ex-dup" @click="menuAct('ex-dup')">Dublikat</button>
+          <button data-act="ex-delete" @click="menuAct('ex-delete')">O'chirish</button>
+        </template>
+        <template v-else>
         <button v-if="menu.row.isCollection" data-act="open" @click="menuAct('open')">Ochish</button>
         <button v-if="menu.row.folder" data-act="runner" @click="menuAct('runner')">Runner</button>
         <button v-if="menu.row.folder && !menu.row.isCollection" data-act="settings" @click="menuAct('settings')">Sozlamalar (Auth, Variables, Scripts)</button>
@@ -266,6 +303,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
         <button v-if="!menu.row.isCollection" data-act="dup" @click="menuAct('dup')">Dublikat</button>
         <button v-if="!menu.row.isCollection" data-act="move" @click="menuAct('move')">Ko'chirish…</button>
         <button v-if="!menu.row.isCollection" data-act="delete" @click="menuAct('delete')">O'chirish</button>
+        </template>
       </div>
     </div>
 

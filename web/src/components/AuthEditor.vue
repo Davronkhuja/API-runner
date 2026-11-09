@@ -11,7 +11,11 @@ const emit = defineEmits<{ change: [] }>()
 const showPass = ref(false)
 const touch = () => emit('change')
 const preview = computed(() => (props.auth.user || props.auth.pass ? '••••' : ''))
-function onType() { props.auth.cfg = { ...defaultCfg(props.auth.type), ...props.auth.cfg }; touch() }
+function onType() {
+  const d = defaultCfg(props.auth.type)
+  props.auth.cfg = { ...d, ...props.auth.cfg, ...(d.algorithm ? { algorithm: d.algorithm } : {}) }       // `algorithm` turlar orasida ma'nosi har xil (JWT HS256 / Hawk sha256)
+  touch()
+}
 
 interface Field { k: string; label: string; secret?: boolean; options?: [string, string][]; area?: boolean; show?: (c: Record<string, string>) => boolean; ph?: string }
 const OAUTH_GRANTS: [string, string][] = [['client_credentials', 'Client Credentials'], ['password', 'Password Credentials'], ['authorization_code', 'Authorization Code'], ['authorization_code_pkce', 'Authorization Code (PKCE)'], ['implicit', 'Implicit']]
@@ -19,7 +23,14 @@ const FIELDS: Record<string, Field[]> = {
   apikey: [{ k: 'key', label: 'Key' }, { k: 'value', label: 'Value' }, { k: 'in', label: 'Qo\'shish', options: [['header', 'Header'], ['query', 'Query params']] }],
   digest: [{ k: 'username', label: 'Username' }, { k: 'password', label: 'Password', secret: true }],
   awsv4: [{ k: 'accessKey', label: 'AccessKey' }, { k: 'secretKey', label: 'SecretKey', secret: true }, { k: 'region', label: 'Region' }, { k: 'service', label: 'Service' }, { k: 'sessionToken', label: 'Session token', secret: true }],
-  jwt: [{ k: 'algorithm', label: 'Algoritm', options: [['HS256', 'HS256'], ['HS384', 'HS384'], ['HS512', 'HS512']] }, { k: 'secret', label: 'Secret', secret: true },
+  hawk: [{ k: 'authId', label: 'Hawk Auth ID' }, { k: 'authKey', label: 'Hawk Auth Key', secret: true }, { k: 'algorithm', label: 'Algoritm', options: [['sha256', 'SHA-256'], ['sha1', 'SHA-1']] },
+         { k: 'extraData', label: 'Ext (ixtiyoriy)' }, { k: 'appId', label: 'App ID (ixtiyoriy)' }, { k: 'delegation', label: 'Delegation (ixtiyoriy)', show: c => !!c.appId },
+         { k: 'includePayloadHash', label: 'Payload hash', options: [['false', "Yo'q"], ['true', 'Ha (body SHA)']] }],
+  ntlm: [{ k: 'username', label: 'Username' }, { k: 'password', label: 'Password', secret: true }, { k: 'domain', label: 'Domain (ixtiyoriy)' }, { k: 'workstation', label: 'Workstation (ixtiyoriy)' }],
+  jwt: [{ k: 'algorithm', label: 'Algoritm', options: [...['HS', 'RS', 'PS', 'ES'].flatMap(f => ['256', '384', '512'].map(n => [f + n, f + n] as [string, string]))] },
+        { k: 'secret', label: 'Secret', secret: true, show: c => (c.algorithm ?? 'HS256').startsWith('HS') },
+        { k: 'privateKey', label: 'Private key (PEM)', area: true, ph: '-----BEGIN PRIVATE KEY-----', show: c => !(c.algorithm ?? 'HS256').startsWith('HS') },
+        { k: 'passphrase', label: 'Passphrase (ixtiyoriy)', secret: true, show: c => !(c.algorithm ?? 'HS256').startsWith('HS') },
         { k: 'payload', label: 'Payload (JSON)', area: true }, { k: 'addTo', label: 'Qo\'shish', options: [['header', 'Header'], ['query', 'Query params']] },
         { k: 'headerPrefix', label: 'Header prefiksi', show: c => c.addTo !== 'query' }, { k: 'queryParamKey', label: 'Query kaliti', ph: 'token', show: c => c.addTo === 'query' }],
   oauth2: [
@@ -61,7 +72,7 @@ const copyTok = () => { navigator.clipboard?.writeText(tok.value?.access_token ?
     <select v-model="auth.type" data-testid="auth-type" aria-label="Auth turi" @change="onType">
       <option v-if="allowInherit" value="inherit">Meros (Inherit)</option>
       <option value="none">Auth yo'q</option><option value="bearer">Bearer Token</option><option value="basic">Basic Auth</option><option value="custom">Custom</option>
-      <option value="apikey">API Key</option><option value="digest">Digest Auth</option><option value="oauth2">OAuth 2.0</option><option value="awsv4">AWS Signature V4</option><option value="jwt">JWT Bearer</option>
+      <option value="apikey">API Key</option><option value="digest">Digest Auth</option><option value="oauth2">OAuth 2.0</option><option value="awsv4">AWS Signature V4</option><option value="jwt">JWT Bearer</option><option value="hawk">Hawk</option><option value="ntlm">NTLM</option>
     </select>
     <div v-if="auth.type === 'inherit'" class="inherit-box" data-testid="auth-inherit-box">
       <template v-if="source">
@@ -72,17 +83,17 @@ const copyTok = () => { navigator.clipboard?.writeText(tok.value?.access_token ?
       </template>
       <p v-else class="muted" style="margin:0" data-testid="auth-inherit-note">{{ inheritNote || "Meros: ota papka va collection'da auth yo'q — Auth yuborilmaydi." }}</p>
     </div>
-    <p v-if="auth.type === 'bearer'"><input v-model="auth.token" placeholder="Token" style="width:100%" data-testid="auth-token" @input="touch"></p>
-    <p v-if="auth.type === 'basic'"><input v-model="auth.user" placeholder="Username" @input="touch"> <input v-model="auth.pass" :type="showPass ? 'text' : 'password'" placeholder="Password" data-testid="auth-pass" @input="touch"> <button class="ghost" data-testid="auth-eye" @click="showPass = !showPass">👁</button> <span class="muted" data-testid="auth-preview">Authorization: Basic {{ preview }}</span></p>
-    <p v-if="auth.type === 'custom'"><input v-model="auth.custom" placeholder="Authorization qiymati" style="width:100%" data-testid="auth-custom" @input="touch"></p>
+    <p v-if="auth.type === 'bearer'"><input v-var-complete v-model="auth.token" placeholder="Token" style="width:100%" data-testid="auth-token" @input="touch"></p>
+    <p v-if="auth.type === 'basic'"><input v-var-complete v-model="auth.user" placeholder="Username" @input="touch"> <input v-var-complete v-model="auth.pass" :type="showPass ? 'text' : 'password'" placeholder="Password" data-testid="auth-pass" @input="touch"> <button class="ghost" data-testid="auth-eye" @click="showPass = !showPass">👁</button> <span class="muted" data-testid="auth-preview">Authorization: Basic {{ preview }}</span></p>
+    <p v-if="auth.type === 'custom'"><input v-var-complete v-model="auth.custom" placeholder="Authorization qiymati" style="width:100%" data-testid="auth-custom" @input="touch"></p>
 
     <table v-if="fields.length" class="kv auth-fields" data-testid="auth-fields"><tbody>
       <tr v-for="f in fields" :key="f.k">
         <td style="width:190px" class="muted">{{ f.label }}</td>
         <td>
           <select v-if="f.options" v-model="auth.cfg[f.k]" :data-testid="'auth-f-' + f.k" :aria-label="f.label" @change="touch"><option v-for="o in f.options" :key="o[0]" :value="o[0]">{{ o[1] }}</option></select>
-          <textarea v-else-if="f.area" v-model="auth.cfg[f.k]" :data-testid="'auth-f-' + f.k" style="width:100%;min-height:90px;height:auto;font-family:ui-monospace,monospace" @input="touch" />
-          <input v-else v-model="auth.cfg[f.k]" :type="f.secret ? 'password' : 'text'" :placeholder="f.ph" :data-testid="'auth-f-' + f.k" style="width:100%" @input="touch">
+          <textarea v-else-if="f.area" v-var-complete v-model="auth.cfg[f.k]" :placeholder="f.ph" spellcheck="false" :aria-label="f.label" :data-testid="'auth-f-' + f.k" style="width:100%;min-height:90px;height:auto;font-family:ui-monospace,monospace" @input="touch" />
+          <input v-else v-var-complete v-model="auth.cfg[f.k]" :type="f.secret ? 'password' : 'text'" :aria-label="f.label" :placeholder="f.ph" :data-testid="'auth-f-' + f.k" style="width:100%" @input="touch">
         </td>
       </tr>
     </tbody></table>

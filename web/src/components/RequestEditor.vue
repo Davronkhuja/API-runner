@@ -8,6 +8,7 @@ import { fmtBytes, showToast } from '../lib/ui'
 import { layout } from '../lib/view'
 import { clampPane, drag, HANDLE, loadJSON, MIN_PANE, MIN_REQ, MIN_REQ_SIDE, MIN_RESP_SIDE, saveJSON } from '../lib/resize'
 import KvTable from './KvTable.vue'
+import DocsPanel from './DocsPanel.vue'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
 import SettingsForm from './SettingsForm.vue'
@@ -37,6 +38,12 @@ const d = computed(() => props.tab.draft!)
 const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
 const touch = () => tabs.touch(props.tab.id)
 const curlOpen = ref(false)
+const docsOpen = computed({ get: () => !!props.tab.state?.docsOpen, set: v => { (props.tab.state ??= {}).docsOpen = v; tabs.persistSoon() } })
+const sendMenu = ref(false)
+const sendSplit = ref<HTMLElement>()
+function onDocDown(e: Event) { if (!sendSplit.value?.contains(e.target as Node)) sendMenu.value = false }
+watch(sendMenu, v => { if (v) document.addEventListener('pointerdown', onDocDown); else document.removeEventListener('pointerdown', onDocDown) })
+onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocDown))
 /** Skript xatolari + muvaffaqiyatsiz testlar (qator belgilash uchun). */
 const scriptIssues = computed(() => {
   const sc = props.tab.response?.scripts
@@ -221,6 +228,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
         <span v-else>{{ c }}</span></template>
       <div style="flex:1" />
       <button class="sm" data-testid="save" :disabled="!tab.dirty && !!tab.ref" aria-keyshortcuts="Control+S Meta+S" @click="saveTab(tab)"><Icon name="save" :size="14" />Saqlash <span class="muted" style="font-size:var(--fs-xs)">⌘S</span></button>
+      <button class="sm" data-testid="docs-btn" :aria-pressed="docsOpen" title="Markdown tavsif (Docs)" @click="docsOpen = !docsOpen">Docs<span v-if="d.description?.trim()" class="dot-on" aria-label="tavsif bor" /></button>
       <button class="sm" data-testid="curl-btn" title="Kod namunasi (cURL, Python, JS, Go, ...)" @click="curlOpen = true">&lt;/&gt; Kod</button>
     </div>
     <div class="urlbar" style="position:relative">
@@ -236,12 +244,17 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       <div v-if="showHist && urlHist.length" class="menu" style="position:absolute;left:18px;top:42px;right:150px" data-testid="url-history" role="listbox" aria-label="URL tarixi">
         <button v-for="(h, i) in urlHist" :key="i" role="option" @mousedown.prevent="d.method = h.method; d.url = h.url; d.pathVars = syncPathVars(d.url, d.pathVars); touch()"><b class="m" :class="'m-' + h.method" style="font:700 var(--fs-xs) var(--font-mono);width:52px;text-align:left">{{ h.method }}</b> {{ h.url }}</button>
       </div>
-      <button class="primary" data-testid="send" :disabled="tab.response?.loading" aria-keyshortcuts="Control+Enter Meta+Enter" @click="sendTab(tab)"><Icon name="send" :size="15" />{{ tab.response?.loading ? 'Yuborilmoqda…' : 'Yuborish' }}</button>
+      <span ref="sendSplit" class="send-split" @keydown.esc="sendMenu = false">
+        <button class="primary" data-testid="send" :disabled="tab.response?.loading" aria-keyshortcuts="Control+Enter Meta+Enter" @click="sendTab(tab)"><Icon name="send" :size="15" />{{ tab.response?.loading ? 'Yuborilmoqda…' : 'Yuborish' }}</button>
+        <button class="primary send-caret" data-testid="send-menu" aria-label="Yuborish variantlari" aria-haspopup="menu" :aria-expanded="sendMenu" :disabled="tab.response?.loading" @click="sendMenu = !sendMenu"><Icon name="chevron-down" :size="14" /></button>
+        <div v-if="sendMenu" class="menu send-pop" role="menu"><button role="menuitem" data-testid="send-download" @click="sendMenu = false; sendTab(tab, { download: true })">Yuborish va yuklab olish</button></div>
+      </span>
     </div>
     <div v-if="chipTip" class="tip-pop" role="tooltip" data-testid="chip-tip" :style="{ left: chipTip.x + 'px', top: chipTip.y + 'px' }">{{ chipTip.text }}</div>
     <div v-if="extraVars.length" class="var-chips" data-testid="var-chips"><span>Boshqa o'zgaruvchilar:</span>
       <span v-for="v in extraVars" :key="v.name" class="var-chip" :class="v.ok ? 'var-ok' : 'var-undef'" data-testid="var-chip" :title="v.title">{{ v.name }}</span>
     </div>
+    <div class="work-row">
     <div ref="workEl" class="work" :class="{ side: layout === 'side', maxed: respMax }" data-testid="work">
     <div class="req-pane">
     <div class="sections" data-testid="sections">
@@ -314,6 +327,8 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
     <section class="resp" ref="respEl" data-testid="response" aria-label="Javob" :style="respStyle" @scroll="tab.scroll.resp = ($event.target as HTMLElement).scrollTop">
       <ResponsePanel :tab="tab" />
     </section>
+    </div>
+    <aside v-if="docsOpen" class="docs-side" data-testid="docs-side"><DocsPanel v-model="d.description" tid="req-docs" title="Docs" @change="touch" /></aside>
     </div>
   </div>
   <Dialog v-if="curlOpen" title="Kod namunasi" testid="curl-drawer" width="min(960px,92vw)" @close="curlOpen = false">

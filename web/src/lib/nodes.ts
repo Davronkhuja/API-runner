@@ -5,7 +5,7 @@ import { isFolder, type RequestItem, type TreeItem } from '../types/model'
 import { folderPath } from './scope'
 
 export const AUTH_NAMES: Record<string, string> = {
-  bearer: 'Bearer Token', basic: 'Basic Auth', apikey: 'API Key', oauth2: 'OAuth 2.0', digest: 'Digest Auth', awsv4: 'AWS Signature V4', jwt: 'JWT Bearer', 'x-custom': 'Custom', noauth: "Auth yo'q",
+  bearer: 'Bearer Token', basic: 'Basic Auth', apikey: 'API Key', oauth2: 'OAuth 2.0', digest: 'Digest Auth', awsv4: 'AWS Signature V4', jwt: 'JWT Bearer', hawk: 'Hawk', ntlm: 'NTLM', 'x-custom': 'Custom', noauth: "Auth yo'q",
 }
 export const authName = (pm: { type?: string } | null | undefined) => (pm?.type ? AUTH_NAMES[pm.type] ?? pm.type : '')
 /** O'z auth'i bor (meros emas) va haqiqiy auth (noauth emas). */

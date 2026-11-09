@@ -5,11 +5,16 @@ from flask import Blueprint, current_app, jsonify, request
 
 from ..core import scripting
 from ..core.scripting.sandbox import Limits
-from ..storage import files, model, tree_ops
+from ..storage import files, findreplace, model, tree_ops
 from ..storage.migrate import import_localstorage
+from ..storage.trash import TrashError
 from ..storage.workspace import Conflict, NotFound
 
 bp = Blueprint("workspace_api", __name__, url_prefix="/api")
+
+
+def _trash():
+    return current_app.extensions["trash"]
 
 
 def _ws():
@@ -78,8 +83,11 @@ def put_collection(cid):
 
 @bp.delete("/collections/<cid>")
 def delete_collection(cid):
-    _ws().delete_collection(cid)
-    return jsonify({"ok": True})
+    ws = _ws()
+    with ws.lock:
+        tid = _trash().add_collection(ws.get_collection(cid))          # avval savatga, keyin o'chirish
+        ws.delete_collection(cid)
+    return jsonify({"ok": True, "trash_id": tid})
 
 
 # environments
@@ -131,8 +139,11 @@ def put_environment(eid):
 
 @bp.delete("/environments/<eid>")
 def delete_environment(eid):
-    _ws().delete_environment(eid)
-    return jsonify({"ok": True})
+    ws = _ws()
+    with ws.lock:
+        tid = _trash().add_environment(ws.get_environment(eid))
+        ws.delete_environment(eid)
+    return jsonify({"ok": True, "trash_id": tid})
 
 
 # globals
@@ -233,9 +244,38 @@ def delete_item(cid, iid):
     ws = _ws()
     with ws.lock:
         col = ws.get_collection(cid)
+        tid = _trash().add_item(col, iid)
         tree_ops.delete_item(col, iid)
         ws.save_collection(col)
+    return jsonify({"ok": True, "trash_id": tid})
+
+
+# ── Savat (30 kun) ──
+@bp.get("/trash")
+def trash_list():
+    return jsonify(_trash().list())
+
+
+@bp.post("/trash/<tid>/restore")
+def trash_restore(tid):
+    try:
+        return jsonify({"ok": True, **_trash().restore(tid)})
+    except TrashError as e:
+        return jsonify({"error": str(e)}), 404
+
+
+@bp.delete("/trash/<tid>")
+def trash_delete(tid):
+    try:
+        _trash().delete(tid)
+    except TrashError as e:
+        return jsonify({"error": str(e)}), 404
     return jsonify({"ok": True})
+
+
+@bp.delete("/trash")
+def trash_empty():
+    return jsonify({"ok": True, "deleted": _trash().empty()})
 
 
 @bp.post("/items/move")
@@ -483,3 +523,47 @@ def get_response_raw(rid):
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["Content-Security-Policy"] = "sandbox"          # HTML javob (preview) skript bajara olmasin
     return resp
+
+
+# ── Workspace bo'ylab Find & Replace ──
+def _fr_load(d):
+    ws = _ws()
+    rx = findreplace.build_regex(d.get("query", ""), bool(d.get("case")), bool(d.get("word")), bool(d.get("regex")))
+    cids = d.get("collection_ids") or None
+    cols = [ws.get_collection(c["id"]) for c in ws.list_collections() if not cids or c["id"] in cids]
+    envs = ws.list_environments()
+    return rx, findreplace.collect(cols, envs, d.get("targets"), cids), cols, envs
+
+
+@bp.post("/find-replace/search")
+def fr_search():
+    d = request.get_json(silent=True) or {}
+    try:
+        rx, fields, _c, _e = _fr_load(d)
+        results, truncated = findreplace.search(fields, rx, d.get("replacement", ""), bool(d.get("regex")))
+    except findreplace.FindError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"results": results, "truncated": truncated, "total": sum(r["count"] for r in results)})
+
+
+@bp.post("/find-replace/apply")
+def fr_apply():
+    """Tanlangan maydonlarni (`ids`) almashtiradi. OLDIN avtomatik zaxira; hammasi workspace qulfi ostida, qayta o'qilgan yangi holat ustida."""
+    from .. import __version__
+    from ..storage import backup as bk
+    d = request.get_json(silent=True) or {}
+    ids = d.get("ids") or []
+    if not ids:
+        return jsonify({"error": "Almashtirish uchun hech narsa tanlanmagan"}), 400
+    ws = _ws()
+    try:
+        with ws.lock:
+            rx, fields, cols, envs = _fr_load(d)
+            findreplace.search(fields, rx, d.get("replacement", ""), bool(d.get("regex")))          # almashtirish matni (backref) tekshiruvi
+            path = bk.create_backup(ws.root, current_app.extensions["saved_file"], __version__, current_app.extensions["backup_dir"], suffix="pre-find-replace")
+            changed, total, skipped = findreplace.apply(fields, rx, d.get("replacement", ""), bool(d.get("regex")), ids)
+            for (kind, did), doc in changed.items():
+                ws.save_collection(doc) if kind == "collection" else ws.save_environment(doc)
+    except findreplace.FindError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"ok": True, "replacements": total, "documents": len(changed), "skipped": skipped, "backup": os.path.basename(path)})

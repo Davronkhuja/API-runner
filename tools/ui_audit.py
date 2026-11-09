@@ -24,7 +24,7 @@ from werkzeug.serving import make_server  # noqa: E402
 from apirunner.app import create_app  # noqa: E402
 
 TOKEN = "audit-token"
-AXE_EXCLUDE = "{ exclude: [['.tabs-scroll']] }"   # tablist + yopish tugmasi: qabul qilingan istisno (docs/ui-audit.md)
+AXE_EXCLUDE = "{ exclude: [['.tabs-scroll'], ['.cm-tooltip-autocomplete']] }"   # tablist + yopish tugmasi: qabul qilingan istisno (docs/ui-audit.md)
 AXE = (ROOT / "web" / "node_modules" / "axe-core" / "axe.min.js")
 LONG_NAME = "https://api.online-mahalla.uz/api/v1/hm/projects/item/with/a/very/long/path/that/keeps/going/and/going/for/more/than/one/hundred/characters"
 VIEWPORTS = [("1280x800", 1280, 800), ("1440x900", 1440, 900), ("1920x1080", 1920, 1080), ("1440x900@80%", 1800, 1125), ("1440x900@125%", 1152, 720)]
@@ -60,11 +60,20 @@ def seed(base, echo, app):
              "url": {"raw": "{{base_url}}/echo?pinfl=30501900000000&contract_id=C-1042&page=1&size=20&sort=created_at,desc&filter=status:active&fields=id,name,code,amount", "query": [{"key": "pinfl", "value": "30501900000000"}, {"key": "contract_id", "value": "C-1042"}]},
              "body": {"mode": "raw", "raw": body, "options": {"raw": {"language": "json"}}}}, "response": [],
              "event": [{"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["pm.environment.set('x', 1)", "console.log('pre')"]}}, {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200))"]}}]}
-    simple = {"id": "simple", "name": "Oddiy so'rov", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/echo?a=1", "query": [{"key": "a", "value": "1"}]}}, "response": []}
+    simple = {"id": "simple", "name": "Oddiy so'rov", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/echo?a=1", "query": [{"key": "a", "value": "1"}]}}, "response": [
+        {"id": "exok", "name": "200 OK — foydalanuvchi", "code": 200, "status": "OK", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Request-Id", "value": "abc-123"}], "body": json.dumps({"id": 1, "name": "Ali", "tags": ["a", "b"]}, indent=2), "_postman_previewlanguage": "json"},
+        {"id": "ex404", "name": "404 " + "Topilmadi, juda uzun namuna nomi " * 3, "code": 404, "status": "Not Found", "header": [], "body": '{"error": "not found"}', "_postman_previewlanguage": "json"}]}
     longn = {"id": "longn", "name": LONG_NAME, "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/echo"}}, "response": []}
     many = [{"id": f"m{i}", "name": f"v1/resource-{i:02d}/" + ("long-segment-" * (i % 5)), "request": {"method": ["GET", "POST", "PUT", "DELETE"][i % 4], "header": [], "url": {"raw": "{{base_url}}/echo?i=%d" % i}}, "response": []} for i in range(80)]
     col["item"] = [{"id": "fbig", "name": "Ko'p so'rovli papka", "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "FOLDER-TOK", "type": "string"}]}, "item": many}, heavy, simple, longn]
     api(base, "PUT", f"/api/collections/{cid}", col)
+    tmp = api(base, "POST", "/api/collections", {"name": "Vaqtinchalik collection"})["id"]           # Savat uchun: o'chirilgan elementlar
+    tc = api(base, "GET", f"/api/collections/{tmp}")
+    tc["item"] = [{"id": f"t{i}", "name": f"O'chirilgan so'rov {i}", "request": {"method": "GET", "header": [], "url": {"raw": "http://x.test/%d" % i}}, "response": []} for i in range(3)]
+    api(base, "PUT", f"/api/collections/{tmp}", tc)
+    for i in range(3):
+        api(base, "DELETE", f"/api/collections/{tmp}/items/t{i}")
+    api(base, "DELETE", f"/api/collections/{tmp}")
     for name, kind in (("Dev", "dev"), ("Prod", "prod")):
         eid = api(base, "POST", "/api/environments", {"name": name, "kind": kind})["id"]
         e = api(base, "GET", f"/api/environments/{eid}")
@@ -206,6 +215,46 @@ def scenes(base, echo):
         p.route("**/api/admin/restart", lambda r: r.fulfill(json={"ok": True}))
         p.click("[data-testid=restart-server]"); p.wait_for_selector("[data-testid=restarting]")
     S["restarting"] = restarting
+    def tree_examples(p):
+        if not p.locator("[data-testid=example-row]").count():           # kengaytirilgan holat ui-state'da saqlanadi
+            p.locator("[data-name=\"Oddiy so'rov\"] [data-testid=ex-chevron]").click()
+        p.wait_for_selector("[data-testid=example-row]")
+    S["tree-examples"] = tree_examples
+    def example_tab(p):
+        tree_examples(p); p.locator("[data-testid=example-row]").first.dblclick(); p.wait_for_selector("[data-testid=example-tab]")
+    S["example-tab"] = example_tab
+    MD = "# Foydalanuvchilar API\n\nBu so'rov **barcha** foydalanuvchilarni qaytaradi.\n\n- `page` — sahifa\n- `size` — hajm\n\n| Kod | Ma'no |\n|---|---|\n| 200 | OK |\n| 404 | Topilmadi |\n\n```json\n{\"id\": 1}\n```\n\n> Eslatma: " + "uzun matn " * 30
+    def docs(p):
+        open_req(p, "Og'ir so'rov"); p.click("[data-testid=docs-btn]"); p.click("[data-testid=req-docs-edit]"); p.fill("[data-testid=req-docs-text]", MD); p.click("[data-testid=req-docs-view]")
+    S["docs-panel"] = docs
+    def docs_edit(p):
+        open_req(p, "Oddiy so'rov"); p.click("[data-testid=docs-btn]"); p.click("[data-testid=req-docs-edit]")
+    S["docs-panel-edit"] = docs_edit
+    S["trash-dialog"] = lambda p: (p.click("[data-testid=trash-open]"), p.wait_for_selector("[data-testid=trash-row]"))
+    def find_dlg(p):
+        p.click("[data-testid=find-open]"); p.fill("[data-testid=fr-query]", "echo"); p.fill("[data-testid=fr-replacement]", "echo2"); p.wait_for_selector("[data-testid=fr-row]")
+    S["find-replace"] = find_dlg
+    def setvar(p):
+        open_req(p, "Oddiy so'rov"); p.click("[data-testid=url]"); p.keyboard.press("End")
+        for _ in range(4): p.keyboard.press("Shift+ArrowLeft")
+        p.wait_for_selector("[data-testid=set-var-btn]"); p.click("[data-testid=set-var-btn]"); p.wait_for_selector("[data-testid=setvar-dialog]")
+    S["setvar-dialog"] = setvar
+    def varpop(p):
+        open_req(p, "Oddiy so'rov"); p.click("[data-testid=url]"); p.keyboard.press("End"); p.keyboard.type("&x={{", delay=30); p.wait_for_selector(".cm-tooltip-autocomplete")
+    S["var-autocomplete-url"] = varpop
+    def varpop_kv(p):
+        open_req(p, "Og'ir so'rov"); p.click("[data-section=headers]"); p.locator("[data-cell='0:1']").click(); p.keyboard.press("End"); p.keyboard.type("{{", delay=30); p.wait_for_selector("[data-testid=var-popup]")
+    S["var-autocomplete-kv"] = varpop_kv
+    S["send-menu"] = lambda p: (open_req(p, "Oddiy so'rov"), p.click("[data-testid=send-menu]"), p.wait_for_selector("[data-testid=send-download]"))
+    def auth_sel(t, **f):
+        def fn(p):
+            open_req(p, "Oddiy so'rov"); p.click("[data-section=auth]"); p.select_option("[data-testid=auth-type]", t)
+            for k, v in f.items():
+                p.select_option(f"[data-testid=auth-f-{k}]", v) if k == "algorithm" else None
+        return fn
+    S["auth-jwt-rs"] = auth_sel("jwt", algorithm="RS256")
+    S["auth-hawk"] = auth_sel("hawk")
+    S["auth-ntlm"] = auth_sel("ntlm")
     S["cookies"] = lambda p: p.click("[data-testid=cookies-btn]")
     def console(p):
         open_req(p, "Oddiy so'rov"); send(p); p.click("[data-testid=console-btn]"); p.wait_for_selector("[data-testid=console]")
@@ -276,7 +325,7 @@ def main():
                         findings.append({"screen": name, "viewport": vname, "theme": theme, "shot": str(shot.relative_to(out)), **f})
                     if AXE.exists():
                         page.add_script_tag(path=str(AXE))
-                        res = page.evaluate("() => axe.run({ exclude: [['.tabs-scroll']] }, { resultTypes: ['violations'] }).then(r => r.violations.filter(v => ['serious','critical'].includes(v.impact)).map(v => ({ id: v.id, impact: v.impact, n: v.nodes.length, sample: v.nodes[0].target.join(' ') })))")
+                        res = page.evaluate("() => axe.run({ exclude: [['.tabs-scroll'], ['.cm-tooltip-autocomplete']] }, { resultTypes: ['violations'] }).then(r => r.violations.filter(v => ['serious','critical'].includes(v.impact)).map(v => ({ id: v.id, impact: v.impact, n: v.nodes.length, sample: v.nodes[0].target.join(' ') })))")
                         for v in res:
                             findings.append({"screen": name, "viewport": vname, "theme": theme, "shot": str(shot.relative_to(out)), "kind": f"axe-{v['id']}", "detail": f"{v['impact']} ×{v['n']} {v['sample']}"})
                 ctx.close()

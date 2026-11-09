@@ -215,3 +215,49 @@ def test_18_batch_settings(vp):
     open_req(vp, "payments")
     vp.click("[data-section=batch]")
     snap(vp, "18-batch-settings")
+
+
+def _cid(app):
+    return next(c["id"] for c in app.api("GET", "/api/workspace")["collections"] if c["name"] == "Kolleksiya")
+
+
+def test_19_example_tab(vp, app):
+    cid = _cid(app)
+    col = app.api("GET", f"/api/collections/{cid}")
+    col["item"][1]["response"] = [{"id": "e1", "name": "200 OK", "code": 200, "status": "OK", "header": [{"key": "Content-Type", "value": "application/json"}], "body": '{\n  "ok": true,\n  "items": [1, 2, 3]\n}', "_postman_previewlanguage": "json"}]
+    app.api("PUT", f"/api/collections/{cid}", col)
+    vp.reload()
+    vp.wait_for_selector("[data-testid=app]")
+    vp.add_style_tag(content=HIDE)
+    vp.locator("[data-name='health']").first.locator("[data-testid=ex-chevron]").click()
+    vp.locator("[data-testid=example-row]").first.dblclick()
+    expect(T(vp, "example-tab")).to_be_visible()
+    snap(vp, "19-example-tab")
+
+
+def test_20_docs_panel(vp):
+    open_req(vp, "contracts")
+    T(vp, "docs-btn").click()
+    T(vp, "req-docs-edit").click()
+    T(vp, "req-docs-text").fill("# Shartnomalar\n\nRo'yxatni **qaytaradi**.\n\n- `page` — sahifa\n- `size` — hajm\n\n```json\n{\"page\": 1}\n```")
+    T(vp, "req-docs-view").click()
+    snap(vp, "20-docs-panel")
+
+
+def test_21_trash(vp, app):
+    cid = _cid(app)
+    app.api("DELETE", f"/api/collections/{cid}/items/c")
+    vp.reload()
+    vp.wait_for_selector("[data-testid=app]")
+    vp.add_style_tag(content=HIDE + "[data-testid=trash-days]{visibility:hidden!important}")
+    T(vp, "trash-open").click()
+    expect(T(vp, "trash-row")).to_have_count(1)
+    snap(vp, "21-trash")
+
+
+def test_22_find_replace(vp):
+    T(vp, "find-open").click()
+    T(vp, "fr-query").fill("api.example.test")
+    T(vp, "fr-replacement").fill("api.new.test")
+    expect(T(vp, "fr-row").first).to_be_visible()
+    snap(vp, "22-find-replace")

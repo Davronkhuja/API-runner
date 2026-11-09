@@ -141,7 +141,7 @@ function applyBulk() {
               @dragstart="dragFrom = i" @dragover.prevent="over = i" @dragleave="over = null" @drop.prevent="onRowDrop(i, $event)" @dragend="dragFrom = over = null">
             <td class="grip" :title="isGhost(i) ? undefined : 'Sudrab tartiblash'"><span v-if="!isGhost(i)" aria-hidden="true">⋮⋮</span></td>
             <td style="text-align:center"><input v-if="!isGhost(i)" type="checkbox" aria-label="Yoqish" tabindex="-1" v-model="r.enabled" @change="emit('change')"></td>
-            <td><input type="text" :data-cell="`${i}:0`" placeholder="Kalit" aria-label="Kalit" v-model="r.key" draggable="false" @input="touch" @keydown="onKey($event, i, 0)"></td>
+            <td><input type="text" :data-cell="`${i}:0`" placeholder="Kalit" aria-label="Kalit" v-var-complete v-model="r.key" draggable="false" @input="touch" @keydown="onKey($event, i, 0)"></td>
             <td v-if="formdata"><select v-if="!isGhost(i)" :value="hasFiles(r) ? 'file' : 'text'" aria-label="Turi" data-testid="fd-type" @change="setKind(i, ($event.target as HTMLSelectElement).value as 'text' | 'file')"><option value="text">Text</option><option value="file">File</option></select></td>
             <td>
               <div v-if="formdata && hasFiles(r)" class="fd-files" data-testid="fd-files">
@@ -155,7 +155,7 @@ function applyBulk() {
                 <button class="linkbtn" data-testid="fd-add" tabindex="-1" @click="startPick(i)">{{ r.files?.length ? '+ yana fayl' : 'Fayl tanlash…' }}</button>
                 <input :ref="el => (inputs[i] = el as HTMLInputElement)" type="file" multiple hidden tabindex="-1" aria-label="Fayl tanlash" data-testid="fd-input" @change="onPick(i, $event)">
               </div>
-              <input v-else type="text" :data-cell="`${i}:1`" placeholder="Qiymat" aria-label="Qiymat" v-model="r.value" draggable="false" @input="touch" @keydown="onKey($event, i, 1)">
+              <input v-else type="text" :data-cell="`${i}:1`" placeholder="Qiymat" aria-label="Qiymat" v-var-complete v-model="r.value" draggable="false" @input="touch" @keydown="onKey($event, i, 1)">
             </td>
             <td v-if="formdata"><input type="text" :data-cell="`${i}:2`" :placeholder="ctPlaceholder(r)" aria-label="Content-Type" v-model="r.contentType" data-testid="fd-ct" draggable="false" @input="touch" @keydown="onKey($event, i, 2)"></td>
             <td v-else><input type="text" :data-cell="`${i}:2`" placeholder="Tavsif" aria-label="Tavsif" v-model="r.description" data-testid="kv-desc" draggable="false" @input="touch" @keydown="onKey($event, i, 2)"></td>

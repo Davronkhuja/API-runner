@@ -3,6 +3,7 @@ export interface PmHeader { key: string; value: string; disabled?: boolean; desc
 export interface PmQuery { key: string; value: string; disabled?: boolean; description?: string }
 export interface PmRequest {
   method: string
+  description?: string | { content?: string; type?: string }
   header: PmHeader[]
   url: { raw: string; query?: PmQuery[]; variable?: { key: string; value: string }[] }
   body?: {
@@ -20,7 +21,7 @@ export interface RequestItem {
   id: string
   name: string
   request: PmRequest
-  response: unknown[] // Examples
+  response: unknown[] // Examples (lib/examples.ts: Example)
   event?: { listen: string; script: { type?: string; exec: string[] | string } }[]
   'x-apirunner'?: { legacy?: Record<string, any>; files_migrated?: boolean; pre_files_body?: unknown; settings?: Record<string, any> }
 }

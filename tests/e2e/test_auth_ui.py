@@ -170,3 +170,28 @@ def test_expired_token_is_refreshed_with_refresh_token(app, browser, echo_server
     page.locator("[data-name='Q']").dblclick()
     assert send_json(page)["headers"]["Authorization"] == "Bearer AT-refresh_token"
     ctx.close()
+
+
+def test_jwt_asymmetric_form_hawk_and_ntlm_fields(ui, echo_server):
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    key = ec.generate_private_key(ec.SECP256R1())
+    pem = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()).decode()
+    new_req(ui, echo_server + "/echo")
+    sel_type(ui, "jwt")
+    expect(T(ui, "auth-f-secret")).to_be_visible()
+    expect(T(ui, "auth-f-privateKey")).to_have_count(0)
+    T(ui, "auth-f-algorithm").select_option("ES256")
+    expect(T(ui, "auth-f-secret")).to_have_count(0)
+    T(ui, "auth-f-privateKey").fill(pem)
+    f(ui, "payload", '{"sub":"1"}')
+    assert send_json(ui)["headers"]["Authorization"].startswith("Bearer eyJ")
+    sel_type(ui, "hawk")
+    for k in ("authId", "authKey", "algorithm", "extraData", "appId", "includePayloadHash"):
+        expect(T(ui, f"auth-f-{k}")).to_be_visible()
+    f(ui, "authId", "dh37fgj492je")
+    f(ui, "authKey", "secret-key")
+    assert send_json(ui)["headers"]["Authorization"].startswith('Hawk id="dh37fgj492je"')
+    sel_type(ui, "ntlm")
+    for k in ("username", "password", "domain", "workstation"):
+        expect(T(ui, f"auth-f-{k}")).to_be_visible()

@@ -4,7 +4,7 @@ import { hydrateResponse } from '../lib/responses'
 import { get, keepalivePut, put } from '../api/client'
 import { newDraft, normalizeDraft, type RequestDraft } from '../lib/draft'
 
-export type TabKind = 'request' | 'environment' | 'collection' | 'runner' | 'settings' | 'cookies'
+export type TabKind = 'request' | 'environment' | 'collection' | 'runner' | 'settings' | 'cookies' | 'example'
 
 export interface Tab {
   id: string

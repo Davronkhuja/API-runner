@@ -131,3 +131,23 @@ def test_save_as_example_requires_saved_request(ui, echo_server):
     send(ui, echo_server + "/echo")
     T(ui, "save-example").click()
     expect(ui.locator(".toast")).to_contain_text("saqlang")
+
+
+def test_send_and_download_saves_binary_and_text_with_proper_names(app, page, echo_server):
+    page.goto(app.url)
+    page.wait_for_selector("[data-testid=app]")
+    T = lambda t: page.locator(f"[data-testid={t}]")  # noqa: E731
+    T("new-tab").click()
+    page.fill("[data-testid=url]", echo_server + "/png")
+    T("send-menu").click()
+    with page.expect_download() as d:
+        T("send-download").click()
+    assert d.value.suggested_filename.endswith(".png"), d.value.suggested_filename
+    page.fill("[data-testid=url]", echo_server + "/echo?a=1")
+    T("send-menu").click()
+    with page.expect_download() as d:
+        T("send-download").click()
+    assert d.value.suggested_filename == "echo.json", d.value.suggested_filename
+    expect(T("send")).to_be_enabled()
+    with page.expect_response(lambda r: r.url.endswith("/run_one")):
+        T("send").click()                                           # oddiy Yuborish fayl yuklamaydi

@@ -8,6 +8,8 @@ import { applyScriptResult, scriptsFor } from './scripts'
 import { logRequest, logResponse } from './console'
 import { prepareAuth, specFor } from './scope'
 import { askConfirm, showToast } from './ui'
+import { saveResponseFile } from './responses'
+import { saveExampleTab } from './examples'
 import { missingFilesOf } from './files'
 import { confirmWrite } from './envkind'
 import type { RequestItem } from '../types/model'
@@ -18,6 +20,7 @@ export const saveAsHandler: { fn: ((tab: Tab) => Promise<boolean>) | null } = { 
 export async function saveTab(tab: Tab): Promise<boolean> {
   const tabs = useTabs(), tree = useTree()
   await tabs.flush()
+  if (tab.kind === 'example') return saveExampleTab(tab)
   if (tab.kind !== 'request' || !tab.draft) return true
   if (!tab.ref) return saveAsHandler.fn ? saveAsHandler.fn(tab) : false
   const [cid, id] = tab.ref.split(':')
@@ -50,7 +53,8 @@ function historyResult(r: any) {
   return { time: r.time, size: r.size, ...(r.response_id ? { response_id: r.response_id } : {}) }
 }
 
-export async function sendTab(tab: Tab) {
+/** `opts.download` — "Send and Download": javob kelgach faylga saqlanadi (Content-Disposition / URL / tur bo'yicha nom). */
+export async function sendTab(tab: Tab, opts: { download?: boolean } = {}) {
   if (!tab.draft || !tab.draft.url.trim()) { showToast('URL kiriting!', 'warn'); return }
   if (!(await confirmWrite(tab.draft.method))) return
   const missing = await missingFilesOf(tab.draft)
@@ -71,6 +75,10 @@ export async function sendTab(tab: Tab) {
     tab.response = r
     useTabs().persistSoon()          // holat/o'lcham/sarlavhalar sahifa yangilanganda ham qoladi (matn emas)
     logResponse(r, tab.id)
+    if (opts.download && typeof r.status === 'number') {
+      const n = await saveResponseFile(r, typeof r.response === 'string' ? r.response : JSON.stringify(r.response, null, 2))
+      if (n) showToast('Yuklab olindi: ' + n, 'success')
+    }
     await applyScriptResult(r.scripts, { tabId: tab.id, ref: tab.ref })
     hist.add('request', { ...spec, name: tab.draft.name || undefined, store_response: undefined, env_vars: undefined, scripts: undefined, ref: undefined, scripts_info: undefined, timestamp: Date.now(), status: r.status, ...historyResult(r) }).catch(() => {})
     hist.add('url', { method: tab.draft.method, url: tab.draft.url }).catch(() => {})

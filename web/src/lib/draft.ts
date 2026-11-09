@@ -8,6 +8,8 @@ import { authFromPm, authHeader, authToPm, emptyAuth, type AuthDraft, type AuthT
 export { authHeader, type AuthType }
 export interface RequestDraft {
   name: string
+  /** Markdown tavsif (Postman `request.description`) */
+  description: string
   method: string
   url: string
   params: KV[]
@@ -48,7 +50,7 @@ export function paramsFromUrl(url: string, existing: KV[]): KV[] {
 
 export function newDraft(name = 'Yangi so\'rov'): RequestDraft {
   return {
-    name, method: 'GET', url: '', params: [emptyKV()], headers: [emptyKV()],
+    name, description: '', method: 'GET', url: '', params: [emptyKV()], headers: [emptyKV()],
     auth: emptyAuth('inherit'), pathVars: [], settings: {}, scripts: emptyScripts(),
     body: { mode: 'none', raw: '', contentType: '', fields: [emptyKV()], file: { path: '', name: '' }, gql: { query: '', variables: '' } },
   }
@@ -90,6 +92,7 @@ export function draftFromItem(item: RequestItem): RequestDraft {
   d.pathVars = syncPathVars(d.url, r.url?.variable ?? [])
   d.headers = withTrailing((r.header ?? []).map(h => ({ key: h.key, value: h.value, enabled: !h.disabled, description: h.description })))
   d.auth = authFromPm(r.auth)
+  d.description = typeof r.description === 'string' ? r.description : (r.description as any)?.content ?? ''
 
   const b = r.body
   if (b?.mode === 'raw') { const l = b.options?.raw?.language; d.body.mode = l === 'json' ? 'json' : 'raw'; d.body.rawLang = l === 'html' || l === 'javascript' ? l : 'text'; d.body.raw = b.raw ?? '' }
@@ -114,6 +117,7 @@ export function requestFromDraft(d: RequestDraft): PmRequest {
   }
   const pmAuth = authToPm(d.auth)
   if (pmAuth) req.auth = pmAuth
+  if (d.description?.trim()) req.description = d.description
   if (d.pathVars.length) req.url.variable = d.pathVars.map(v => ({ key: v.key, value: v.value }))
   const m = d.body.mode
   if (m === 'raw' || m === 'json') req.body = { mode: 'raw', raw: d.body.raw, options: { raw: { language: m === 'json' ? 'json' : (d.body.rawLang ?? 'text') } } }

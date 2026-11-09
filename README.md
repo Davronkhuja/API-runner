@@ -79,6 +79,12 @@ Node.js kerak emas — frontend build natijasi (`apirunner/static/app/`) repoga 
 2. Kerak bo'lsa **Params**, **Headers**, **Auth** yoki **Body** tablarini to'ldiring
 3. **▶ RUN** tugmasini bosing
 
+### Kundalik qulayliklar (v2.6.0)
+- **`{{`** yozsangiz o'zgaruvchilar ro'yxati chiqadi (URL, Params, Headers, Body, Auth); matn belgilasangiz **{{ }} O'zgaruvchi qilish** tugmasi paydo bo'ladi.
+- **Example'lar** so'rov ostida (chevron); **Docs** tugmasi — Markdown tavsif paneli.
+- **Savat** (sidebar yoki ⌘K): o'chirilganlar 30 kun saqlanadi. **Find & Replace** (sidebar yoki ⌘K): butun workspace bo'ylab, almashtirishdan oldin avtomatik zaxira.
+- **Yuborish ▾ → Yuborish va yuklab olish**. Auth: JWT RS/PS/ES (PEM kalit), Hawk, NTLM (`cryptography` `requirements.txt` da).
+
 ### Runner v2 (v2.5.0)
 Collection/papka kontekst menyusidan **Runner**: chapda yagona "Run sozlamalari" paneli (iteratsiyalar, kechikish, parallel, retry, timeout, muhit, CSV/JSON data fayl, "o'zgaruvchi qiymatlarini saqlash", "birinchi xatoda to'xtash", "javoblarni saqlash"), o'ngda real-time natijalar jadvali (Testlar ustuni), `run #N` tarixi, "Avvalgi run bilan solishtirish" va Eksport (JSON/HTML/JUnit). Hisoblash serverda, natijalar `workspace/state.db` (SQLite) da — sahifa yangilangach ham saqlanadi. So'rovdagi **Batch** shu panel va shu engine'dan foydalanadi.
 

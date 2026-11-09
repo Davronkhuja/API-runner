@@ -13,6 +13,7 @@ import { json } from '@codemirror/lang-json'
 import { html } from '@codemirror/lang-html'
 import { javascript } from '@codemirror/lang-javascript'
 import { tags as t } from '@lezer/highlight'
+import { completionTheme, varCompletion } from '../lib/varcomplete'
 
 const props = withDefaults(defineProps<{ modelValue: string; lang: 'json' | 'raw' | 'html' | 'javascript' | 'curl'; testid?: string; placeholder?: string; readonly?: boolean; wrap?: boolean; label?: string }>(), { wrap: true })
 const emit = defineEmits<{ 'update:modelValue': [string]; beautify: [] }>()
@@ -60,6 +61,7 @@ const jsonLinter = linter((v): Diagnostic[] => {
   return [{ from: Math.max(0, to > from ? from : from - 1), to: Math.max(to, from), severity: 'error', message: `JSON xatosi (${err.line}-qator, ${err.col}-ustun): ${err.message}` }]
 }, { delay: 300 })
 
+const lang_ok = () => props.lang === 'json' || props.lang === 'raw' || props.lang === 'html' || props.lang === 'javascript'          // `{{` avtoto'ldirish faqat so'rov body'si kabi matnlarda
 onMounted(() => {
   view = new EditorView({
     parent: host.value!,
@@ -69,7 +71,7 @@ onMounted(() => {
         history(), theme, ...(props.wrap ? [EditorView.lineWrapping] : []), syntaxHighlighting(style),
         lineNumbers(), foldGutter(), bracketMatching(), highlightActiveLine(), highlightSelectionMatches(), search({ top: true }),
         ...(props.lang === 'json' && !props.readonly ? [jsonLinter, lintGutter()] : []),
-        ...(props.readonly ? [EditorState.readOnly.of(true)] : []),
+        ...(props.readonly ? [EditorState.readOnly.of(true)] : lang_ok() ? [varCompletion(), completionTheme] : []),
         ...(props.lang === 'json' ? [json()] : props.lang === 'html' ? [html()] : props.lang === 'javascript' ? [javascript()] : props.lang === 'curl' ? [curlLang, syntaxHighlighting(curlClasses)] : []),
         ...(props.placeholder ? [cmPlaceholder(props.placeholder)] : []),
         EditorView.contentAttributes.of({ 'data-testid': props.testid ?? 'code-editor', 'aria-label': props.label ?? 'Kod muharriri', tabindex: '0' }),
