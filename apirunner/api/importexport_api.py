@@ -66,7 +66,7 @@ def import_preview():
         items = []
         for it in items_of(parsed):
             c = import_apply.conflict_of(ws, it)
-            items.append({"type": it["type"], "name": it["name"], "stats": it["stats"], "conflict": c, "default_action": "copy" if c else "import"})
+            items.append({"type": it["type"], "name": it["name"], "stats": it["stats"], "conflict": c, "default_action": (("merge" if it["type"] == "globals" else "copy") if c else "import")})
         out.append({**row, "ok": True, "kind": parsed["kind"], "label": parsed["label"], "warnings": parsed["warnings"], "items": items, "files": len(parsed["files"])})
     return jsonify({"sources": out})
 
@@ -91,7 +91,7 @@ def import_apply_route():
             errors.append({"source": si, "error": str(e)})
             continue
         for ii, it in enumerate(items_of(parsed)):
-            action = decisions.get((si, ii)) or ("copy" if import_apply.conflict_of(ws, it) else "import")
+            action = decisions.get((si, ii)) or (("merge" if it["type"] == "globals" else "copy") if import_apply.conflict_of(ws, it) else "import")
             try:
                 r = import_apply.apply_item(ws, it, action, lambda: _backup("pre-import-globals"))
             except ValueError as e:

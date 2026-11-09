@@ -7,6 +7,7 @@ import { showToast } from '../lib/ui'
 import { ensureGhost } from '../lib/ghost'
 import { useTree } from '../stores/tree'
 import { requestsIn } from '../lib/nodes'
+import { downloadFrom } from '../lib/exporter'
 import Icon from './Icon.vue'
 import { KINDS } from '../lib/envkind'
 import type { EnvKind } from '../types/model'
@@ -110,6 +111,7 @@ async function save() {
     <div class="env-foot">
       <button data-testid="env-cur-to-init" :disabled="!hasCurrent" @click="currentToInitial">Joriy → boshlang'ich (hammasi)</button>
       <button data-testid="env-cur-reset" :disabled="!hasCurrent" @click="resetCurrent">Joriy qiymatlarni tiklash</button>
+      <button data-testid="env-export-postman" title="Postman formati: faqat boshlang'ich qiymatlar, maxfiylar bo'sh (saqlangan holat)" @click="downloadFrom(isGlobals ? '/api/globals/export' : `/api/environments/${env!.id}/export`)"><Icon name="download" :size="14" />Eksport (Postman)</button>
       <span style="flex:1" />
       <span class="muted" data-testid="env-used-by">{{ isGlobals ? 'Globals barcha muhitlarda amal qiladi' : `Bu muhitni ${usedBy} ta so'rov ishlatadi` }}</span>
     </div>

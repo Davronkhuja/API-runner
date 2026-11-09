@@ -5,7 +5,7 @@ import { useTree } from './stores/tree'
 import { useWorkspace } from './stores/workspace'
 import { useHistory } from './stores/history'
 import { put, get, keepalivePut } from './api/client'
-import { askClose, closeDialog, confirmDialog, findOpen, importOpen, toast, trashOpen } from './lib/ui'
+import { askClose, closeDialog, confirmDialog, exportOf, findOpen, importOpen, toast, trashOpen } from './lib/ui'
 import { suggestName } from './lib/rename'
 import { clamp, drag } from './lib/resize'
 import { createRequestIn, saveAsHandler, saveTab, sendTab, openRequest } from './lib/actions'
@@ -17,6 +17,7 @@ import RunnerTab from './components/RunnerTab.vue'
 import RunGuard from './components/RunGuard.vue'
 import ExampleTab from './components/ExampleTab.vue'
 import RestartOverlay from './components/RestartOverlay.vue'
+import ExportDialog from './components/ExportDialog.vue'
 import FindReplaceDialog from './components/FindReplaceDialog.vue'
 import TrashDialog from './components/TrashDialog.vue'
 import VarPopup from './components/VarPopup.vue'
@@ -221,6 +222,7 @@ function openRunnerWithData(name: string, text: string) {
     <VarPopup />
     <SetVarPopover />
     <ImportDialog v-if="importOpen" @close="importOpen = false" />
+    <ExportDialog v-if="exportOf" :cid="exportOf.cid" :name="exportOf.name" :requests="exportOf.requests" @close="exportOf = null" />
     <FindReplaceDialog v-if="findOpen" @close="findOpen = false" />
     <TrashDialog v-if="trashOpen" @close="trashOpen = false" />
     <Dialog v-if="saveAs" title="So'rovni saqlash" testid="saveas-dialog" width="460px" @close="saveAs.resolve(false); saveAs = null">

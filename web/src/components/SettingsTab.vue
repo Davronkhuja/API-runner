@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { get, post } from '../api/client'
-import { askConfirm, fmtBytes, showToast } from '../lib/ui'
+import { askConfirm, fmtBytes, importOpen, showToast } from '../lib/ui'
+import { downloadFrom } from '../lib/exporter'
 import { useWorkspace } from '../stores/workspace'
 import SettingsForm from './SettingsForm.vue'
 import { dense, layout } from '../lib/view'
@@ -13,6 +14,7 @@ interface Backup { name: string; version: string | null; created: number | null;
 const backups = ref<Backup[]>([])
 const status = ref<any>(null)
 const busy = ref(false)
+const zipState = ref(true)
 
 const fstat = ref<{ count: number; size: number; unused_count: number; unused_size: number } | null>(null)
 async function loadFiles() { try { fstat.value = await get('/api/files/usage') } catch { fstat.value = null } }
@@ -57,7 +59,7 @@ const gsSaved = ref(false)
 let gsTimer: ReturnType<typeof setTimeout> | undefined
 async function saveGlobal() { try { await ws.saveSettings(gs.value); gsDirty.value = false; gsSaved.value = true } catch (e: any) { showToast(e.message, 'error') } }
 function queueGlobal() { gsDirty.value = true; gsSaved.value = false; clearTimeout(gsTimer); gsTimer = setTimeout(saveGlobal, 500) }
-const NAV = [['s-view', "Ko'rinish"], ['s-request', "So'rov"], ['s-scripts', 'Skriptlar'], ['s-files', 'Fayllar'], ['s-data', "Ma'lumotlar"], ['s-backups', 'Zaxiralar']] as const
+const NAV = [['s-view', "Ko'rinish"], ['s-request', "So'rov"], ['s-scripts', 'Skriptlar'], ['s-files', 'Fayllar'], ['s-data', "Ma'lumotlar"], ['s-io', 'Import / Eksport'], ['s-backups', 'Zaxiralar']] as const
 const sec = ref<string>('s-view'), mainEl = ref<HTMLElement>()
 function go(id: string) { sec.value = id; mainEl.value?.querySelector('#' + id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }
 onMounted(load)
@@ -102,6 +104,15 @@ onMounted(load)
     <h4 id="s-data">Ma'lumotlar</h4>
     <p class="muted">Eski brauzer (localStorage) ma'lumotlarini serverga ko'chirish yoki <code>saved_requests.json</code> formatiga eksport (orqaga qaytish uchun).</p>
     <p style="display:flex;gap:8px"><button data-testid="ls-import" @click="importLocalStorage"><Icon name="upload" :size="14" />Brauzerdan ko'chirish</button><button data-testid="export-legacy" @click="exportLegacy"><Icon name="download" :size="14" />saved_requests.json eksport</button></p>
+    <h4 id="s-io">Import / Eksport</h4>
+    <p class="muted" style="margin:0 0 8px">Postman, OpenAPI/Swagger, Insomnia, HAR, cURL va workspace zaxirasini import qiling; butun workspace'ni zip qilib oling.</p>
+    <p style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button data-testid="io-import" @click="importOpen = true"><Icon name="upload" :size="14" />Import…</button>
+      <button data-testid="io-workspace-zip" @click="downloadFrom('/api/workspace/export?state=' + (zipState ? 1 : 0))"><Icon name="download" :size="14" />Workspace zaxirasi (.zip)</button>
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" v-model="zipState" data-testid="io-zip-state">tarix va javoblar bilan</label>
+      <button data-testid="io-globals" @click="downloadFrom('/api/globals/export')"><Icon name="download" :size="14" />Globals (Postman)</button>
+    </p>
+    <p class="muted" style="font-size:var(--fs-sm)">Zip zaxirasi muhit qiymatlarini (Initial/Current, maxfiylar bilan) aynan saqlaydi — faylni begonalarga bermang. Postman muhit eksporti esa faqat Initial qiymat, maxfiylar bo'sh.</p>
     <h4 id="s-backups">Zaxiralar</h4>
     <p class="muted">Har bir migratsiyadan oldin avtomatik zaxira olinadi. Oxirgi 20 tasi saqlanadi. <code>saved_requests.json</code> tiklashda tegilmaydi.</p>
     <p><button class="primary" data-testid="backup-create" :disabled="busy" @click="create">Zaxira yaratish</button></p>
