@@ -106,8 +106,8 @@ function setBody(v: string) { d.value.body.mode = 'raw'; d.value.body.raw = v; t
 <template>
   <div class="proto" :data-testid="'proto-' + d.protocol">
     <section class="proto-cfg" :class="{ collapsed: !cfgOpen }">
-      <div class="sec-tabs" role="tablist" aria-label="Ulanish sozlamalari">
-        <button v-for="s in SECTIONS" :key="s" role="tab" :aria-selected="section === s && cfgOpen" :class="{ on: section === s && cfgOpen }" :data-psection="s" @click="section = s; cfgOpen = true">{{ LABEL[s] }}<span v-if="counts[s]" class="badge">{{ counts[s] }}</span></button>
+      <div class="sec-tabs">
+        <div class="ptabs" role="tablist" aria-label="Ulanish sozlamalari"><button v-for="s in SECTIONS" :key="s" role="tab" :aria-selected="section === s && cfgOpen" :class="{ on: section === s && cfgOpen }" :data-psection="s" @click="section = s; cfgOpen = true">{{ LABEL[s] }}<span v-if="counts[s]" class="badge">{{ counts[s] }}</span></button></div>
         <span style="flex:1" />
         <button class="ghost" :aria-expanded="cfgOpen" data-testid="proto-cfg-toggle" @click="cfgOpen = !cfgOpen"><Icon :name="cfgOpen ? 'chevron-up' : 'chevron-down'" :size="14" />{{ cfgOpen ? "Yig'ish" : 'Sozlamalar' }}</button>
       </div>
@@ -160,7 +160,7 @@ function setBody(v: string) { d.value.body.mode = 'raw'; d.value.body.raw = v; t
       </div>
       <div v-if="!isWs && sseTypes.length > 1" class="proto-types" role="group" aria-label="Event turi filtri" data-testid="proto-types">
         <span class="muted">Event turi:</span>
-        <button v-for="t in sseTypes" :key="t" class="chip" :class="{ on: typeOn(t) }" :aria-pressed="typeOn(t)" :data-type="t" @click="toggleType(t)">{{ t }}</button>
+        <button v-for="t in sseTypes" :key="t" class="pchip" :class="{ on: typeOn(t) }" :aria-pressed="typeOn(t)" :data-type="t" @click="toggleType(t)">{{ t }}</button>
       </div>
       <p v-if="conn.lost && live" class="state-error" role="alert" style="margin:0;padding:6px 12px">Server bilan oqim uzildi. Sahifani yangilang yoki qayta ulaning.</p>
       <div ref="listEl" class="proto-list scroll" data-testid="proto-list" tabindex="0" aria-label="Xabarlar ro'yxati">
@@ -171,13 +171,15 @@ function setBody(v: string) { d.value.body.mode = 'raw'; d.value.body.raw = v; t
           <div v-if="isSystem(e)" class="plog sys" :class="e.type" data-testid="proto-sys" :data-type="e.type">
             <span class="t">{{ fmtTime(e.ts) }}</span><span class="ic" aria-hidden="true">{{ e.type === 'error' ? '⚠' : e.type === 'open' ? '●' : e.type === 'comment' ? ':' : '○' }}</span><span class="tx">{{ systemText(e) }}</span>
           </div>
-          <div v-else class="plog msg" :class="[e.dir ?? 'in', { sel: open.has(e.seq) }]" data-testid="proto-msg" :data-dir="e.dir ?? 'in'" role="button" tabindex="0" :aria-expanded="open.has(e.seq)" @click="toggleRow(e)" @keydown.enter="toggleRow(e)">
+          <div v-else class="plog msg" :class="[e.dir ?? 'in', { sel: open.has(e.seq) }]" data-testid="proto-msg" :data-dir="e.dir ?? 'in'">
+            <div class="pline" role="button" tabindex="0" :aria-expanded="open.has(e.seq)" @click="toggleRow(e)" @keydown.enter="toggleRow(e)">
             <span class="t">{{ fmtTime(e.ts) }}</span>
             <span class="ic" :title="e.dir === 'out' ? 'Yuborilgan' : 'Qabul qilingan'" aria-hidden="true">{{ e.dir === 'out' ? '↑' : '↓' }}</span>
             <span v-if="e.type === 'event'" class="tag" data-testid="proto-etype">{{ e.event }}</span><span v-else-if="e.kind === 'binary'" class="tag">binary</span>
             <span v-if="e.id" class="muted eid" :title="'event id'">#{{ e.id }}</span>
             <span class="tx">{{ preview(e) }}</span>
             <span class="sz muted">{{ fmtSize(e.size ?? 0) }}</span>
+            </div>
             <div v-if="open.has(e.seq)" class="pdetail" data-testid="proto-detail" @click.stop>
               <pre :class="detail(e).kind">{{ detail(e).text }}</pre>
               <button class="sm" data-testid="proto-copy" @click="copy(e)">Nusxa</button>
@@ -188,7 +190,7 @@ function setBody(v: string) { d.value.body.mode = 'raw'; d.value.body.raw = v; t
       <div v-if="isWs" class="proto-compose" data-testid="proto-compose">
         <div class="proto-tpls" data-testid="proto-templates" role="group" aria-label="Saqlangan xabarlar">
           <span class="muted">Shablonlar:</span>
-          <span v-for="t in templates" :key="t.id" class="tpl" :class="{ on: activeTpl === t.id }"><button class="chip" data-testid="proto-tpl" :title="oneLine(t.data, 80)" @click="loadTpl(t)">{{ t.name }}</button><button class="ghost x" :aria-label="`${t.name} shablonini o'chirish`" data-testid="proto-tpl-del" @click="delTpl(t)">×</button></span>
+          <span v-for="t in templates" :key="t.id" class="tpl" :class="{ on: activeTpl === t.id }"><button class="pchip" data-testid="proto-tpl" :title="oneLine(t.data, 80)" @click="loadTpl(t)">{{ t.name }}</button><button class="ghost x" :aria-label="`${t.name} shablonini o'chirish`" data-testid="proto-tpl-del" @click="delTpl(t)">×</button></span>
           <span v-if="!templates.length" class="muted" data-testid="proto-tpl-empty">hali yo'q</span>
         </div>
         <div class="proto-compose-row">

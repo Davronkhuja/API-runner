@@ -44,6 +44,17 @@ def start_servers(tmp):
     return f"http://127.0.0.1:{srv.server_port}", f"http://127.0.0.1:{echo.server_port}", app
 
 
+_EXTRA = {}
+
+
+def extra_servers():
+    """WS / SSE / GraphQL test serverlari (bir marta ishga tushadi)."""
+    if not _EXTRA:
+        from tests.servers import FlaskServer, WsServer, build_graphql_app, build_sse_app
+        _EXTRA.update(ws=WsServer().start().url, sse=FlaskServer(build_sse_app()).url, gql=FlaskServer(build_graphql_app()).url)
+    return _EXTRA
+
+
 def api(base, method, path, js=None):
     r = requests.request(method, base + path, json=js, headers={"X-Session-Token": TOKEN})
     r.raise_for_status()
@@ -277,6 +288,29 @@ def scenes(base, echo):
         p.click("[data-testid=settings-btn]"); p.click("[data-testid=io-workspace-zip]"); p.wait_for_selector("[data-testid=wsexport-dialog]")
         p.check("[data-testid=wsexport-secrets]"); p.check("[data-testid=wsexport-encrypt]"); p.fill("[data-testid=wsexport-password]", "abc"); p.wait_for_selector("[data-testid=wsexport-pwerror]")
     S["wsexport-dialog"] = wsexp
+    def proto_tab(p, kind, url):
+        p.click("[data-testid=new-tab]"); p.select_option("[data-testid=method]", kind)
+        p.click("[data-testid=url]"); p.keyboard.press("ControlOrMeta+a"); p.keyboard.type(url); p.keyboard.press("Escape")
+        p.click("[data-testid=proto-connect]")
+    def ws_session(p):
+        proto_tab(p, "WS", extra_servers()["ws"] + "/echo"); p.wait_for_selector("[data-testid=proto-status]:has-text('Ulangan')")
+        for t, k in (("salom", "text"), ('{"type": "ping", "id": 1}', "json")):
+            p.click(f"[data-testid=proto-compose] [data-kind={k}]"); p.click("[data-testid=proto-compose-text]"); p.keyboard.press("ControlOrMeta+a"); p.keyboard.type(t); p.click("[data-testid=proto-send]")
+        p.wait_for_function("document.querySelectorAll('[data-testid=proto-msg]').length >= 4"); p.locator("[data-testid=proto-msg]").nth(3).click()
+    S["ws-session"] = ws_session
+    def ws_settings(p):
+        proto_tab(p, "WS", extra_servers()["ws"] + "/echo"); p.click("[data-psection=settings]"); p.check("[data-testid=proto-rc-enabled]")
+    S["ws-settings"] = ws_settings
+    def sse_session(p):
+        proto_tab(p, "SSE", extra_servers()["sse"] + "/sse/basic"); p.wait_for_selector("[data-testid=proto-types]"); p.locator("[data-testid=proto-msg]").nth(1).click()
+    S["sse-session"] = sse_session
+    def gql_explorer(p):
+        p.click("[data-testid=new-tab]"); p.select_option("[data-testid=method]", "POST")
+        p.click("[data-testid=url]"); p.keyboard.type(extra_servers()["gql"] + "/graphql"); p.keyboard.press("Escape")
+        p.click("[data-section=body]"); p.click("[data-testid=body-mode] [data-mode=graphql]")
+        p.click("[data-testid=gql-introspect]"); p.wait_for_selector("[data-testid=gql-schema-info]"); p.click("[data-testid=gql-explorer-toggle]")
+        p.locator("[data-testid=gql-field]").filter(has=p.locator("b", has_text="users")).first.click()
+    S["graphql-explorer"] = gql_explorer
     S["cookies"] = lambda p: p.click("[data-testid=cookies-btn]")
     def console(p):
         open_req(p, "Oddiy so'rov"); send(p); p.click("[data-testid=console-btn]"); p.wait_for_selector("[data-testid=console]")
