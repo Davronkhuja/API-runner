@@ -256,3 +256,17 @@ def test_send_request_goes_through_the_configured_proxy_and_cookie_jar(client, e
         assert d["scripts"]["tests"][0]["passed"], d["scripts"]
     finally:
         srv.shutdown()
+
+
+def test_sandbox_bookkeeping_is_not_bounded_by_the_script_time_budget():
+    """Regressiya (beqaror test sababi): yuklama ostida tayyorlash/`set_event` 100 ms byudjetdan o'tib ketsa ScriptTimeout 500 xatoga aylanardi."""
+    import time
+    from apirunner.core.scripting.sandbox import Limits, ScriptSession, ScriptSource
+    scopes = {k: {} for k in ("globals", "collection", "environment", "data", "local")}
+    s = ScriptSession(scopes, {}, {}, Limits(timeout_ms=100), host=None)
+    time.sleep(0.25)                                              # byudjet tugadi
+    s.set_event("test")                                           # ichki chaqiruvlar baribir ishlaydi
+    s.set_response({"code": 200, "headers": [], "body": ""})
+    s.run(ScriptSource("pm.test('late', () => {})", "test"))     # foydalanuvchi skripti esa byudjet tugagani uchun TimeoutError oladi
+    rep = s.collect()
+    assert rep.errors and rep.errors[0]["name"] == "TimeoutError"
