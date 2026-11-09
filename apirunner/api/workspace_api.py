@@ -325,43 +325,6 @@ def clear_history():
 
 
 # ── import (fayl tashlash / Import tugmasi). Bosqich 5 da to'liq round-trip testlar bilan kengayadi ──
-@bp.post("/import")
-def import_any():
-    import json as _json
-    d = request.get_json(silent=True) or {}
-    content = d.get("content")
-    try:
-        doc = _json.loads(content) if isinstance(content, str) else content
-    except _json.JSONDecodeError:
-        return jsonify({"error": "JSON o'qib bo'lmadi (YAML hali qo'llab-quvvatlanmaydi)"}), 400
-    from ..importers.openapi import import_openapi, looks_like_openapi
-    from ..importers.postman import import_postman, looks_like_postman
-    if looks_like_openapi(doc):
-        col, kind = import_openapi(doc), "openapi"
-    elif looks_like_postman(doc):
-        col, kind = import_postman(doc), "postman"
-    else:
-        return jsonify({"error": "Format tanilmadi (Postman collection yoki OpenAPI JSON kerak)"}), 400
-    summary = _import_summary(col, kind)
-    if d.get("dry_run"):
-        return jsonify({"ok": True, "dry_run": True, **summary})
-    cid = _ws().save_collection(col)
-    return jsonify({"ok": True, "id": cid, **summary})
-
-
-def _import_summary(col, kind):
-    folders = requests_n = 0
-    stack = list(col.get("item", []))
-    while stack:
-        it = stack.pop()
-        if model.is_folder(it):
-            folders += 1
-            stack.extend(it.get("item", []))
-        else:
-            requests_n += 1
-    return {"kind": kind, "name": col["info"]["name"], "folders": folders, "requests": requests_n, "variables": len(col.get("variable", []))}
-
-
 @bp.post("/import/fetch")
 def import_fetch():
     """URL'dan import uchun matnni yuklab beradi (faqat http/https, 15 s, 10 MB)."""
