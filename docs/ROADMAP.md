@@ -114,7 +114,13 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] Favikon (SVG + ICO 16/32/48 + apple-touch-icon + 192/512 + manifest), tab sarlavhasida holat (v2.2.3)
 
 ## Bosqich 8 — Sayqal va sifat
-- [ ] Ishlash tezligi, UX, hujjatlar
+- [x] **Beqaror testlar:** sabab tahlili va tuzatish (docs/flaky-tests.md) — v3.0.0
+- [x] **Ishlash tezligi** (o'lchovlar oldin/keyin, `docs/performance.md`, `tools/perf_bench.py`): katta JSON qotishi tuzatildi — v3.0.0
+- [x] **UX sayqali:** sidebar «⋯» menyusi, bo'sh/xato/yuklanish holatlari (`StateBlock`), klaviatura yorliqlari (`?`), tanishtiruv — v3.0.0
+- [x] **Xavfsizlik ko'rigi** (`docs/security-review.md`) — v3.0.0
+- [x] **Hujjatlar:** `docs/user-guide.md`, README — v3.0.0
+- [x] **Paketlash:** pywebview desktop rejimi, macOS `.app` build skripti (PyInstaller) — v3.0.0
+- [x] Yakuniy UI audit (to'liq matritsa) — v3.0.0
 
 ## Ma'lumotlar xavfsizligi (doimiy qoida, v2.1.6)
 - [x] Testlar faqat tmp (APIRUNNER_TESTING himoyasi) · [x] avtomatik zaxira (20 ta) · [x] schemaVersion + idempotent migratsiya + sonlar tekshiruvi + rollback · [x] atomik yozuv · [x] SQLite WAL · [x] qulf va rev (409) · [x] localStorage o'chirilmaydi, dublikatsiz import · [x] tiklash (UI + CLI) · [x] anonimlashtirilgan fixture testi

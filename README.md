@@ -79,6 +79,13 @@ Node.js kerak emas — frontend build natijasi (`apirunner/static/app/`) repoga 
 2. Kerak bo'lsa **Params**, **Headers**, **Auth** yoki **Body** tablarini to'ldiring
 3. **▶ RUN** tugmasini bosing
 
+### Bosqich 8 (v3.0.0): sayqal va sifat
+- **To'liq o'zbekcha qo'llanma:** [docs/user-guide.md](docs/user-guide.md) (skrinshotlar bilan).
+- **Klaviatura yorliqlari:** `?` tugmasi; birinchi ishga tushirishda qisqa tanishtiruv.
+- **Ishlash:** [docs/performance.md](docs/performance.md) — 1200 so'rovli collection, 9 MB JSON, 10 000 qatorli CSV, 50 tab.
+- **Xavfsizlik:** [docs/security-review.md](docs/security-review.md).
+- **macOS ilovasi (alohida oyna):** `packaging/build_macos_app.sh` → `dist/API Runner.app` ([packaging/README.md](packaging/README.md)).
+
 ### Bosqich 7 (v2.9.0): CLI, mock, hujjat, workspace'lar, monitor, proxy
 
 **CLI (newman analogi).** O'rnatish: `pipx install .` (skriptlar uchun `pipx install ".[scripts]"`) — `apirunner` buyrug'i paydo bo'ladi.
