@@ -336,6 +336,34 @@ def scenes(base, echo):
         open_req(p, "Og'ir so'rov"); p.focus("[data-testid=url]")
     S["url-120-focus"] = url120
     S["sidebar-80"] = lambda p: p.locator("[data-name=\"Ko'p so'rovli papka\"]").first.click()
+    def seed_col():
+        for c in api(base, "GET", "/api/workspace")["collections"]:
+            if any(i.get("id") == "simple" for i in api(base, "GET", f"/api/collections/{c['id']}")["item"]):
+                return c
+    def mock_dialog(p):
+        for m in api(base, "GET", "/api/mocks"): api(base, "POST", f"/api/mocks/{m['id']}/stop")                  # sahna qayta yurganda toza holat
+        c = seed_col(); p.locator(f"[data-name=\"{c['name']}\"]").first.click(button="right"); p.click("[data-act=mock]"); p.click("[data-testid=mock-start]")
+        p.wait_for_selector("[data-testid=mock-status]"); requests.get(p.locator("[data-testid=mock-url]").inner_text() + "/echo?a=1"); p.wait_for_selector("[data-testid=mock-entry]")
+    S["mock-dialog"] = mock_dialog
+    def ws_menu(p):
+        p.click("[data-testid=ws-switch]"); p.wait_for_selector("[data-testid=ws-menu]")
+    S["ws-menu"] = ws_menu
+    def monitor_list(p):
+        c = seed_col()
+        for m in api(base, "GET", "/api/monitors")["items"]: api(base, "DELETE", f"/api/monitors/{m['id']}")
+        for n, cron in (("Prod sog'liq tekshiruvi", "*/5 * * * *"), ("Kechki to'liq run", "0 22 * * mon-fri")):
+            m = api(base, "POST", "/api/monitors", {"name": n, "collection_id": c["id"], "cron": cron}); api(base, "POST", f"/api/monitors/{m['id']}/run?wait=1")
+        p.click("[data-testid=monitor-open]"); p.wait_for_selector("[data-testid=mon-item]")
+    S["monitor-dialog"] = monitor_list
+    def monitor_form(p):
+        seed_col(); p.click("[data-testid=monitor-open]"); p.click("[data-testid=mon-new]"); p.fill("[data-testid=mon-cron]", "61 * * * *"); p.wait_for_selector("[data-testid=mon-cron-hint]:has-text('0')")
+    S["monitor-form"] = monitor_form
+    def proxy_dialog(p):
+        api(base, "POST", "/api/proxy/stop")
+        p.click("[data-testid=proxy-open]"); p.click("[data-testid=proxy-start]"); p.wait_for_selector("[data-testid=proxy-status]")
+        u = p.locator("[data-testid=proxy-url]").inner_text()
+        requests.get(echo + "/echo?a=1", proxies={"http": u}); requests.post(echo + "/echo", json={"x": 1}, proxies={"http": u}); p.wait_for_function("document.querySelectorAll('[data-testid=proxy-entry]').length >= 2")
+    S["proxy-dialog"] = proxy_dialog
     return S
 
 

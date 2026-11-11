@@ -5,6 +5,7 @@ import { useTabs } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { checkVersion, hasNewBuild, isServerStale, NOT_MANAGED_HINT, reloadForNewBuild, restartServer, server, uiVersion } from '../lib/server'
 import { consoleOpen, toggle as toggleConsole, unreadErrors } from '../lib/console'
+import { monitorOpen, proxyOpen } from '../lib/ui'
 
 const tabs = useTabs(), ws = useWorkspace()
 const online = ref(true)
@@ -33,6 +34,8 @@ onBeforeUnmount(() => { clearInterval(timer); clearInterval(vtimer); document.re
   <footer class="statusbar" data-testid="statusbar">
     <span role="status" style="display:flex;align-items:center;gap:6px" data-testid="server-status"><span class="dot" :class="{ off: !online }" />{{ online ? 'Server ulangan' : 'Server bilan aloqa yo\'q' }}</span>
     <button :aria-pressed="consoleOpen" title="Console: so'rov/javob loglari, console.log va skript xatolari" data-testid="console-btn" @click="toggleConsole">Console<span v-if="unreadErrors" class="badge badge-err" data-testid="console-unread" style="margin-left:4px">{{ unreadErrors }}</span></button>
+    <button data-testid="monitor-open" title="Monitor — rejalashtirilgan run'lar" @click="monitorOpen = true">Monitor</button>
+    <button data-testid="proxy-open" title="Proxy capture — trafikni yozib olish" @click="proxyOpen = true">Proxy</button>
     <button data-testid="cookies-btn" title="Cookie Manager" @click="tabs.open('cookies', 'cookies', 'Cookie\'lar', { permanent: true })">Cookie'lar</button>
     <span v-if="stale" class="stale-warn" role="alert" data-testid="stale-server">⚠ Server eski (v{{ ws.version }}, UI v{{ uiVersion }})
       <button v-if="server.managed" class="primary" data-testid="restart-server" :disabled="server.restarting" @click="restartServer">Qayta ishga tushirish</button>

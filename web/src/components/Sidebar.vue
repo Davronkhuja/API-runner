@@ -11,7 +11,7 @@ import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { openFromHistory } from '../lib/history'
 import { openRequest } from '../lib/actions'
-import { askConfirm, exportOf, mockOf, monitorOpen, proxyOpen, findOpen, showToast, sidePanel, trashOpen } from '../lib/ui'
+import { askConfirm, exportOf, mockOf, findOpen, showToast, sidePanel, trashOpen } from '../lib/ui'
 import Icon from './Icon.vue'
 import { authName, hasRealAuth, openNodeTab } from '../lib/nodes'
 import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
@@ -226,8 +226,6 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
           <button class="ib" aria-label="Yangi so'rov" title="Yangi so'rov" data-testid="sb-new-request" @click="tabs.openNew()"><Icon name="plus" :size="16" /></button>
           <button class="ib" aria-label="Yangi collection" title="Yangi collection" data-testid="new-collection" @click="newCollection"><Icon name="folder-plus" :size="16" /></button>
           <button class="ib" aria-label="Savat (o'chirilganlar)" title="Savat — 30 kun saqlanadi" data-testid="trash-open" @click="trashOpen = true"><Icon name="trash" :size="16" /></button>
-          <button class="ib" aria-label="Monitor (rejalashtirilgan run'lar)" title="Monitor — rejalashtirilgan run'lar" data-testid="monitor-open" @click="monitorOpen = true"><Icon name="clock" :size="16" /></button>
-          <button class="ib" aria-label="Proxy capture" title="Proxy capture — trafikni yozib olish" data-testid="proxy-open" @click="proxyOpen = true"><Icon name="globe" :size="16" /></button>
           <button class="ib" aria-label="Find &amp; Replace" title="Workspace bo'ylab qidirish va almashtirish" data-testid="find-open" @click="findOpen = true"><Icon name="search" :size="16" /></button>
         </template>
         <template v-else-if="panel === 'environments'"><button class="ib" aria-label="Yangi muhit" title="Yangi muhit" data-testid="new-env" @click="newEnv"><Icon name="plus" :size="16" /></button></template>

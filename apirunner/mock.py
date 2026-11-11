@@ -8,7 +8,7 @@ import json
 import re
 import threading
 import time
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from flask import Flask, Response, jsonify, request
 from werkzeug.serving import make_server
@@ -105,6 +105,10 @@ def pick(routes, method, parts, args, headers):
     return (best[1], best[2]) if best else None
 
 
+def _latin1(v):
+    return v.encode("latin-1", "replace").decode("latin-1")
+
+
 class MockServer:
     def __init__(self, col, host="127.0.0.1", port=0, delay_ms=0, folder=None):
         self.col, self.host, self.delay_ms = col, host, int(delay_ms or 0)
@@ -169,10 +173,10 @@ class MockServer:
             resp = Response(body if request.method != "HEAD" else b"", status=int(ex.get("code") or 200))
             for k, v in exh.items():
                 if k.lower() not in HOP:
-                    resp.headers[k] = replace_variables(str(v), params)
+                    resp.headers[k] = _latin1(replace_variables(str(v), params))
             if not any(k.lower() == "content-type" for k in exh):
                 resp.headers["Content-Type"] = "application/json" if body.strip()[:1] in "{[" else "text/plain; charset=utf-8"
-            resp.headers["X-Mock-Example"] = str(ex.get("name") or "")
+            resp.headers["X-Mock-Example"] = quote(str(ex.get("name") or ""), safe=" ")      # sarlavha faqat latin-1: o'zbekcha/«—» belgilar foiz-kodlanadi
             self._record(**base, matched=f"{r['name']} · {ex.get('name')}", status=resp.status_code, delay=delay, ms=round((time.time() - t0) * 1000))
             return resp
         return app

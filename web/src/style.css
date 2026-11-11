@@ -725,7 +725,7 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 /* ── Workspace almashtirgich ── */
 .ws-switch{position:relative}.ws-btn{display:inline-flex;align-items:center;gap:var(--sp-1);height:var(--ctl-sm);padding:0 var(--sp-2);border:0;background:transparent;font-weight:500;font-size:var(--fs-md);max-width:220px}.ws-btn:hover{background:var(--hover)}
 .ws-menu{position:absolute;left:0;top:calc(100% + 4px);min-width:260px;max-height:60vh;overflow:auto;z-index:60}
-.ws-row{display:flex;align-items:center;gap:2px}.ws-row .ws-pick{flex:1;display:flex;align-items:center;gap:var(--sp-2);text-align:left;min-width:0}.ws-row .ib{opacity:.0}.ws-row:hover .ib,.ws-row:focus-within .ib{opacity:1}
+.ws-row{display:flex;align-items:center;gap:2px}.ws-row .ws-pick{flex:1;width:auto;display:flex;align-items:center;gap:var(--sp-2);text-align:left;min-width:0}.ws-row .ib{opacity:.0;flex:none;width:var(--ctl-sm)}.ws-row:hover .ib,.ws-row:focus-within .ib{opacity:1}
 .ws-chk{width:14px;flex:none;color:var(--accent-text)}.ws-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ws-row.on .ws-name{font-weight:600}
 .ws-new{display:flex;align-items:center;gap:var(--sp-2);width:100%;border-top:1px solid var(--border);margin-top:var(--sp-1);padding-top:var(--sp-1);color:var(--accent-text)}
 

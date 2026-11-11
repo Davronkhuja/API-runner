@@ -357,3 +357,38 @@ def test_29_graphql_explorer(vp, gql_server):
     expect(T(vp, "gql-schema-info")).to_be_visible()
     T(vp, "gql-explorer-toggle").click()
     snap(vp, "29-graphql")
+
+
+def test_30_workspace_menu(vp):
+    T(vp, "ws-switch").click()
+    expect(T(vp, "ws-menu")).to_be_visible()
+    snap(vp, "30-workspace-menu")
+
+
+def test_31_monitor_form(vp):
+    T(vp, "monitor-open").click()
+    T(vp, "mon-new").click()
+    T(vp, "mon-name").fill("Prod sog'liq tekshiruvi")
+    T(vp, "mon-preset").nth(1).click()
+    expect(T(vp, "mon-cron-hint")).to_contain_text("Keyingi")
+    vp.add_style_tag(content="[data-testid=mon-cron-hint]{visibility:hidden!important}")            # keyingi vaqt — o'zgaruvchan
+    snap(vp, "31-monitor-form")
+
+
+def test_32_monitor_empty(vp):
+    T(vp, "monitor-open").click()
+    expect(T(vp, "mon-empty")).to_be_visible()
+    snap(vp, "32-monitor-empty")
+
+
+def test_33_proxy_dialog(vp):
+    T(vp, "proxy-open").click()
+    expect(T(vp, "proxy-start")).to_be_visible()
+    snap(vp, "33-proxy-dialog")
+
+
+def test_34_mock_dialog_form(vp):
+    vp.locator("[data-testid=tree-row][data-name='Kolleksiya']").click(button="right")
+    vp.click("[data-act=mock]")
+    expect(T(vp, "mock-start")).to_be_visible()
+    snap(vp, "34-mock-dialog")

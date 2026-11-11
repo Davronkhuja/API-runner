@@ -112,3 +112,13 @@ def test_api_start_stop_port_log_and_errors(client):
     empty = client.post("/api/collections", json={"name": "NoEx"}).get_json()["id"]
     assert client.post("/api/mocks", json={"collection_id": empty}).status_code == 400
     assert client.post("/api/mocks", json={"collection_id": "nope"}).status_code == 404
+
+
+def test_non_latin1_example_name_and_header_values_do_not_break_the_response():
+    col = {"info": {"_postman_id": "m2", "name": "Uni"}, "item": [item("u", "U", "GET", "{{b}}/u", [ex("200 OK — foydalanuvchi", 200, "{}", rh=[{"key": "Content-Type", "value": "application/json"}, {"key": "X-Title", "value": "Ўзбек — ok"}])])]}
+    m = MockServer(col).start()
+    try:
+        r = requests.get(m.url + "/u")
+        assert r.status_code == 200 and "foydalanuvchi" in r.headers["X-Mock-Example"] and r.headers["X-Title"].endswith("ok")
+    finally:
+        m.stop()

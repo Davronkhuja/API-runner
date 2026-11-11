@@ -51,10 +51,10 @@ async function remove(w: W) {
   <div ref="root" class="ws-switch" @keydown.esc="open = false">
     <button class="ws-btn" data-testid="ws-switch" aria-haspopup="menu" :aria-expanded="open" title="Workspace'ni almashtirish" @click="toggle">{{ active()?.name ?? 'Shaxsiy workspace' }}<Icon name="chevron-down" :size="14" /></button>
     <div v-if="open" class="menu ws-menu" role="menu" aria-label="Workspace'lar" data-testid="ws-menu">
-      <div v-for="w in items" :key="w.id" class="ws-row" :class="{ on: w.active }" data-testid="ws-item" :data-name="w.name">
+      <div v-for="w in items" :key="w.id" role="none" class="ws-row" :class="{ on: w.active }" data-testid="ws-item" :data-name="w.name">
         <button role="menuitemradio" :aria-checked="w.active" class="ws-pick" data-testid="ws-pick" @click="switchTo(w)"><span class="ws-chk" aria-hidden="true">{{ w.active ? '✓' : '' }}</span><span class="ws-name">{{ w.name }}</span></button>
-        <button class="ib" :aria-label="`${w.name} nomini o'zgartirish`" title="Nomini o'zgartirish" data-testid="ws-rename" @click="renameDlg(w)">✎</button>
-        <button v-if="!w.default && !w.active" class="ib" :aria-label="`${w.name} ni o'chirish`" title="Savatga" data-testid="ws-delete" @click="remove(w)"><Icon name="trash" :size="14" /></button>
+        <button role="menuitem" class="ib" :aria-label="`${w.name} nomini o'zgartirish`" title="Nomini o'zgartirish" data-testid="ws-rename" @click="renameDlg(w)">✎</button>
+        <button v-if="!w.default && !w.active" role="menuitem" class="ib" :aria-label="`${w.name} ni o'chirish`" title="Savatga" data-testid="ws-delete" @click="remove(w)"><Icon name="trash" :size="14" /></button>
       </div>
       <button role="menuitem" class="ws-new" data-testid="ws-new" @click="newDlg"><Icon name="plus" :size="14" />Yangi workspace</button>
     </div>
