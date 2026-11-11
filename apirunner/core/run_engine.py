@@ -30,6 +30,11 @@ def _text(v):
     return v if isinstance(v, str) else json.dumps(v, ensure_ascii=False, indent=2)
 
 
+def _failed_step(res):
+    """CLI `--bail`: so'rov xatosi (tarmoq) yoki yiqilgan test."""
+    return res.get("status") == "ERROR" or any(not t["passed"] for t in _tests_of(res))
+
+
 class Run:
     def __init__(self, run_id, number, plan, services, store, db):
         self.id, self.number, self.plan, self.services, self.store, self.db = run_id, number, plan, services, store, db
@@ -182,7 +187,7 @@ class Run:
                     futs = [pool.submit(one, j) for j in jobs]
                     for f in concurrent.futures.as_completed(futs):
                         r = f.result()
-                        if r and st.get("stop_on_error") and not r[0] and not r[1]:
+                        if r and ((st.get("stop_on_error") and not r[0] and not r[1]) or (st.get("bail") and _failed_step(r[2]))):
                             self.stop.set()
             else:
                 names = {}
@@ -205,7 +210,7 @@ class Run:
                         it = items[i]
                         res = self._step(n, total_iter, it, row, i + 1, st)
                         ok, skipped, res = self._record(n, i + 1, it, res, st, counters)
-                        if st.get("stop_on_error") and not ok and not skipped:
+                        if (st.get("stop_on_error") and not ok and not skipped) or (st.get("bail") and _failed_step(res)):
                             done = True
                             break
                         if delay:
