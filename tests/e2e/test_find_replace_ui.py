@@ -25,6 +25,7 @@ def world(app):
 def ui(app, page, world):
     page.goto(app.url)
     page.wait_for_selector("[data-testid=app]")
+    T(page, "sb-more").click()
     T(page, "find-open").click()
     expect(T(page, "fr-dialog")).to_be_visible()
     return page

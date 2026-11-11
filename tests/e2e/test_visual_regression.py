@@ -258,12 +258,14 @@ def test_21_trash(vp, app):
     vp.reload()
     vp.wait_for_selector("[data-testid=app]")
     vp.add_style_tag(content=HIDE + "[data-testid=trash-days]{visibility:hidden!important}")
+    T(vp, "sb-more").click()
     T(vp, "trash-open").click()
     expect(T(vp, "trash-row")).to_have_count(1)
     snap(vp, "21-trash")
 
 
 def test_22_find_replace(vp):
+    T(vp, "sb-more").click()
     T(vp, "find-open").click()
     T(vp, "fr-query").fill("api.example.test")
     T(vp, "fr-replacement").fill("api.new.test")
@@ -392,3 +394,21 @@ def test_34_mock_dialog_form(vp):
     vp.click("[data-act=mock]")
     expect(T(vp, "mock-start")).to_be_visible()
     snap(vp, "34-mock-dialog")
+
+
+def test_35_shortcuts_dialog(vp):
+    vp.keyboard.press("?")
+    expect(T(vp, "shortcuts-dialog")).to_be_visible()
+    snap(vp, "35-shortcuts")
+
+
+def test_36_onboarding(vp, app):
+    vp.goto(app.url + "?onboarding=1")
+    expect(T(vp, "onboarding")).to_be_visible()
+    snap(vp, "36-onboarding")
+
+
+def test_37_sidebar_more_menu(vp):
+    T(vp, "sb-more").click()
+    expect(T(vp, "sb-more-menu")).to_be_visible()
+    snap(vp, "37-sidebar-more")

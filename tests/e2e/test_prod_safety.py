@@ -3,6 +3,8 @@ import pytest
 import requests
 from playwright.sync_api import expect
 
+from tests.e2e.conftest import eventually
+
 from conftest import E2E_TOKEN
 
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
@@ -63,6 +65,7 @@ def test_env_kind_and_confirm_setting_are_saved_and_validated(app, world, page):
     page.click("[data-kind=prod]")
     expect(T(page, "env-confirm-writes")).to_be_checked()                       # Prod uchun sukut bo'yicha yoqiq
     T(page, "env-save").click()
+    eventually(lambda: app.api("GET", f"/api/environments/{eid}")["kind"] == "prod")           # saqlash asinxron
     saved = app.api("GET", f"/api/environments/{eid}")
     assert saved["kind"] == "prod" and saved["confirm_writes"] is True
     r = requests.put(app.url + f"/api/environments/{eid}", json={**saved, "kind": "staging"}, headers={"X-Session-Token": E2E_TOKEN})
@@ -141,77 +144,10 @@ def checked_methods(p):
     return sorted({r.locator(".m").inner_text().strip() for r in p.locator("[data-testid=runner-item]").all() if r.locator("input[type=checkbox]").is_checked()})
 
 
-def test_runner_get_only_default_is_on_for_prod_off_for_dev_and_configurable(app, world, page):
-    make_env(app, "Prod", kind="prod")
-    start(app, page)
-    open_runner(page)
-    expect(T(page, "runner-selcount")).to_have_text("2 / 4 tanlangan")
-    assert checked_methods(page) == ["GET"]
 
 
-def test_runner_dev_selects_everything_by_default(app, world, page):
-    make_env(app, "Dev", kind="dev")
-    start(app, page)
-    open_runner(page)
-    expect(T(page, "runner-selcount")).to_have_text("4 / 4 tanlangan")
 
 
-def test_env_setting_overrides_the_default_both_ways(app, world, page):
-    make_env(app, "Dev strict", kind="dev", active=True)
-    eid = app.api("GET", "/api/workspace")["environments"][0]["id"]
-    e = app.api("GET", f"/api/environments/{eid}")
-    app.api("PUT", f"/api/environments/{eid}", {**e, "runner_get_only": True})
-    start(app, page)
-    open_runner(page)
-    expect(T(page, "runner-selcount")).to_have_text("2 / 4 tanlangan")
-    app.api("PUT", f"/api/environments/{eid}", {**app.api("GET", f"/api/environments/{eid}"), "kind": "prod", "runner_get_only": False})
-    page.reload()
-    page.wait_for_selector("[data-testid=app]")
-    page.locator("[data-name='Col']").click(button="right")
-    page.click("[data-act=runner]")
-    expect(T(page, "runner-selcount")).to_have_text("4 / 4 tanlangan")                # Prod, lekin aniq o'chirilgan
-
-
-def test_env_tab_checkbox_saves_runner_get_only(app, world, page):
-    eid = make_env(app, "E1", kind="dev", active=False)
-    start(app, page)
-    T(page, "sb-environments").click()
-    page.locator("[data-testid=env-row]", has_text="E1").first.dblclick()
-    expect(T(page, "env-runner-get-only")).not_to_be_checked()
-    T(page, "env-runner-get-only").check()
-    T(page, "env-save").click()
-    expect(T(page, "dirty-dot")).to_have_count(0)
-    assert app.api("GET", f"/api/environments/{eid}")["runner_get_only"] is True
-    r = requests.put(app.url + f"/api/environments/{eid}", json={**app.api("GET", f"/api/environments/{eid}"), "runner_get_only": "ha"}, headers={"X-Session-Token": E2E_TOKEN})
-    assert r.status_code == 400
-
-
-def test_runner_remembers_last_selection_per_scope(app, world, page):
-    make_env(app, "Dev", kind="dev")
-    cid2 = app.api("POST", "/api/collections", {"name": "Other"})["id"]
-    c2 = app.api("GET", f"/api/collections/{cid2}")
-    c2["item"] = [req("x1", "XGet", "GET", "http://x/a"), req("x2", "XPost", "POST", "http://x/b")]
-    app.api("PUT", f"/api/collections/{cid2}", c2)
-    start(app, page)
-    open_runner(page)
-    page.locator("[data-testid=runner-item]", has_text="Post1").locator("input[type=checkbox]").uncheck()
-    expect(T(page, "runner-selcount")).to_have_text("3 / 4 tanlangan")
-    page.reload()
-    page.wait_for_selector("[data-testid=app]")
-    open_runner(page)
-    expect(T(page, "runner-selcount")).to_have_text("3 / 4 tanlangan")                 # eslab qolindi
-    page.locator("[data-name='Other']").click(button="right")
-    page.click("[data-act=runner]")
-    expect(T(page, "runner-selcount")).to_have_text("2 / 2 tanlangan")                 # boshqa collection — o'z holati
-
-
-def test_runner_on_non_prod_runs_without_guard(app, world, page):
-    make_env(app, "Dev", kind="dev")
-    start(app, page)
-    open_runner(page)
-    T(page, "runner-run").click()
-    expect(T(page, "runner-row")).to_have_count(4)
-    expect(T(page, "runguard")).to_have_count(0)
 
 
 def test_runguard_get_only_runs_just_gets(app, world, page):
@@ -261,3 +197,120 @@ def test_runguard_cancel_runs_nothing(app, world, page):
     expect(T(page, "runguard")).to_have_count(0)
     page.wait_for_timeout(300)
     assert sent == []
+
+
+# ── Runner: xavfsizlik so'rovning o'ziga qaraydi (v3.0.1) ──
+def set_safety(app, **kw):
+    app.api("PUT", "/api/workspace/meta", {"safety": {"test_hosts": [], "host_confirm": True, "dev_runner_writes": False, **kw}})
+
+
+@pytest.mark.parametrize("kind", [None, "dev", "test", "prod"])
+def test_runner_selects_only_safe_methods_by_default_for_any_env(app, world, page, kind):
+    if kind:
+        make_env(app, "E", kind=kind)
+    start(app, page)
+    open_runner(page)
+    expect(T(page, "runner-selcount")).to_have_text("2 / 4 tanlangan")
+    assert checked_methods(page) == ["GET"]
+
+
+def test_dev_exception_only_when_allowed_in_settings(app, world, page):
+    make_env(app, "Dev", kind="dev")
+    set_safety(app, dev_runner_writes=True)
+    start(app, page)
+    open_runner(page)
+    expect(T(page, "runner-selcount")).to_have_text("4 / 4 tanlangan")
+    make_env(app, "Prod", kind="prod")                                                  # Prod'da ruxsat ishlamaydi
+    page.reload()
+    page.wait_for_selector("[data-testid=app]")
+    open_runner(page)
+    expect(T(page, "runner-selcount")).to_have_text("2 / 4 tanlangan")
+
+
+def test_no_env_and_absolute_prod_urls_select_only_gets_and_delete_triggers_guard(app, page):
+    cid = app.api("POST", "/api/collections", {"name": "ProdCol"})["id"]
+    col = app.api("GET", f"/api/collections/{cid}")
+    col["item"] = [req("a", "ListA", "GET", "https://hujjat.uz/api/a"), req("b", "ListB", "GET", "https://api.online-mahalla.uz/api/b"),
+                   req("c", "CreateC", "POST", "https://hujjat.uz/api/c"), req("d", "RemoveD", "DELETE", "https://api.online-mahalla.uz/api/d"), req("h", "HeadH", "GET", "http://localhost:1/h")]
+    app.api("PUT", f"/api/collections/{cid}", col)
+    sent = []
+    start(app, page, sent)
+    page.locator("[data-name='ProdCol']").click(button="right")
+    page.click("[data-act=runner]")
+    expect(T(page, "runner-selcount")).to_have_text("3 / 5 tanlangan")
+    assert checked_methods(page) == ["GET"]
+    T(page, "runner-run").click()                                                       # faqat GET — dialog yo'q (muhit ham Prod emas)
+    expect(T(page, "runguard")).to_have_count(0)
+    T(page, "runner-stop").click() if T(page, "runner-stop").count() else None
+    page.locator("[data-testid=runner-item]", has_text="RemoveD").locator("input[type=checkbox]").check()
+    T(page, "runner-run").click()
+    expect(T(page, "runguard")).to_be_visible()
+    expect(T(page, "rg-count-DELETE")).to_contain_text("1")
+    hosts = T(page, "rg-host").all_inner_texts()
+    assert any("api.online-mahalla.uz" in h and "prod" in h for h in hosts) and any("localhost" in h and "test/dev" in h for h in hosts), hosts
+    expect(T(page, "rg-warn")).to_contain_text("api.online-mahalla.uz")
+    T(page, "rg-cancel").click()
+    assert not [u for u in sent if "online-mahalla" in u]
+
+
+def test_guard_all_requires_confirm_word_and_get_mode_skips_writes(app, world, page):
+    start(app, page)
+    open_runner(page)
+    page.locator("[data-testid=runner-item]", has_text="Post1").locator("input[type=checkbox]").check()
+    T(page, "runner-run").click()
+    expect(T(page, "runguard")).to_be_visible()
+    T(page, "rg-all").check()
+    expect(T(page, "rg-word")).to_have_text("tasdiqlayman")
+    expect(T(page, "rg-run-all")).to_be_disabled()
+    T(page, "rg-type").fill("tasdiqlayman")
+    expect(T(page, "rg-run-all")).to_be_enabled()
+    T(page, "rg-get").check()
+    T(page, "rg-run").click()
+    expect(T(page, "runner-row")).to_have_count(2)
+    expect(page.locator("[data-testid=runner-row] .m-POST")).to_have_count(0)
+
+
+def test_test_hosts_setting_makes_host_safe_and_single_send_asks_for_unlisted_host(app, page):
+    cid = app.api("POST", "/api/collections", {"name": "C"})["id"]
+    col = app.api("GET", f"/api/collections/{cid}")
+    col["item"] = [req("p", "PostProd", "POST", "https://api.company.uz/items"), req("q", "PostStage", "POST", "https://x.staging.company.uz/items")]
+    app.api("PUT", f"/api/collections/{cid}", col)
+    sent = []
+    start(app, page, sent)
+    open_req(page, "PostProd")
+    T(page, "send").click()
+    expect(T(page, "confirm-dialog")).to_contain_text("api.company.uz")                  # muhit yo'q, lekin host bo'yicha so'raydi
+    page.click("[data-testid=confirm-dialog] button:not(.primary)")
+    assert not sent
+    set_safety(app, test_hosts=["*.staging.company.uz"])
+    page.reload()
+    page.wait_for_selector("[data-testid=app]")
+    open_req(page, "PostStage")
+    T(page, "send").click()
+    expect(T(page, "confirm-dialog")).to_have_count(0)                                   # ro'yxatdagi host — tasdiqsiz
+    eventually(lambda: len(sent) == 1)
+
+
+def test_host_confirm_can_be_disabled_in_settings(app, page):
+    cid = app.api("POST", "/api/collections", {"name": "C"})["id"]
+    col = app.api("GET", f"/api/collections/{cid}")
+    col["item"] = [req("p", "PostProd", "POST", "https://api.company.invalid/items")]
+    app.api("PUT", f"/api/collections/{cid}", col)
+    set_safety(app, host_confirm=False)
+    sent = []
+    start(app, page, sent)
+    open_req(page, "PostProd")
+    T(page, "send").click()
+    expect(T(page, "confirm-dialog")).to_have_count(0)
+    eventually(lambda: len(sent) == 1)
+
+
+def test_safety_settings_ui_saves_hosts(app, world, page):
+    start(app, page)
+    T(page, "settings-btn").click()
+    T(page, "safety-hosts").fill("*.corp.test\napi.stage.company.uz")
+    T(page, "safety-hosts").blur()
+    expect(T(page, "safety-saved")).to_contain_text("Saqlandi")
+    eventually(lambda: app.api("GET", "/api/workspace")["meta"]["safety"]["test_hosts"] == ["*.corp.test", "api.stage.company.uz"])
+    T(page, "safety-host-confirm").uncheck()
+    eventually(lambda: app.api("GET", "/api/workspace")["meta"]["safety"]["host_confirm"] is False)

@@ -57,6 +57,7 @@ def test_create_switch_isolation_rename_delete_and_restore(ui, app):
     expect(T(ui, "ws-item")).to_have_count(1)
     expect(ui.locator("[data-testid=ws-item] [data-testid=ws-delete]")).to_have_count(0)    # sukut va faol o'chirilmaydi
     ui.keyboard.press("Escape")
+    T(ui, "sb-more").click()
     T(ui, "trash-open").click()
     expect(T(ui, "trash-row")).to_contain_text("Mijoz B")
     T(ui, "trash-restore").click()
@@ -80,6 +81,7 @@ def test_switch_asks_confirmation_when_connections_are_open(ui, app, ws_server):
     ui.locator("[data-testid=ws-item][data-name='Boshqa'] [data-testid=ws-pick]").click()
     expect(T(ui, "confirm-dialog")).to_contain_text("ulanishlari")
     ui.keyboard.press("Escape")
+    expect(T(ui, "confirm-dialog")).to_have_count(0)
     assert app.api("GET", "/api/workspaces")["active"] == "default"
     open_menu(ui)
     ui.locator("[data-testid=ws-item][data-name='Boshqa'] [data-testid=ws-pick]").click()

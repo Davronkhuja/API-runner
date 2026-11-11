@@ -77,3 +77,17 @@ Jami: bloklaydi: 12, xalaqit beradi: 33, kosmetik: 16
 
 ## Natija
 Avtomatik topilmalar: **2946 → 0** (kombinatsiya bo'yicha; qolgan faqat qabul qilingan `.tabs-scroll` istisnosi). Qo'lda tasdiqlangan 22 band yopildi (B6 qisman). Himoya: vizual regressiya (30 baseline), layout testlari, axe, `tools/check_fixed_heights.py`.
+
+## Yakuniy audit — v3.0.0 (Bosqich 8)
+To'liq matritsa (`python3 tools/ui_audit.py --out docs/screenshots/qa/3.0.0-full`): 5 oyna (1280×800, 1440×900, 1920×1080, 80%, 125%) × light/dark × ~80 ekran (yangi: mock, workspace menyusi, monitor, proxy, yorliqlar, tanishtiruv, sidebar «⋯»). Real ssenariylar skrinshotlari `docs/screenshots/qa/3.0.0*/` (gitignored).
+
+| ID | Ekran | Holat | Topilma | Og'irlik | Holat |
+|---|---|---|---|---|---|
+| AUD-101 | runner, runner-results, runner-compare, dlg-runguard | 1152×720 (125% zoom) | Natijalar jadvali (`.result-table`) ~40 px ga siqilib qoladi, ustun sarlavhalari («So'rov» / «Status») ustma-ust tushadi — `clipped-text` | xalaqit beradi | **yopildi:** o'ng panel scroll qiladi, jadval `min-height:260px`, ustunlar `minmax(120px,1fr)` + gorizontal scroll; guard testi `test_runner_results_table_stays_usable_at_125_percent_zoom` |
+| AUD-102 | runner, dlg-runguard (125%) | bo'sh natijalar | axe `scrollable-region-focusable` (serious): `runner-results` klaviaturadan fokuslanmaydi | xalaqit beradi | **yopildi:** `tabindex=0 role=region aria-label` |
+| AUD-103 | shortcuts-dialog (125%) | past oyna | axe `scrollable-region-focusable` (serious): `.dlg-body` scroll, ichida fokuslanadigan element yo'q | xalaqit beradi | **yopildi:** ro'yxat `role=region tabindex=0` |
+| AUD-104 | ws-menu | har oynada | axe `aria-required-children` (critical): `role=menu` ichida oddiy tugmalar/div | bloklaydi | **yopildi** (stage 7 oxirida): `role=none` qatorlar, `menuitem` tugmalar |
+| AUD-105 | sidebar sarlavhasi | 1280×720 | 4 ikonka tugma sig'maydi — «Find» tugmasi yopilib qolgan edi | xalaqit beradi | **yopildi:** 2 asosiy tugma + «⋯» menyu (`test_polish_ui`) |
+| AUD-106 | export-dialog | 1280×800 dark | Bir martalik `scenario-error` (`Page.click` 30 s timeout) to'liq matritsa yurishida | — | **qayta hosil bo'lmadi:** 6 parallel yurish (xuddi shu oyna) va keyingi matritsa qismlari toza. Sababi aniqlanmadi — qayta paydo bo'lsa, `findings.json` dagi `scenario-error` bilan shu ID ostida tekshiriladi |
+
+Natija: tuzatishlardan keyin tegishli ekranlar bo'yicha (runner*, runguard, shortcuts, ws-menu, export) qayta audit — **0 topilma**; layout/axe guard'lari yangi sahnalarni qamraydi.

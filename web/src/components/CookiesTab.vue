@@ -3,6 +3,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { del, get, post } from '../api/client'
 import { askConfirm, showToast } from '../lib/ui'
+import StateBlock from './StateBlock.vue'
 
 interface Cookie { domain: string; path: string; name: string; value: string; expires: number | null; secure: number; httponly: number; host_only: number }
 const all = ref<Cookie[]>([])
@@ -13,7 +14,8 @@ const groups = computed(() => {
   return [...m.entries()]
 })
 let seq = 0
-async function load() { const n = ++seq; const r = await get('/api/cookies'); if (n === seq) all.value = r }   // eskirgan javob yangisini bosmasin
+const loaded = ref(false), loadErr = ref('')
+async function load() { const n = ++seq; try { const r = await get('/api/cookies'); if (n === seq) { all.value = r; loadErr.value = '' } } catch (e: any) { loadErr.value = e.message || 'Cookie\'larni o\'qib bo\'lmadi' } finally { loaded.value = true } }   // eskirgan javob yangisini bosmasin
 async function add() {
   const payload = { ...form.value }
   form.value.name = ''; form.value.value = ''          // kutmasdan tozalanadi: keyingi yozuv oldingi javobga urilmasin
@@ -56,6 +58,8 @@ onMounted(load)
         </tr>
       </tbody></table>
     </div>
-    <div v-if="!all.length" class="empty" data-testid="cookies-empty">Cookie yo'q</div>
+    <StateBlock v-if="!loaded" kind="loading" testid="cookies-loading" />
+    <StateBlock v-else-if="loadErr && !all.length" kind="error" :text="loadErr" testid="cookies-error" @retry="load" />
+    <div v-else-if="!all.length" class="empty" data-testid="cookies-empty">Cookie yo'q</div>
   </div>
 </template>

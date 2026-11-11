@@ -69,7 +69,7 @@ def test_header_controls(ui):
 def test_statusbar_server_console_cookies_version(ui, app):
     expect(T(ui, "server-status")).to_contain_text("Server ulangan")
     expect(T(ui, "console-btn")).to_be_enabled()
-    expect(T(ui, "version")).to_contain_text("v2.")
+    expect(T(ui, "version")).to_have_text(re.compile(r"^v\d+\.\d+\.\d+"))
     T(ui, "cookies-btn").click()
     expect(T(ui, "cookies-tab")).to_be_visible()
 
@@ -408,16 +408,26 @@ def test_runner_layout_iterations_stats_progress_and_filters(ui, tmp_path):
     expect(T(ui, "runner-row")).to_have_count(6)
 
 
+def confirm_all(ui):
+    """Tanlovda yozuvchi metod bor — RunGuard (v3.0.1): «Hammasi» + tasdiq so'zi."""
+    expect(T(ui, "runguard")).to_be_visible()
+    T(ui, "rg-all").check()
+    T(ui, "rg-type").fill("tasdiqlayman")
+    T(ui, "rg-run-all").click()
+
+
 def test_runner_stop_on_first_error_and_manual_stop_and_delay(ui):
     runner(ui)
     T(ui, "runner-iterations").fill("4")
     T(ui, "runner-stop-on-error").check()
     T(ui, "runner-run").click()
+    confirm_all(ui)
     expect(T(ui, "runner-run")).to_be_enabled()
     expect(T(ui, "runner-row")).to_have_count(3)                                # Main, Create(echo 200), Missing(404) → shu yerda to'xtadi
     T(ui, "runner-stop-on-error").uncheck()
     T(ui, "runner-delay").fill("400")
     T(ui, "runner-run").click()
+    confirm_all(ui)
     expect(T(ui, "runner-stop")).to_be_visible()
     T(ui, "runner-stop").click()
     expect(T(ui, "runner-run")).to_be_visible()

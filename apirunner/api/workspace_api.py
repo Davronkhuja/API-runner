@@ -302,6 +302,10 @@ def put_meta():
     allowed = {k: d[k] for k in ("active_environment_id", "legacy_default_notified", "nameclean_dismissed") if k in d}
     if isinstance(d.get("settings"), dict):
         allowed["settings"] = d["settings"]
+    if isinstance(d.get("safety"), dict):
+        sf = d["safety"]
+        hosts = [h.strip().lower() for h in (sf.get("test_hosts") or []) if isinstance(h, str) and h.strip()][:200]
+        allowed["safety"] = {"test_hosts": hosts, "host_confirm": bool(sf.get("host_confirm", True)), "dev_runner_writes": bool(sf.get("dev_runner_writes", False))}
     if isinstance(d.get("script_limits"), dict):
         allowed["script_limits"] = Limits.from_meta({"script_limits": d["script_limits"]}).as_dict()      # chegaralarga keltiriladi
     _ws().update_meta(**allowed)

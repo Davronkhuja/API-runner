@@ -56,7 +56,7 @@ function historyResult(r: any) {
 /** `opts.download` — "Send and Download": javob kelgach faylga saqlanadi (Content-Disposition / URL / tur bo'yicha nom). */
 export async function sendTab(tab: Tab, opts: { download?: boolean } = {}) {
   if (!tab.draft || !tab.draft.url.trim()) { showToast('URL kiriting!', 'warn'); return }
-  if (!(await confirmWrite(tab.draft.method))) return
+  if (!(await confirmWrite(tab.draft.method, tab.draft.url, tab.ref))) return
   const missing = await missingFilesOf(tab.draft)
   if (missing.length && !(await askConfirm(`Fayl topilmadi: ${missing.map(m => m.name).join(', ')}. Body'da faylni qayta tanlang. Baribir yuborilsinmi? (xato qaytadi)`, 'Baribir yuborish'))) return
   const hist = useHistory()

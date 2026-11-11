@@ -269,8 +269,15 @@ def cmd_run(args):
 
 
 # ── mock / docs / serve ──
+def warn_if_exposed(host):
+    """Loopback'dan boshqa manzil — ilova tarmoqqa ochiladi (sukut 127.0.0.1). Xavfsizlik ko'rigi: foydalanuvchi bilishi shart."""
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        print(f"⚠ Diqqat: {host} manzili tarmoqdagi boshqa qurilmalarga ochiq. Mock javoblari/UI shu tarmoqdagi hammaga ko'rinadi.", file=sys.stderr)
+
+
 def cmd_mock(args):
     from .mock import run_cli
+    warn_if_exposed(args.host)
     return run_cli(args)
 
 
@@ -281,6 +288,7 @@ def cmd_docs(args):
 
 def cmd_serve(args):
     from .app import main as serve
+    warn_if_exposed(args.host)
     serve(host=args.host, port=args.port, open_browser_tab=not args.no_browser)
     return 0
 

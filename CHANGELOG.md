@@ -2,6 +2,46 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [3.0.1] — 2026-11-11 — Fix: so'rov asosidagi xavfsizlik (Runner/Batch), tanishtiruv, .app workspace tanlovi
+### Fixed
+- **KRITIK — Runner muhit turiga qarab himoyalanardi:** muhitsiz (yoki Dev) holatda butun collection (POST/PATCH/DELETE bilan) prod host'larga belgilangan holda ochilardi. Endi himoya **so'rovning o'ziga** (metod + host) qaraydi:
+  - Runner **sukut bo'yicha faqat GET/HEAD/OPTIONS** ni belgilaydi (har qanday muhit va muhitsiz). Istisno: muhit Dev/Test **va** Sozlamalar → Xavfsizlik da ruxsat berilgan.
+  - Tanlovda POST/PUT/PATCH/DELETE bo'lsa **har doim RunGuard**: metodlar bo'yicha sonlar, host'lar ro'yxati (test/dev yoki prod/noma'lum), «Faqat xavfsiz metodlar» (tavsiya); «Hammasi» tasdiq so'zini talab qiladi (`prod` — Prod muhitda, aks holda `tasdiqlayman`).
+  - Host tasnifi: `localhost`, `127.0.0.1`, `::1`, `*.local`, `*.test`, `*.localhost` va foydalanuvchi ro'yxati (`*.staging.x.uz` ham mumkin) — test/dev; **boshqa hamma host (hal qilinmagan o'zgaruvchi ham) xavfli**.
+  - Yagona so'rov va Batch: yozuvchi metod test/dev bo'lmagan host'ga ketsa — muhit sozlamasiga **qo'shimcha** tasdiq (Batch'da qatorlar soni bilan); Sozlamalar → Xavfsizlik da o'chirish mumkin.
+  - Muhitdagi «Runner'da sukut bo'yicha faqat GET» belgisi olib tashlandi (umumiy qoida bilan almashtirildi).
+- Tanishtiruv faqat **workspace bo'sh** (so'rovlar soni 0) bo'lganda yoki `?onboarding=1` bilan chiqadi (`?onboarding=auto` — faqat qoida, testlar uchun).
+### Added
+- **.app: birinchi ishga tushishda mavjud workspace** (repo `workspace/`, PM2 `api-runner` nusxasi) topilsa tanlov: **Shu ma'lumotlardan foydalanish / Nusxa olish (tavsiya, manba tegilmaydi) / Yangi bo'sh**; tanlov `desktop.json` da.
+- **Sessiya qulfi** (`.session.lock`): bir workspace'ni ikki nusxa (masalan PM2 + .app) bir vaqtda ochsa, tanlov oynasida va ilova ichida aniq ogohlantirish (pid, versiya). Ochilish to'xtatilmaydi.
+- Sozlamalar → **Workspace papkasi** (desktop rejimida o'zgartirish; qayta ochish kerak) va **Xavfsizlik** (test host'lar, host tasdig'i, Dev'da Runner ruxsati).
+
+## [3.0.0] — 2026-11-11 — Bosqich 8: sayqal va sifat (reliz)
+### 2.x dan beri asosiy o'zgarishlar (xulosa)
+- **Poydevor (2.1):** modulli backend (`apirunner/`), Postman v2.1 superseti modeli, SQLite (`state.db`), avtomatik zaxira, atomik yozuv, migratsiya + rollback, Savat (30 kun), token/Host himoyasi.
+- **So'rov muharriri (2.1–2.2):** auth turlari (Bearer, Basic, API Key, Digest, JWT, Hawk, NTLM, SigV4, OAuth 2.0), body rejimlari, sozlamalar, cookie jar, javob paneli, yangi dizayn tizimi va ⌘K.
+- **Skriptlar (2.3):** quickjs sandbox, `pm.*` API, testlar, Console, Postman sample'lar o'zgarishsiz ishlaydi.
+- **Runner v2 (2.5):** run #N, CSV/JSON ma'lumot, parallel/retry, tarix, solishtirish, JSON/HTML/JUnit eksport.
+- **Kundalik qulayliklar (2.6):** Initial/Current qiymatlar, `{{` avtoto'ldirish, Example'lar, Docs paneli, Find & Replace, javoblar tarixi.
+- **Import/Eksport (2.7):** Postman, OpenAPI, Insomnia, HAR, cURL, workspace zip (shifrlash).
+- **Protokollar (2.8):** WebSocket, SSE, GraphQL (introspection, explorer, avtoto'ldirish).
+- **Avtomatlashtirish (2.9):** CLI (`apirunner run`), mock server, hujjat generatsiyasi, bir nechta workspace, monitor (cron), proxy capture.
+- **Sifat jarayoni (2.4+):** UI audit matritsasi, vizual regressiya, layout guard, axe (0 serious/critical), qattiq balandliklar lint'i; 1300+ avtomatik test.
+### Added
+- **Klaviatura yorliqlari** dialogi (`?` tugmasi, sidebar «⋯» va ⌘K); **birinchi ishga tushirish tanishtiruvi** (3 qadam, o'tkazib yuborish mumkin; avtomatlashtirilgan brauzerda ko'rsatilmaydi).
+- Yagona **`StateBlock`** (yuklanish / xato + «Qayta urinish» / bo'sh): Savat, Monitor, Cookie'lar, Tarix, Sozlamalar.
+- **Desktop rejim** (`python -m apirunner.desktop`, pywebview) va **macOS .app** build skripti (`packaging/build_macos_app.sh`, PyInstaller; selftest tekshirilgan). Ma'lumot `~/Library/Application Support/API Runner/`.
+- `tools/perf_bench.py` va `docs/performance.md` (1200 so'rovli collection, 9 MB JSON, 10 000 qatorli CSV, 50 tab, sovuq ishga tushish).
+- `docs/user-guide.md` (o'zbekcha qo'llanma, skrinshotlar), `docs/security-review.md`, ADR 0011.
+### Changed
+- Sidebar sarlavhasi: asosiy 2 tugma (yangi so'rov, yangi collection) + **«⋯»** menyu (Savat, Find & Replace, yorliqlar) — Find tugmasi yopilib qolmaydi. Monitor va Proxy — pastki qatorda.
+- **Xavfsizlik (docs/security-review.md):** Origin aynan shu server bo'lishi shart (`null` ham rad); `X-Frame-Options`/CSP `frame-ancestors`/`nosniff`/`Referrer-Policy`; sessiya tokeni kirish jurnalida yashiriladi; fayl siyosati ildizi workspace o'rniga faqat `workspace/files` + yuklash papkasi; `*.localhost` hostlari ruxsat (Caddy); `--host` loopback emas bo'lsa ogohlantirish.
+### Fixed
+- **Katta JSON'da UI qotishi:** 9 MB javobda Pretty ko'rinish ~1.3 s asosiy oqimni bloklardi (reaktiv proxy orqali `JSON.stringify`); endi ~0.1 s, heap 222 → ~65 MB.
+- **Esc** dialogni fokus yo'qolganda ham yopadi (eng ustki dialog); ichma-ich dialogda faqat eng ustkisi.
+- Beqaror testlar (`test_node_tabs`, `test_scripts_ui`, `test_multitab_spec`, `test_trash_ui`): tekshiruvlar tezkor "snapshot" o'qishdan qayta urinuvchi `expect`ga o'tkazildi (qarang: docs/flaky-tests.md).
+- Mock server: header qiymatida latin-1 dan tashqari belgi bo'lsa javob yiqilardi; Markdown'da NUL belgisi hujjat generatorini yiqitardi.
+
 ## [2.9.0] — 2026-11-11 — Bosqich 7: CLI, mock server, hujjatlar, workspace'lar, monitor, proxy
 ### Added
 - **CLI (`apirunner run <collection|papka> …`)** — newman analogi: `-e` muhit (fayl yoki workspace nomi), `-g`, `--env-var K=V`, `-d data.csv|json`, `-n`, `--folder`, `--reporters cli,json,junit,html`, `--export-dir`, `--bail`, `--delay`, `--retry`, `--timeout-request`, `--insecure`, `--fail-on-http-errors`, `--export-environment`. Xatoda **exit code 1** (CLI/xato so'rov/test); noto'g'ri argument — 2. Collection har qanday import formatida (Postman/OpenAPI/Insomnia/HAR/cURL) yoki workspace nomi bilan. Vaqtinchalik workspace'da ishlaydi (haqiqiy ma'lumotga tegmaydi). `pipx install .` → `apirunner` (pyproject entry point; `quickjs-ng` — `[scripts]` extra). README'da GitHub Actions misoli. Qo'shimcha buyruqlar: `apirunner mock`, `apirunner docs`, `apirunner serve`.

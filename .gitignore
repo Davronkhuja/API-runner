@@ -48,3 +48,8 @@ docs/screenshots/before/
 docs/screenshots/after/
 docs/screenshots/qa/
 docs/screenshots/audit/
+
+# Paketlash (macOS .app)
+.venv-build/
+build/
+dist/

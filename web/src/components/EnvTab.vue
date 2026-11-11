@@ -33,8 +33,6 @@ function setKind(k: EnvKind) {
   tabs.touch(props.tab.id)
 }
 const confirmOn = (): boolean => env.value?.confirm_writes ?? env.value?.kind === 'prod'
-const getOnlyOn = (): boolean => env.value?.runner_get_only ?? env.value?.kind === 'prod'
-function setGetOnly(v: boolean) { if (env.value) { env.value.runner_get_only = v; tabs.touch(props.tab.id) } }
 function setConfirm(v: boolean) { if (env.value) { env.value.confirm_writes = v; tabs.touch(props.tab.id) } }
 // ── Boshlang'ich / Joriy qiymatlar ──
 const shown = ref<Record<string, boolean>>({})
@@ -87,7 +85,6 @@ async function save() {
       <button v-for="k in KINDS" :key="k.id" class="chip" :class="['kind-' + k.id, { on: env.kind === k.id }]" :aria-pressed="env.kind === k.id" :data-kind="k.id" @click="setKind(k.id)"><span class="kind-dot" :class="'kind-' + k.id" />{{ k.label }}</button>
       <label class="confirm"><input type="checkbox" data-testid="env-confirm-writes" :checked="confirmOn()" @change="setConfirm(($event.target as HTMLInputElement).checked)">POST / PUT / PATCH / DELETE yuborishdan oldin tasdiq so'ralsin</label>
     </div>
-    <label v-if="!isGlobals" class="env-opt" data-testid="env-runner-opt"><input type="checkbox" data-testid="env-runner-get-only" :checked="getOnlyOn()" @change="setGetOnly(($event.target as HTMLInputElement).checked)">Runner'da sukut bo'yicha faqat GET so'rovlar belgilansin <span class="muted">(Prod uchun yoqiq, Dev/Test uchun o'chiq)</span></label>
     <div class="env-note" data-testid="env-note"><Icon name="alert" :size="16" /><span><b>Boshlang'ich qiymat</b> eksport va zaxiraga tushadi. <b>Joriy qiymat</b> faqat shu kompyuterda ishlatiladi: tokenlar va parollarni shu ustunga yozing. Skriptlar faqat joriy qiymatni o'zgartiradi.</span></div>
     <div class="kv-wrap">
       <table class="kv" style="table-layout:fixed" data-testid="env-table">

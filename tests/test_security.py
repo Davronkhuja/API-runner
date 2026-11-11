@@ -39,7 +39,7 @@ def test_token_via_query_for_eventsource(make_client):
 
 def test_foreign_origin_rejected(client):
     assert client.get("/saved", headers={"Origin": "https://evil.com"}).status_code == 403
-    assert client.get("/saved", headers={"Origin": "http://localhost:5050"}).status_code == 200
+    assert client.get("/saved", headers={"Origin": "http://localhost"}).status_code == 200                 # aynan shu server (Host bilan bir xil)
 
 
 def test_index_is_public_and_injects_token(make_client):

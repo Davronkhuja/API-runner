@@ -223,7 +223,7 @@ mark{background:var(--mark);color:var(--mark-text);border-radius:2px}mark.cur{ba
 /* ── runner ── */
 .runner{flex:1;min-height:0;display:flex;background:var(--bg)}
 .runner .cfg{width:360px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:18px;padding:18px;background:var(--panel);border-right:1px solid var(--border)}
-.runner .out{flex:1;min-width:0;display:flex;flex-direction:column;padding:20px 24px;gap:16px}
+.runner .out{flex:1;min-width:0;display:flex;flex-direction:column;padding:20px 24px;gap:16px;overflow-y:auto}
 .runner .req{display:flex;align-items:center;gap:10px;height:34px;padding:0 8px;border-radius:7px;position:relative}
 .runner .req:hover{background:var(--hover)}
 .runner .req.drop-before::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--accent)}
@@ -237,7 +237,7 @@ mark{background:var(--mark);color:var(--mark-text);border-radius:2px}mark.cur{ba
 .res{display:grid;grid-template-columns:56px 64px minmax(0,1fr) 84px 76px;align-items:center;gap:8px;height:40px;padding:0 14px;border-bottom:1px solid var(--border);font-size:var(--fs-md)}
 .res:hover{background:var(--hover)}
 .res.head{height:var(--ctl);font:600 var(--fs-sm) var(--font-ui);color:var(--muted);background:var(--subtle)}
-.result-table{flex:1;min-height:0;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--panel);overflow:hidden}
+.result-table{flex:1;min-height:260px;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--panel);overflow-x:auto;overflow-y:hidden}
 .result-card{border:1px solid var(--border);border-radius:10px;padding:8px;margin-bottom:6px;background:var(--panel)}
 .runner-page{flex:1;overflow:auto;padding:18px}
 
@@ -580,7 +580,7 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 .rs-fname{display:flex;flex-direction:column;flex:1;min-width:0}.rs-fname b{overflow:hidden;text-overflow:ellipsis}
 .rs-checks{display:flex;flex-direction:column;gap:var(--sp-2);font-size:var(--fs-md)}.rs-checks label{display:flex;align-items:flex-start;gap:var(--sp-2)}.rs-checks small{display:block}
 .runner-list{padding:4px;max-height:min(38vh,360px);overflow:auto}
-.res{grid-template-columns:56px 64px minmax(0,1fr) 84px 76px 72px}
+.res{grid-template-columns:56px 64px minmax(120px,1fr) 84px 76px 72px;min-width:560px}
 .res[role=button]{cursor:pointer;width:100%;text-align:left}.res[role=button]:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .res-detail{padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--border);background:var(--subtle)}
 .res-tests{list-style:none;margin:0 0 var(--sp-2);padding:0;display:flex;flex-direction:column;gap:2px;font-size:var(--fs-md)}
@@ -731,3 +731,8 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 
 .mon-form{display:flex;flex-direction:column;gap:var(--sp-3)}.mon-row{display:flex;gap:var(--sp-3);flex-wrap:wrap}.mon-row .bf{flex:1;min-width:180px}.mon-presets{display:flex;gap:var(--sp-2);flex-wrap:wrap}
 .mon-chk{display:flex;align-items:center;gap:var(--sp-2)}.mon-table{width:100%}.mon-table td,.mon-table th{overflow-wrap:anywhere}.mon-table tr.off{opacity:.6}.mon-act{display:flex;gap:var(--sp-1);flex-wrap:wrap}
+
+.sb-more{position:relative}.sb-more-menu{position:absolute;right:0;top:calc(100% + 4px);min-width:220px;z-index:60}.sb-more-menu button{display:flex;align-items:center;gap:var(--sp-2);width:100%;text-align:left}
+.sc-group h3{margin:var(--sp-3) 0 var(--sp-1);font-size:var(--fs-md)}
+.rg-hosts{display:flex;flex-direction:column;gap:var(--sp-1);margin:var(--sp-3) 0;max-height:150px;overflow:auto}.rg-host{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}.rg-host code{overflow-wrap:anywhere}.rg-host.risky code{color:var(--err)}.rg-warn{margin:0 0 var(--sp-3);padding:6px 10px;align-items:flex-start;text-align:left}
+.instance-warn{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;padding:6px var(--sp-4);background:var(--warn-bg,#fff4e0);color:var(--warn,#8a5300);border-bottom:1px solid var(--border);font-size:var(--fs-md)}

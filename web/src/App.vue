@@ -5,7 +5,7 @@ import { useTree } from './stores/tree'
 import { useWorkspace } from './stores/workspace'
 import { useHistory } from './stores/history'
 import { put, get, keepalivePut } from './api/client'
-import { askClose, closeDialog, confirmDialog, exportOf, findOpen, mockOf, monitorOpen, proxyOpen, wsExportOpen, importOpen, toast, trashOpen } from './lib/ui'
+import { askClose, closeDialog, confirmDialog, exportOf, findOpen, mockOf, monitorOpen, proxyOpen, shortcutsOpen, wsExportOpen, importOpen, toast, trashOpen } from './lib/ui'
 import { suggestName } from './lib/rename'
 import { clamp, drag } from './lib/resize'
 import { createRequestIn, saveAsHandler, saveTab, sendTab, openRequest } from './lib/actions'
@@ -21,6 +21,8 @@ import WorkspaceExportDialog from './components/WorkspaceExportDialog.vue'
 import MockDialog from './components/MockDialog.vue'
 import MonitorDialog from './components/MonitorDialog.vue'
 import ProxyDialog from './components/ProxyDialog.vue'
+import ShortcutsDialog from './components/ShortcutsDialog.vue'
+import Onboarding from './components/Onboarding.vue'
 import ExportDialog from './components/ExportDialog.vue'
 import FindReplaceDialog from './components/FindReplaceDialog.vue'
 import TrashDialog from './components/TrashDialog.vue'
@@ -109,10 +111,26 @@ function persistTree() { if (uiTimer) clearTimeout(uiTimer); uiTimer = setTimeou
 function flushTree() { if (uiTimer) { clearTimeout(uiTimer); uiTimer = null; put('/api/ui-state', { expanded: tree.expandedOverride }).catch(() => {}) } }
 function flushTreeOnUnload() { if (uiTimer) { clearTimeout(uiTimer); uiTimer = null; keepalivePut('/api/ui-state', { expanded: tree.expandedOverride }) } }
 
+const isEditable = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || !!t.closest('.cm-editor'))
+// Tanishtiruv: faqat workspace BO'SH bo'lganda (so'rovlar soni 0) va hali ko'rsatilmagan bo'lsa; `?onboarding=1` majburlaydi; avtomatlashtirilgan brauzerda (testlar) o'zi chiqmaydi
+const ONB_KEY = 'apirunner.onboarded'
+const onboarding = ref(false)
+const instanceConflict = ref<{ pid?: number; version?: string; mode?: string } | null>(null)
+const countRequests = (items: any[]): number => items.reduce((n, i) => n + (i.item ? countRequests(i.item) : 1), 0)
+function maybeOnboard() {
+  try {
+    const qp = new URLSearchParams(location.search).get('onboarding')
+    const force = qp !== null && qp !== 'auto'                      // `?onboarding=auto` — avtomatik qoidani (bo'sh workspace) avtomatlashtirilgan brauzerda ham yoqadi (testlar)
+    const empty = Object.values(tree.cols).reduce((n, c: any) => n + countRequests(c?.item ?? []), 0) === 0
+    if (force || (empty && (qp === 'auto' || !navigator.webdriver) && !localStorage.getItem(ONB_KEY))) onboarding.value = true
+  } catch { /* localStorage yo'q */ }
+}
+function finishOnboarding() { onboarding.value = false; try { localStorage.setItem(ONB_KEY, '1') } catch { /* ixtiyoriy */ } }
 function onKey(e: KeyboardEvent) {
   const mod = e.metaKey || e.ctrlKey
   const k = e.key.toLowerCase()
-  if (e.ctrlKey && e.key === 'Tab') { e.preventDefault(); tabs.next(e.shiftKey ? -1 : 1) }
+  if (e.key === '?' && !mod && !e.altKey && !isEditable(e.target)) { e.preventDefault(); shortcutsOpen.value = !shortcutsOpen.value }
+  else if (e.ctrlKey && e.key === 'Tab') { e.preventDefault(); tabs.next(e.shiftKey ? -1 : 1) }
   else if (mod && k === 'k') { e.preventDefault(); cmdkOpen.value = !cmdkOpen.value }
   else if (mod && k === 't' && e.shiftKey) { e.preventDefault(); tabs.reopenClosed() }
   else if (mod && k === 't') { e.preventDefault(); tabs.openNew() }
@@ -126,6 +144,8 @@ onMounted(async () => {
   window.addEventListener('pagehide', flushTreeOnUnload)
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushTreeOnUnload() })
   await Promise.all([tree.load(), ws.load(), hist.load()])
+  maybeOnboard()
+  get('/api/instance').then((i: any) => { if (i.conflict) instanceConflict.value = i.holder ?? {} }).catch(() => {})
   const st = await get('/api/ui-state').catch(() => ({}))
   if (st.expanded) tree.expandedOverride = st.expanded
   await tabs.restore()
@@ -182,6 +202,11 @@ function openRunnerWithData(name: string, text: string) {
 <template>
   <div v-if="ready && migrationWarning" class="toast" style="position:static;background:var(--err);color:var(--on-accent);border-radius:0;padding:8px 14px" data-testid="migration-warning" role="alert">⚠ {{ migrationWarning }}</div>
   <div class="app" data-testid="app" :class="{ 'dropzone-active': dropping }" @dragover="onWindowDragOver" @dragleave="dropping = false" @drop="onWindowDrop" v-if="ready">
+    <div v-if="instanceConflict" class="instance-warn" role="alert" data-testid="instance-conflict">
+      <b>Bu workspace boshqa API Runner nusxasida ham ochiq</b> (pid {{ instanceConflict.pid ?? '?' }}{{ instanceConflict.version ? ', v' + instanceConflict.version : '' }}{{ instanceConflict.mode ? ', ' + instanceConflict.mode : '' }}).
+      Ikkala nusxa bir vaqtda yozsa, o'zgarishlar to'qnashadi yoki yo'qoladi. Birini yoping (yoki Sozlamalar → Workspace papkasi orqali alohida nusxadan foydalaning).
+      <button class="sm" data-testid="instance-dismiss" @click="instanceConflict = null">Tushunarli</button>
+    </div>
     <AppHeader />
     <div class="shell">
       <IconRail />
@@ -230,6 +255,8 @@ function openRunnerWithData(name: string, text: string) {
     <MockDialog v-if="mockOf" :cid="mockOf.cid" :name="mockOf.name" @close="mockOf = null" />
     <ExportDialog v-if="exportOf" :cid="exportOf.cid" :name="exportOf.name" :requests="exportOf.requests" @close="exportOf = null" />
     <FindReplaceDialog v-if="findOpen" @close="findOpen = false" />
+    <ShortcutsDialog v-if="shortcutsOpen" @close="shortcutsOpen = false" />
+    <Onboarding v-if="onboarding" @close="finishOnboarding" />
     <ProxyDialog v-if="proxyOpen" @close="proxyOpen = false" />
     <MonitorDialog v-if="monitorOpen" @close="monitorOpen = false" />
     <TrashDialog v-if="trashOpen" @close="trashOpen = false" />

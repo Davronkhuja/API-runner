@@ -2,6 +2,7 @@
 /** Rejalashtirilgan run'lar (monitor): cron ifoda, collection/papka/muhit, xatoda macOS bildirishnomasi; natijalar run tarixida. */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Dialog from './Dialog.vue'
+import StateBlock from './StateBlock.vue'
 import { del, get, post, put } from '../api/client'
 import { askConfirm, showToast } from '../lib/ui'
 import { useTree } from '../stores/tree'
@@ -11,9 +12,10 @@ const emit = defineEmits<{ close: [] }>()
 interface Last { at: number; ok: boolean; failures: number; total: number; error: string | null; duration: number; run_id: string | null }
 interface Mon { id: string; name: string; collection_id: string; folder: string | null; env_name: string; cron: string; enabled: boolean; notify: boolean; last: Last | null; next_at: number | null }
 const tree = useTree(), ws = useWorkspace()
+const loaded = ref(false), loadErr = ref('')
 const items = ref<Mon[]>([]), editing = ref<Partial<Mon> | null>(null), err = ref(''), cronHint = ref(''), cronOk = ref(true)
 let timer: ReturnType<typeof setInterval> | undefined
-async function load() { try { items.value = (await get('/api/monitors')).items } catch { /* vaqtincha */ } }
+async function load() { try { items.value = (await get('/api/monitors')).items; loadErr.value = '' } catch (e: any) { loadErr.value = e.message || 'Monitorlarni o\'qib bo\'lmadi' } finally { loaded.value = true } }
 onMounted(() => { load(); timer = setInterval(load, 3000) })
 onBeforeUnmount(() => clearInterval(timer))
 const fmt = (ts: number | null) => ts ? new Date(ts * 1000).toLocaleString('uz-UZ', { dateStyle: 'short', timeStyle: 'short' }) : '—'
@@ -59,7 +61,9 @@ async function remove(m: Mon) { if (await askConfirm(`«${m.name}» monitori o'c
     </div>
     <template v-else>
       <p class="muted" style="margin:0 0 var(--sp-3)">Ilova ochiq turganda belgilangan vaqtda collection avtomatik yuriladi. Natijalar «Tarix» / Runner tarixida <code>monitor</code> turi bilan saqlanadi.</p>
-      <p v-if="!items.length" class="muted" data-testid="mon-empty">Hali monitor yo'q. «Yangi monitor» tugmasi bilan qo'shing.</p>
+      <StateBlock v-if="!loaded" kind="loading" testid="mon-loading" />
+      <StateBlock v-else-if="loadErr && !items.length" kind="error" :text="loadErr" testid="mon-load-error" @retry="load" />
+      <p v-else-if="!items.length" class="muted" data-testid="mon-empty">Hali monitor yo'q. «Yangi monitor» tugmasi bilan qo'shing.</p>
       <table v-else class="kv mon-table" data-testid="mon-list"><thead><tr><th>Nomi</th><th>Collection</th><th>Cron</th><th>Oxirgi natija</th><th>Keyingi</th><th></th></tr></thead>
         <tbody><tr v-for="m in items" :key="m.id" data-testid="mon-item" :class="{ off: !m.enabled }">
           <td>{{ m.name }}</td><td>{{ colName(m.collection_id) }}</td><td><code>{{ m.cron }}</code></td>

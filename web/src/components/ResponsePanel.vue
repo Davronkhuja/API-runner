@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch, toRaw } from 'vue'
 import { fetchRawBlob, MAX_STORED, saveResponseFile } from '../lib/responses'
 import type { Tab } from '../stores/tabs'
 import { useTree } from '../stores/tree'
@@ -37,14 +37,15 @@ const parsed = computed(() => (r.value && typeof r.value.response !== 'string' ?
 const jpResult = computed<{ value?: any; error?: string }>(() => {
   const p = jpath.value.trim()
   if (!p || parsed.value === undefined) return {}
-  try { return { value: jsonPath(parsed.value, p) } } catch (e: any) { return { error: e.message } }
+  try { return { value: jsonPath(toRaw(parsed.value), p) } } catch (e: any) { return { error: e.message } }
 })
 const shown = computed<unknown>(() => (jpResult.value.value !== undefined ? jpResult.value.value : r.value?.response))
 const text = computed(() => {
   const v = shown.value
   if (v === undefined || v === null) return v === null ? 'null' : ''
   if (typeof v === 'string') return v
-  return mode.value === 'raw' && jpResult.value.value === undefined ? JSON.stringify(v) : JSON.stringify(v, null, 2)
+  const raw = toRaw(v)            // reaktiv proxy orqali stringify har elementda track() chaqiradi (9 MB javobda ~0.8 s)
+  return mode.value === 'raw' && jpResult.value.value === undefined ? JSON.stringify(raw) : JSON.stringify(raw, null, 2)
 })
 
 const lines = computed(() => text.value.split('\n'))

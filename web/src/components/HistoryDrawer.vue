@@ -8,6 +8,7 @@ import { saveAsHandler } from '../lib/actions'
 import { useTabs } from '../stores/tabs'
 import { askConfirm, fmtBytes, fmtMs } from '../lib/ui'
 import HistoryList from './HistoryList.vue'
+import StateBlock from './StateBlock.vue'
 import { fetchStored } from '../lib/responses'
 import { bodyLines, diffStats, headerDiff, lineDiff } from '../lib/diff'
 
@@ -19,7 +20,8 @@ const picked = ref<number[]>([])             // solishtirish uchun belgilangan y
 const sel = ref<number | null>(null)
 const ignore = ref(true)
 
-async function load() { all.value = await get('/api/history?kind=request&limit=300'); if (sel.value && !all.value.some(h => h.id === sel.value)) sel.value = null; picked.value = picked.value.filter(id => all.value.some(h => h.id === id)) }
+const loadErr = ref('')
+async function load() { loadErr.value = ''; try { all.value = await get('/api/history?kind=request&limit=300') } catch (e: any) { loadErr.value = e.message || 'Tarixni o\'qib bo\'lmadi'; return }; if (sel.value && !all.value.some(h => h.id === sel.value)) sel.value = null; picked.value = picked.value.filter(id => all.value.some(h => h.id === id)) }
 watch(open, v => { if (v) { load(); listEl.value?.reset(); picked.value = []; sel.value = null } })
 watch(() => hist.items, () => { if (open.value) load() })
 const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape' && open.value) open.value = false }
@@ -75,6 +77,7 @@ async function removeOne(id: number) { await hist.remove(id); await load() }
     <div class="drawer-backdrop" data-testid="drawer-backdrop" @click="open = false" />
     <aside class="hist-drawer hist-wide" role="dialog" aria-modal="true" aria-label="So'rovlar tarixi" data-testid="history-drawer">
       <div class="hx-list">
+        <StateBlock v-if="loadErr" kind="error" :text="loadErr" testid="hd-error" @retry="load" />
         <HistoryList ref="listEl" :entries="all" :selected="sel" :picked="picked" selectable @select="h => (sel = h.id)" @pick="togglePick" @remove="removeOne">
           <template #head>
             <div style="display:flex;align-items:center;gap:8px"><b style="flex:1;font-size:var(--fs-lg)">Tarix</b>

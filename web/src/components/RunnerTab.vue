@@ -11,7 +11,8 @@ import { useWorkspace } from '../stores/workspace'
 import { useRunner, type LiveRun } from '../stores/runner'
 import { parseDataFile, isDataFile } from '../lib/datafile'
 import { buildPlan, compareRuns, defaultRunSettings, exportRun, getResult, listRuns, type RunInfo } from '../lib/runs'
-import { isProd, runnerGetOnly } from '../lib/envkind'
+import { isProd } from '../lib/envkind'
+import { hostInfo, isSafeMethod } from '../lib/safety'
 import { isFolder, type RequestItem, type TreeItem } from '../types/model'
 
 const props = defineProps<{ tab: Tab }>()
@@ -34,12 +35,14 @@ const items = computed(() => {
   const byId = new Map(base.value.map(x => [x.id, x]))
   return [...order.filter(id => byId.has(id)).map(id => byId.get(id)!), ...base.value.filter(x => !order.includes(x.id))]
 })
-// Belgilash: oxirgi tanlov (shu collection/papka uchun eslab qolinadi) → bo'lmasa muhit sozlamasi (Prod: faqat GET; Dev/Test: hammasi)
+// Belgilash: oxirgi tanlov (shu collection/papka uchun eslab qolinadi) → bo'lmasa xavfsiz sukut
 const SEL_KEY = 'apirunner.runner.sel.v1'
 const loadSel = (): Record<string, boolean> => { try { return JSON.parse(localStorage.getItem(SEL_KEY) ?? '{}')[props.tab.ref!] ?? {} } catch { return {} } }
 const saveSel = () => { try { const all = JSON.parse(localStorage.getItem(SEL_KEY) ?? '{}'); all[props.tab.ref!] = { ...loadSel(), ...st.checked }; localStorage.setItem(SEL_KEY, JSON.stringify(all)) } catch { /* bloklangan */ } }
 const remembered = loadSel()
-const isOn = (id: string) => st.checked[id] ?? remembered[id] ?? (runnerGetOnly(ws.activeEnv) ? items.value.find(x => x.id === id)?.method === 'GET' : true)
+// Sukut: FAQAT GET/HEAD/OPTIONS. Istisno: muhit Dev/Test va foydalanuvchi Sozlamalar → Xavfsizlik da ruxsat bergan
+const writesDefaultOn = () => (ws.activeEnv?.kind === 'dev' || ws.activeEnv?.kind === 'test') && ws.safety.dev_runner_writes
+const isOn = (id: string) => st.checked[id] ?? remembered[id] ?? (isSafeMethod(items.value.find(x => x.id === id)?.method ?? '') || writesDefaultOn())
 const enabled = computed(() => items.value.filter(x => isOn(x.id)))
 
 const dragId = ref<string | null>(null), overIdx = ref<number | null>(null)
@@ -81,14 +84,22 @@ async function start() {
 }
 async function begin() {
   let onlyGet = false
-  if (isProd(ws.activeEnv)) {
-    const counts: Record<string, number> = {}
-    for (const x of enabled.value) counts[x.method] = (counts[x.method] ?? 0) + iterations.value
-    const a = await askRunGuard(ws.activeEnv!.name, counts)
+  const counts: Record<string, number> = {}
+  const hosts = new Map<string, { host: string | null; count: number; writes: number; safe: boolean }>()
+  for (const x of enabled.value) {
+    counts[x.method] = (counts[x.method] ?? 0) + iterations.value
+    const hi = hostInfo(typeof x.item.request.url === 'string' ? x.item.request.url : (x.item.request.url?.raw ?? ''), `${cid}:${x.id}`)
+    const h = hosts.get(hi.host ?? '?') ?? { host: hi.host, count: 0, writes: 0, safe: hi.safe }
+    h.count += iterations.value; if (!isSafeMethod(x.method)) h.writes += iterations.value
+    hosts.set(hi.host ?? '?', h)
+  }
+  const hasWrite = enabled.value.some(x => !isSafeMethod(x.method))
+  if (hasWrite || isProd(ws.activeEnv)) {              // yozuvchi metod tanlangan bo'lsa HAR DOIM; Prod muhitda GET bo'lsa ham
+    const a = await askRunGuard(ws.activeEnv?.name ?? '', ws.activeEnv?.kind ?? '', counts, [...hosts.values()])
     if (!a) return
     onlyGet = a === 'get'
   }
-  const list = (onlyGet ? enabled.value.filter(x => x.method === 'GET') : enabled.value).map(x => ({ id: x.id, name: x.name, method: x.method, ref: `${cid}:${x.id}`, item: x.item }))
+  const list = (onlyGet ? enabled.value.filter(x => isSafeMethod(x.method)) : enabled.value).map(x => ({ id: x.id, name: x.name, method: x.method, ref: `${cid}:${x.id}`, item: x.item }))
   try {
     const plan = await buildPlan({ ref: props.tab.ref!, name: scopeName.value, kind: 'runner' }, list, st.settings, st.data?.rows ?? [], ws.activeEnv?.name ?? '')
     const r = await runner.launch(plan, props.tab.id)
@@ -204,7 +215,7 @@ defineExpose({ loadData })
           </div>
         </div>
         <div class="res head"><span>Iter.</span><span>Metod</span><span>So'rov</span><span>Status</span><span>Vaqt</span><span>Testlar</span></div>
-        <div class="scroll" style="flex:1;overflow-y:auto" data-testid="runner-results">
+        <div class="scroll" style="flex:1;overflow-y:auto" data-testid="runner-results" tabindex="0" role="region" aria-label="Natijalar jadvali">
           <template v-for="r in filtered" :key="keyOf(r)">
             <div class="res" data-testid="runner-row" role="button" tabindex="0" :aria-expanded="expanded.has(keyOf(r))" @click="toggle(r)" @keydown.enter="toggle(r)">
               <span class="muted" style="font-family:var(--font-mono)">#{{ r.iter }}</span>

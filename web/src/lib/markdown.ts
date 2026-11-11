@@ -22,7 +22,7 @@ function inline(src: string): string {
 }
 
 export function renderMarkdown(md: string): string {
-  const lines = md.replace(/\r\n?/g, '\n').split('\n')
+  const lines = md.replace(/\u0000/g, '').replace(/\r\n?/g, '\n').split('\n')      // NUL — ichki o'rinbosar belgi
   const out: string[] = []
   let i = 0
   const isBlank = (l: string) => !l.trim()

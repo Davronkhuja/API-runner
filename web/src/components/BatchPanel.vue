@@ -38,7 +38,7 @@ function onEsc(e: KeyboardEvent) { if (e.key === 'Escape') { if (full.value) ful
 onMounted(() => window.addEventListener('keydown', onEsc))
 onBeforeUnmount(() => window.removeEventListener('keydown', onEsc))
 async function run() {
-  if (!(await confirmWrite(props.tab.draft!.method))) return
+  if (!(await confirmWrite(props.tab.draft!.method, props.tab.draft!.url, props.tab.ref, Math.max(1, b.value.data?.rows?.length ?? 1)))) return
   await tabs.flush()
   await startBatch(props.tab, {}, async done => {
     try { await hist.add('run', { ts: Date.now(), label: props.tab.draft!.url, count: done.results.length, results: done.results.map(r => ({ index: r.index, status: r.status, time: r.time, size: r.size, url: r.url })) }) } catch { /* tarix yozilmasa ham natija ko'rinadi */ }

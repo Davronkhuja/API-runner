@@ -34,7 +34,7 @@ def _inline(src):
 
 
 def md(text):
-    lines = (text or "").replace("\r\n", "\n").split("\n")
+    lines = (text or "").replace("\0", "").replace("\r\n", "\n").split("\n")      # NUL — ichki o'rinbosar belgi: kiritishdan olib tashlanadi
     out, i = [], 0
     special = re.compile(r"^(#{1,6}\s|```|>\s?|\s*([-*+]|\d+\.)\s+|\s*(-{3,}|\*{3,})\s*$)")
     while i < len(lines):

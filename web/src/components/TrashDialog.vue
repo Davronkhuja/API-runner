@@ -3,6 +3,7 @@
 import { onMounted, ref } from 'vue'
 import Dialog from './Dialog.vue'
 import Icon from './Icon.vue'
+import StateBlock from './StateBlock.vue'
 import { askConfirm, showToast } from '../lib/ui'
 import { deleteTrash, emptyTrash, kindLabel, listTrash, restoreTrash, whereLabel, type TrashRow } from '../lib/trash'
 import { useTree } from '../stores/tree'
@@ -10,8 +11,8 @@ import { useWorkspace } from '../stores/workspace'
 
 const emit = defineEmits<{ close: [] }>()
 const tree = useTree(), ws = useWorkspace()
-const rows = ref<TrashRow[]>([]), loading = ref(true), busy = ref(false)
-async function load() { try { rows.value = await listTrash() } finally { loading.value = false } }
+const rows = ref<TrashRow[]>([]), loading = ref(true), busy = ref(false), loadErr = ref('')
+async function load() { loadErr.value = ''; try { rows.value = await listTrash() } catch (e: any) { loadErr.value = e.message || 'Savatni o\'qib bo\'lmadi' } finally { loading.value = false } }
 onMounted(load)
 async function restore(r: TrashRow) {
   busy.value = true
@@ -35,7 +36,8 @@ async function empty() {
 <template>
   <Dialog title="Savat" testid="trash-dialog" width="min(680px,92vw)" @close="emit('close')">
     <p class="muted" style="margin:0 0 var(--sp-3)">O'chirilgan so'rov, papka, collection va muhitlar 30 kun saqlanadi, keyin avtomatik o'chiriladi.</p>
-    <p v-if="loading" class="muted" role="status">Yuklanmoqda…</p>
+    <StateBlock v-if="loading" kind="loading" testid="trash-loading" />
+    <StateBlock v-else-if="loadErr" kind="error" :text="loadErr" testid="trash-error" @retry="loading = true; load()" />
     <p v-else-if="!rows.length" class="muted" data-testid="trash-empty">Savat bo'sh.</p>
     <ul v-else class="trash-list" data-testid="trash-list">
       <li v-for="r in rows" :key="r.id" data-testid="trash-row">

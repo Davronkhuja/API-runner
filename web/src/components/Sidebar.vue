@@ -4,14 +4,14 @@ import Dialog from './Dialog.vue'
 import HistoryList from './HistoryList.vue'
 import NameCleanDialog from './NameCleanDialog.vue'
 import { dismissOffer, urlNamedItems } from '../lib/nameclean'
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useTree, rowKey, dropPositionFor, type Row } from '../stores/tree'
 import { useTabs } from '../stores/tabs'
 import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { openFromHistory } from '../lib/history'
 import { openRequest } from '../lib/actions'
-import { askConfirm, exportOf, mockOf, findOpen, showToast, sidePanel, trashOpen } from '../lib/ui'
+import { askConfirm, exportOf, mockOf, findOpen, shortcutsOpen, showToast, sidePanel, trashOpen } from '../lib/ui'
 import Icon from './Icon.vue'
 import { authName, hasRealAuth, openNodeTab } from '../lib/nodes'
 import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
@@ -79,6 +79,11 @@ function onContainerDragOver(e: DragEvent) {
 }
 function stopScroll() { scrollDir = 0; if (scrollRaf) cancelAnimationFrame(scrollRaf); scrollRaf = 0 }
 onBeforeUnmount(stopScroll)
+const moreOpen = ref(false), moreRoot = ref<HTMLElement>()
+const onDocDown = (e: MouseEvent) => { if (moreOpen.value && !moreRoot.value?.contains(e.target as Node)) moreOpen.value = false }
+const onDocKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && moreOpen.value) { moreOpen.value = false; e.stopPropagation() } }
+onMounted(() => { document.addEventListener('mousedown', onDocDown); document.addEventListener('keydown', onDocKey, true) })
+onBeforeUnmount(() => { document.removeEventListener('mousedown', onDocDown); document.removeEventListener('keydown', onDocKey, true) })
 
 // ── Fayl tashlash (Postman/OpenAPI/CSV/cURL) — import Bosqich 5 da; hozir App.vue ushlaydi ──
 
@@ -225,8 +230,14 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
         <template v-if="panel === 'collections'">
           <button class="ib" aria-label="Yangi so'rov" title="Yangi so'rov" data-testid="sb-new-request" @click="tabs.openNew()"><Icon name="plus" :size="16" /></button>
           <button class="ib" aria-label="Yangi collection" title="Yangi collection" data-testid="new-collection" @click="newCollection"><Icon name="folder-plus" :size="16" /></button>
-          <button class="ib" aria-label="Savat (o'chirilganlar)" title="Savat — 30 kun saqlanadi" data-testid="trash-open" @click="trashOpen = true"><Icon name="trash" :size="16" /></button>
-          <button class="ib" aria-label="Find &amp; Replace" title="Workspace bo'ylab qidirish va almashtirish" data-testid="find-open" @click="findOpen = true"><Icon name="search" :size="16" /></button>
+          <div class="sb-more" ref="moreRoot">
+            <button class="ib" aria-label="Boshqa amallar" title="Boshqa amallar" aria-haspopup="menu" :aria-expanded="moreOpen" data-testid="sb-more" @click="moreOpen = !moreOpen"><Icon name="more" :size="16" /></button>
+            <div v-if="moreOpen" class="menu sb-more-menu" role="menu" aria-label="Boshqa amallar" data-testid="sb-more-menu" @click="moreOpen = false" @keydown.esc="moreOpen = false">
+              <button role="menuitem" data-testid="trash-open" @click="trashOpen = true"><Icon name="trash" :size="14" />Savat <small class="muted">30 kun</small></button>
+              <button role="menuitem" data-testid="find-open" @click="findOpen = true"><Icon name="search" :size="14" />Find &amp; Replace</button>
+              <button role="menuitem" data-testid="shortcuts-open" @click="shortcutsOpen = true"><Icon name="terminal" :size="14" />Klaviatura yorliqlari <small class="muted">?</small></button>
+            </div>
+          </div>
         </template>
         <template v-else-if="panel === 'environments'"><button class="ib" aria-label="Yangi muhit" title="Yangi muhit" data-testid="new-env" @click="newEnv"><Icon name="plus" :size="16" /></button></template>
         <template v-else-if="panel === 'history'">

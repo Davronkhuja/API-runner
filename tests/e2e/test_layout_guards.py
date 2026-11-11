@@ -41,7 +41,7 @@ def page(request, world, browser):
 SCENES = ["welcome", "editor-empty", "editor-simple-response", "heavy-params", "heavy-headers", "heavy-auth", "heavy-body", "heavy-scripts", "heavy-settings", "heavy-batch",
           "body-graphql", "body-formdata", "resp-400", "resp-headers-tab", "resp-cookies-tab", "resp-tests-tab", "dlg-code-long", "dlg-saveas", "dlg-move", "dlg-confirm",
           "env-tab", "env-eye", "folder-overview-80", "history-drawer", "sidebar-history", "settings", "tree-examples", "example-tab", "docs-panel", "docs-panel-edit", "trash-dialog", "find-replace", "setvar-dialog", "var-autocomplete-url", "var-autocomplete-kv", "send-menu", "auth-jwt-rs", "auth-hawk", "auth-ntlm", "ws-session", "ws-settings", "sse-session", "graphql-explorer", "import-openapi", "import-multi", "import-warnings", "import-conflict", "import-error", "export-dialog", "wsexport-dialog", "settings-io", "server-stale", "server-stale-hint", "new-build", "restarting", "runner", "runner-results", "runner-compare", "runner-export-menu", "cookies", "console", "cmdk", "tabs-30", "long-name-request",
-          "layout-side", "layout-dense", "dlg-import", "dlg-nameclean", "mock-dialog", "ws-menu", "monitor-dialog", "monitor-form", "proxy-dialog"]
+          "layout-side", "layout-dense", "dlg-import", "dlg-nameclean", "mock-dialog", "ws-menu", "monitor-dialog", "monitor-form", "proxy-dialog", "shortcuts-dialog", "onboarding", "sidebar-more"]
 
 
 def go(page, name):
@@ -59,7 +59,7 @@ def EXTRA(page):
     return {"dlg-import": imp, "dlg-nameclean": clean}
 
 
-@pytest.mark.parametrize("name", ["dlg-code-long", "dlg-saveas", "dlg-move", "dlg-confirm", "dlg-import", "dlg-nameclean", "dlg-runguard", "runner-compare", "import-multi", "import-conflict", "export-dialog", "wsexport-dialog", "trash-dialog", "find-replace", "setvar-dialog", "mock-dialog", "monitor-dialog", "monitor-form", "proxy-dialog"])
+@pytest.mark.parametrize("name", ["dlg-code-long", "dlg-saveas", "dlg-move", "dlg-confirm", "dlg-import", "dlg-nameclean", "dlg-runguard", "runner-compare", "import-multi", "import-conflict", "export-dialog", "wsexport-dialog", "trash-dialog", "find-replace", "setvar-dialog", "mock-dialog", "monitor-dialog", "monitor-form", "proxy-dialog", "shortcuts-dialog", "onboarding"])
 def test_dialogs_never_exceed_the_viewport_and_keep_header_and_footer_visible(page, name):
     go(page, name)
     vw, vh = page.viewport_size["width"], page.viewport_size["height"]
@@ -164,3 +164,24 @@ def test_code_dialog_height_follows_the_content(page):
     tall = page.locator(".dialog.dlg").bounding_box()
     assert short < 330 and tall["height"] > short + 200                                              # qisqa kodda katta oq maydon yo'q, uzunida o'sadi
     assert tall["height"] <= page.viewport_size["height"] - 60
+
+
+@pytest.mark.parametrize("name", ["runner", "runner-results", "runner-compare"])
+def test_runner_results_table_stays_usable_at_125_percent_zoom(world, browser, name):
+    """Yakuniy audit topilmasi (v3.0.0): 1152×720 (125% zoom) da natijalar jadvali ~40 px ga siqilib, ustun sarlavhalari ustma-ust tushardi."""
+    app, echo = world
+    ctx = browser.new_context(viewport={"width": 1152, "height": 720}, locale="uz")
+    p = ctx.new_page()
+    p.goto(app.url)
+    p.wait_for_selector("[data-testid=app]")
+    p.add_style_tag(content="*{caret-color:transparent!important;animation:none!important;transition:none!important}")
+    p.echo, p.app = echo, app
+    go(p, name)
+    h = p.locator(".result-table").bounding_box()["height"]
+    assert h >= 250, h
+    heads = p.locator(".res.head span").evaluate_all("els => els.map(e => { const r = e.getBoundingClientRect(); return [r.left, r.right] })")
+    for a, b in zip(heads, heads[1:]):
+        assert a[1] <= b[0] + 1, heads                                  # sarlavhalar ustma-ust tushmaydi
+    found = p.evaluate(DETECT)
+    assert not [f for f in found if f["kind"] in ("clipped-text", "page-hscroll")], found
+    ctx.close()

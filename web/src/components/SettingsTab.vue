@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { get, post } from '../api/client'
+import { get, post, put } from '../api/client'
 import { askConfirm, fmtBytes, importOpen, showToast, wsExportOpen } from '../lib/ui'
 import { downloadFrom } from '../lib/exporter'
 import { useWorkspace } from '../stores/workspace'
 import SettingsForm from './SettingsForm.vue'
 import { dense, layout } from '../lib/view'
 import Icon from './Icon.vue'
+import StateBlock from './StateBlock.vue'
 import { exportLegacy, importLocalStorage } from '../lib/migrate'
 import type { ReqSettings } from '../lib/settings'
 
@@ -23,10 +24,19 @@ async function cleanFiles() {
   try { const r = await post('/api/files/cleanup'); showToast(`${r.removed} ta fayl o'chirildi (${fmtBytes(r.freed)})`, 'success'); await loadFiles() }
   catch (e: any) { showToast(e.message, 'error') }
 }
+const dsk = ref<{ desktop: boolean; workspace_dir: string } | null>(null), wsDir = ref(''), wsMsg = ref(''), wsErr = ref('')
+get('/api/desktop').then((d: any) => { dsk.value = d; wsDir.value = d.workspace_dir }).catch(() => {})
+async function saveWsDir() {
+  wsErr.value = ''; wsMsg.value = ''
+  try {
+    const r = await put('/api/desktop/workspace', { workspace_dir: wsDir.value })
+    wsMsg.value = `Saqlandi. Ilovani yoping va qayta oching.${r.locked_by ? ` ⚠ Bu papka hozir boshqa nusxada ochiq (pid ${r.locked_by.pid ?? '?'}) — avval uni yoping.` : ''}`
+  } catch (e: any) { wsErr.value = e.message }
+}
+const loadErr = ref('')
 async function load() {
   loadFiles()
-  backups.value = await get('/api/backups')
-  status.value = await get('/api/status')
+  try { backups.value = await get('/api/backups'); status.value = await get('/api/status'); loadErr.value = '' } catch (e: any) { loadErr.value = e.message || 'Server javob bermadi' }
 }
 async function create() {
   busy.value = true
@@ -44,6 +54,14 @@ async function restore(b: Backup) {
 }
 const fmt = (t: number | null) => (t ? new Date(t * 1000).toLocaleString() : '—')
 const ws = useWorkspace()
+const sf = ref({ hosts: ws.safety.test_hosts.join('\n'), host_confirm: ws.safety.host_confirm, dev_runner_writes: ws.safety.dev_runner_writes }), sfSaved = ref(false)
+async function saveSafetyNow() {
+  try {
+    await ws.saveSafety({ test_hosts: sf.value.hosts.split(/[\n,]+/).map(x => x.trim()).filter(Boolean), host_confirm: sf.value.host_confirm, dev_runner_writes: sf.value.dev_runner_writes })
+    sf.value.hosts = ws.safety.test_hosts.join('\n'); sfSaved.value = true
+  } catch (e: any) { showToast(e.message, 'error') }
+}
+
 const lim = ref({ ...ws.scripts.limits })
 const limDirty = ref(false)
 const limSaved = ref(false)
@@ -58,7 +76,7 @@ const gsSaved = ref(false)
 let gsTimer: ReturnType<typeof setTimeout> | undefined
 async function saveGlobal() { try { await ws.saveSettings(gs.value); gsDirty.value = false; gsSaved.value = true } catch (e: any) { showToast(e.message, 'error') } }
 function queueGlobal() { gsDirty.value = true; gsSaved.value = false; clearTimeout(gsTimer); gsTimer = setTimeout(saveGlobal, 500) }
-const NAV = [['s-view', "Ko'rinish"], ['s-request', "So'rov"], ['s-scripts', 'Skriptlar'], ['s-files', 'Fayllar'], ['s-data', "Ma'lumotlar"], ['s-io', 'Import / Eksport'], ['s-backups', 'Zaxiralar']] as const
+const NAV = [['s-view', "Ko'rinish"], ['s-request', "So'rov"], ['s-safety', 'Xavfsizlik'], ['s-workspace', 'Workspace papkasi'], ['s-scripts', 'Skriptlar'], ['s-files', 'Fayllar'], ['s-data', "Ma'lumotlar"], ['s-io', 'Import / Eksport'], ['s-backups', 'Zaxiralar']] as const
 const sec = ref<string>('s-view'), mainEl = ref<HTMLElement>()
 function go(id: string) { sec.value = id; mainEl.value?.querySelector('#' + id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }
 onMounted(load)
@@ -71,6 +89,7 @@ onMounted(load)
       <button v-for="n in NAV" :key="n[0]" :class="{ on: sec === n[0] }" :data-nav="n[0]" @click="go(n[0])">{{ n[1] }}</button>
     </nav>
     <div class="settings-main" ref="mainEl">
+      <StateBlock v-if="loadErr" kind="error" :text="`Zaxira va holat ma'lumotlarini o'qib bo'lmadi: ${loadErr}`" testid="settings-load-error" @retry="load" />
     <div class="muted" data-testid="settings-status" v-if="status">Versiya {{ status.version }} · sxema {{ status.schemaVersion }}</div>
     <h4 id="s-view">Ko'rinish</h4>
     <div class="view-opts" data-testid="view-settings">
@@ -85,6 +104,22 @@ onMounted(load)
     <p class="muted">Barcha so'rovlar uchun sukut; har bir so'rov o'z Sozlamalar tabida qayta belgilashi mumkin.</p>
     <SettingsForm :model="gs" prefix="gset" @change="queueGlobal" />
     <p class="saved-note" role="status" data-testid="gset-saved"><template v-if="gsDirty">Saqlanmoqda…</template><template v-else-if="gsSaved">✓ Saqlandi</template><template v-else>O'zgarishlar avtomatik saqlanadi</template></p>
+    <h4 id="s-safety">Xavfsizlik (Runner va yuborish)</h4>
+    <p class="muted" style="max-width:720px">Himoya so'rovning <b>o'ziga</b> qaraydi: Runner sukut bo'yicha faqat GET/HEAD/OPTIONS ni belgilaydi; POST/PUT/PATCH/DELETE tanlansa har doim tasdiq dialogi chiqadi. <code>localhost</code>, <code>127.0.0.1</code>, <code>*.local</code>, <code>*.test</code> va quyidagi ro'yxat «test/dev host» hisoblanadi; boshqa har qanday host (hujjat.uz, api.… ) xavfli.</p>
+    <label class="bf" style="max-width:520px"><span class="bl">Test/dev host'lar (har qatorda bittadan; <code>*.staging.company.uz</code> ham mumkin)</span>
+      <textarea v-model="sf.hosts" rows="4" spellcheck="false" data-testid="safety-hosts" aria-label="Test host'lar" @change="saveSafetyNow" /></label>
+    <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" v-model="sf.host_confirm" data-testid="safety-host-confirm" @change="saveSafetyNow"> Yozuvchi so'rovni test/dev bo'lmagan host'ga yuborishda tasdiq so'rash (muhit sozlamasiga qo'shimcha)</label>
+    <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" v-model="sf.dev_runner_writes" data-testid="safety-dev-writes" @change="saveSafetyNow"> Dev/Test muhitda Runner hamma metodlarni belgilangan holda ochsin (tasdiq dialogi baribir chiqadi)</label>
+    <p class="saved-note" role="status" data-testid="safety-saved"><template v-if="sfSaved">✓ Saqlandi</template><template v-else>O'zgarishlar avtomatik saqlanadi.</template></p>
+    <h4 id="s-workspace">Workspace papkasi</h4>
+    <p class="muted" style="max-width:720px">Joriy ma'lumotlar papkasi: <code data-testid="ws-dir-current">{{ dsk?.workspace_dir }}</code></p>
+    <template v-if="dsk?.desktop">
+      <label class="bf" style="max-width:620px"><span class="bl">Yangi papka (to'liq yo'l; mavjud workspace yoki bo'sh papka)</span><input v-model="wsDir" data-testid="ws-dir-input" aria-label="Workspace papkasi" spellcheck="false"></label>
+      <p style="display:flex;gap:10px;align-items:center"><button data-testid="ws-dir-save" @click="saveWsDir">O'zgartirish</button></p>
+      <p v-if="wsMsg" class="saved-note" role="status" data-testid="ws-dir-msg">{{ wsMsg }}</p>
+      <p v-if="wsErr" class="state-error" role="alert" data-testid="ws-dir-err" style="padding:6px 10px">{{ wsErr }}</p>
+    </template>
+    <p v-else class="muted" style="max-width:720px">Oddiy server rejimida papka <code>APIRUNNER_WORKSPACE</code> muhit o'zgaruvchisi bilan beriladi (sukut: loyiha ichidagi <code>workspace/</code>). O'zgartirish desktop (.app) rejimida mumkin.</p>
     <h4 id="s-scripts">Skriptlar</h4>
     <p v-if="ws.scripts.available" class="muted" data-testid="script-status">Pre-request va Tests skriptlari yoqilgan (<code>quickjs-ng {{ ws.scripts.version }}</code>). Skriptlar fayl tizimi va tarmoqqa (<code>pm.sendRequest</code> dan tashqari) kira olmaydi; workspace'ni faqat <code>pm.environment/globals/collectionVariables</code> orqali o'zgartiradi.</p>
     <div v-else class="script-off" role="alert" data-testid="script-status"><b>Skriptlar o'chiq:</b> <code>quickjs-ng</code> o'rnatilmagan. Skript tablari ko'rinadi va matn saqlanadi, lekin bajarilmaydi. O'rnatish:
