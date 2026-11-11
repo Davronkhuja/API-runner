@@ -2,6 +2,24 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.9.0] — 2026-11-11 — Bosqich 7: CLI, mock server, hujjatlar, workspace'lar, monitor, proxy
+### Added
+- **CLI (`apirunner run <collection|papka> …`)** — newman analogi: `-e` muhit (fayl yoki workspace nomi), `-g`, `--env-var K=V`, `-d data.csv|json`, `-n`, `--folder`, `--reporters cli,json,junit,html`, `--export-dir`, `--bail`, `--delay`, `--retry`, `--timeout-request`, `--insecure`, `--fail-on-http-errors`, `--export-environment`. Xatoda **exit code 1** (CLI/xato so'rov/test); noto'g'ri argument — 2. Collection har qanday import formatida (Postman/OpenAPI/Insomnia/HAR/cURL) yoki workspace nomi bilan. Vaqtinchalik workspace'da ishlaydi (haqiqiy ma'lumotga tegmaydi). `pipx install .` → `apirunner` (pyproject entry point; `quickjs-ng` — `[scripts]` extra). README'da GitHub Actions misoli. Qo'shimcha buyruqlar: `apirunner mock`, `apirunner docs`, `apirunner serve`.
+- **Mock server:** collection Example'lari asosida; metod + yo'l (`:id`, `{{var}}` path variables) + ixtiyoriy query / `x-mock-*` header moslash; Example sarlavhasidagi `X-Mock-Delay` va umumiy kechikish; so'rovlar jurnali. UI: collection menyusi / Overview → «Mock server…» (port tanlash, yo'nalishlar jadvali, jurnal, to'xtatish).
+- **Hujjat generatsiyasi:** collection/papka tavsiflari va Example'lardan bitta statik HTML (`apirunner docs`, Folder Overview → «Hujjat yaratish», `GET /api/collections/<id>/docs`).
+- **Bir nechta workspace:** header'dagi almashtirgich — yaratish, nomlash, almashtirish (faol run/mock/ulanishlar bo'lsa tasdiq), o'chirish (**Savatga**, 30 kun); har biri alohida papka va o'z SQLite'i; `workspaces.json` reestri.
+- **Monitor (rejalashtirilgan run'lar):** cron ifoda (`*/5`, oraliq, ro'yxat, `mon-fri`), collection/papka/muhit tanlash, xatoda **macOS bildirishnomasi**, natijalar run tarixida (`kind=monitor`), «Hozir» tugmasi, yoqish/o'chirish. Status-bardagi «Monitor».
+- **Proxy capture:** lokal HTTP proxy; ushlangan so'rovlar ro'yxati, tanlanganlarni collection'ga (javob namunasi bilan) yangi papka sifatida saqlash. HTTPS — faqat tunnel (ichi ko'rinmaydi). Status-bardagi «Proxy».
+- **GraphQL sxema keshi diskda** (`workspace/schemas/`): qayta yuklagach introspection'ni qayta so'ramaydi.
+- Testlar: `test_cli`, `test_mock`, `test_docs_gen`, `test_workspaces`, `test_monitor`, `test_proxy`; e2e `test_mock_ui`, `test_workspaces_ui`, `test_monitor_ui`, `test_proxy_ui`; vizual baseline 30–34 (+ header o'zgargani uchun hammasi qayta olindi); layout/axe sahnalari (mock, ws-menu, monitor, proxy).
+### Fixed
+- Mock server Example nomi/header qiymatida latin-1 dan tashqari belgi (`—`, kirill) bo'lsa javob yiqilardi (regressiya testi bilan).
+- Run engine `bail` sozlamasini qo'llab-quvvatlaydi; skriptsiz run'da workspace o'zgaruvchilari (`{{base}}`) ham hal qilinadi.
+- Auth: `bearer` / `basic` turlari `apply_auth_config` da.
+### Changed
+- Header'dagi «Shaxsiy workspace» matni — almashtirgich tugmasi.
+- Ochiq (bajarilmagan): HTTPS MITM (proxy), monitor — ilova yopiq bo'lganda ishlamaydi (alohida daemon yo'q).
+
 ## [2.8.0] — 2026-11-09 — Bosqich 6: WebSocket, SSE, GraphQL
 ### Added
 - **WebSocket tabi:** ulanish (headers, auth: Bearer/Basic/API Key/JWT/Hawk/SigV4, subprotokollar, ping), xabar yuborish (matn / JSON validatsiyasi bilan / binary hex·base64, ⌘↵), xabarlar oqimi (vaqt, yo'nalish, hajm; filtr: yo'nalish, tizim hodisalari; qidiruv + regex; kengaytirish — JSON chiroyli, binary hex dump; avto-scroll, tozalash, JSON/TXT eksport), **saqlangan xabar shablonlari**, **avtomatik qayta ulanish**, collection'ga saqlash, tarix, multi-tab (ulanish tab almashganda uzilmaydi), sahifa yangilangach jurnal tiklanadi.

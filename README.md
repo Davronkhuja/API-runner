@@ -79,6 +79,40 @@ Node.js kerak emas — frontend build natijasi (`apirunner/static/app/`) repoga 
 2. Kerak bo'lsa **Params**, **Headers**, **Auth** yoki **Body** tablarini to'ldiring
 3. **▶ RUN** tugmasini bosing
 
+### Bosqich 7 (v2.9.0): CLI, mock, hujjat, workspace'lar, monitor, proxy
+
+**CLI (newman analogi).** O'rnatish: `pipx install .` (skriptlar uchun `pipx install ".[scripts]"`) — `apirunner` buyrug'i paydo bo'ladi.
+```bash
+apirunner run collection.json -e dev.postman_environment.json -d data.csv -n 3 \
+  --reporters cli,json,junit,html --export-dir reports --bail --delay 200
+apirunner run "Mening collection" --folder Shartnomalar -e Dev      # workspace'dagi collection (nom bo'yicha)
+apirunner mock collection.json --port 3000                          # Example'lar asosida mock server
+apirunner docs collection.json -o docs.html                         # statik HTML hujjat
+```
+Xato (test yiqilishi, so'rov xatosi) bo'lsa **exit code 1**, noto'g'ri argument — 2. `--fail-on-http-errors` — 4xx/5xx ham xato hisoblanadi.
+
+**CI misoli (GitHub Actions):**
+```yaml
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pipx install "git+https://github.com/Davronkhuja/API-runner.git#egg=apirunner[scripts]"
+      - run: apirunner run tests/api.postman_collection.json -e tests/ci.postman_environment.json --reporters cli,junit --export-dir reports
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: api-reports, path: reports }
+```
+
+- **Mock server:** collection menyusi → «Mock server…» — Example'lar asosida metod + yo'l (`:id`) + ixtiyoriy query/header bo'yicha javob; port va kechikish; so'rovlar jurnali.
+- **Hujjat:** Folder/Collection Overview → «Hujjat yaratish» — tavsiflar va Example'lardan bitta HTML fayl.
+- **Workspace'lar:** header'dagi nom → almashtirish, yangi workspace, nomlash, o'chirish (Savatga). Har biri alohida papka.
+- **Monitor:** status-bardagi «Monitor» → cron (`*/5 * * * *`, `0 9 * * mon-fri`), xatoda macOS bildirishnomasi; natijalar Run tarixida (`monitor`). Ilova (PM2) ishlab turganda ishlaydi.
+- **Proxy capture:** status-bardagi «Proxy» → lokal proxy; ilovangizni `http://127.0.0.1:<port>` proxy'ga yo'naltiring, ushlangan HTTP so'rovlarni collection'ga saqlang (HTTPS — faqat tunnel).
+
 ### Boshqa protokollar (v2.8.0)
 Metod tanlagichidan **WS** (WebSocket) yoki **SSE** ni tanlang: ulanish serverning o'zida ochiladi (headers, auth, subprotokol), xabarlar oqimi filtr/qidiruv bilan, xabar shablonlari, avtomatik qayta ulanish, collection'ga saqlash. **GraphQL** — Body → graphql: «Sxemani yuklash», schema explorer, avtoto'ldirish va validatsiya.
 
