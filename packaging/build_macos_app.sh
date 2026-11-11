@@ -25,12 +25,12 @@ iconutil -c icns "$ICONSET" -o build/icon.icns
 
 VERSION="$(python -c 'import apirunner; print(apirunner.__version__)')"
 pyinstaller --noconfirm --clean --windowed --name "API Runner" \
-  --icon build/icon.icns \
+  --icon "$PWD/build/icon.icns" \
   --osx-bundle-identifier uz.localhost.apirunner \
-  --add-data "apirunner/static:apirunner/static" \
-  --hidden-import quickjs --collect-submodules apirunner --collect-all webview \
-  --distpath dist --workpath build/pyi --specpath build \
-  packaging/desktop_entry.py
+  --add-data "$PWD/apirunner/static:apirunner/static" \
+  --paths "$PWD" --hidden-import quickjs --collect-submodules apirunner --collect-all webview \
+  --distpath "$PWD/dist" --workpath "$PWD/build/pyi" --specpath "$PWD/build" \
+  "$PWD/packaging/desktop_entry.py"
 
 # Info.plist: versiya va yuqori aniqlik
 PLIST="dist/API Runner.app/Contents/Info.plist"
