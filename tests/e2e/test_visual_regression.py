@@ -394,3 +394,21 @@ def test_34_mock_dialog_form(vp):
     vp.click("[data-act=mock]")
     expect(T(vp, "mock-start")).to_be_visible()
     snap(vp, "34-mock-dialog")
+
+
+def test_35_shortcuts_dialog(vp):
+    vp.keyboard.press("?")
+    expect(T(vp, "shortcuts-dialog")).to_be_visible()
+    snap(vp, "35-shortcuts")
+
+
+def test_36_onboarding(vp, app):
+    vp.goto(app.url + "?onboarding=1")
+    expect(T(vp, "onboarding")).to_be_visible()
+    snap(vp, "36-onboarding")
+
+
+def test_37_sidebar_more_menu(vp):
+    T(vp, "sb-more").click()
+    expect(T(vp, "sb-more-menu")).to_be_visible()
+    snap(vp, "37-sidebar-more")

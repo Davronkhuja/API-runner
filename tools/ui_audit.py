@@ -364,6 +364,9 @@ def scenes(base, echo):
         u = p.locator("[data-testid=proxy-url]").inner_text()
         requests.get(echo + "/echo?a=1", proxies={"http": u}); requests.post(echo + "/echo", json={"x": 1}, proxies={"http": u}); p.wait_for_function("document.querySelectorAll('[data-testid=proxy-entry]').length >= 2")
     S["proxy-dialog"] = proxy_dialog
+    S["shortcuts-dialog"] = lambda p: (p.keyboard.press("?"), p.wait_for_selector("[data-testid=shortcuts-dialog]"))
+    S["onboarding"] = lambda p: (p.goto(base + "?onboarding=1"), js_ready(p), p.wait_for_selector("[data-testid=onboarding]"))
+    S["sidebar-more"] = lambda p: (p.click("[data-testid=sb-more]"), p.wait_for_selector("[data-testid=sb-more-menu]"))
     return S
 
 
