@@ -36,9 +36,10 @@ def bind_workspace(app, ws_dir, saved_file, backup_dir, upload_dir):
     ext["db"] = StateDB(os.path.join(ws.root, "state.db"))
     ext["cookies"] = CookieStore(os.path.join(ws.root, "state.db"))
     ext["runs"] = RunStore(ext["db"])
-    ext["run_manager"] = RunManager(ext["runs"], ext["db"], ws, ext["cookies"], (upload_dir, ws.root))
+    file_roots = (upload_dir, os.path.join(ws.root, "files"))      # faqat yuklash papkasi va fayl ombori; workspace'ning qolgan qismi (state.db, JSON) emas
+    ext["run_manager"] = RunManager(ext["runs"], ext["db"], ws, ext["cookies"], file_roots)
     ext["monitors"] = MonitorStore(ws.root)
-    ext["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root), cookies=ext["cookies"], workspace=ws)
+    ext["jobs"] = JobManager(allowed_file_roots=file_roots, cookies=ext["cookies"], workspace=ws)
     return result
 
 
