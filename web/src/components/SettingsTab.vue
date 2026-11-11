@@ -45,6 +45,14 @@ async function restore(b: Backup) {
 }
 const fmt = (t: number | null) => (t ? new Date(t * 1000).toLocaleString() : '—')
 const ws = useWorkspace()
+const sf = ref({ hosts: ws.safety.test_hosts.join('\n'), host_confirm: ws.safety.host_confirm, dev_runner_writes: ws.safety.dev_runner_writes }), sfSaved = ref(false)
+async function saveSafetyNow() {
+  try {
+    await ws.saveSafety({ test_hosts: sf.value.hosts.split(/[\n,]+/).map(x => x.trim()).filter(Boolean), host_confirm: sf.value.host_confirm, dev_runner_writes: sf.value.dev_runner_writes })
+    sf.value.hosts = ws.safety.test_hosts.join('\n'); sfSaved.value = true
+  } catch (e: any) { showToast(e.message, 'error') }
+}
+
 const lim = ref({ ...ws.scripts.limits })
 const limDirty = ref(false)
 const limSaved = ref(false)
@@ -59,7 +67,7 @@ const gsSaved = ref(false)
 let gsTimer: ReturnType<typeof setTimeout> | undefined
 async function saveGlobal() { try { await ws.saveSettings(gs.value); gsDirty.value = false; gsSaved.value = true } catch (e: any) { showToast(e.message, 'error') } }
 function queueGlobal() { gsDirty.value = true; gsSaved.value = false; clearTimeout(gsTimer); gsTimer = setTimeout(saveGlobal, 500) }
-const NAV = [['s-view', "Ko'rinish"], ['s-request', "So'rov"], ['s-scripts', 'Skriptlar'], ['s-files', 'Fayllar'], ['s-data', "Ma'lumotlar"], ['s-io', 'Import / Eksport'], ['s-backups', 'Zaxiralar']] as const
+const NAV = [['s-view', "Ko'rinish"], ['s-request', "So'rov"], ['s-safety', 'Xavfsizlik'], ['s-scripts', 'Skriptlar'], ['s-files', 'Fayllar'], ['s-data', "Ma'lumotlar"], ['s-io', 'Import / Eksport'], ['s-backups', 'Zaxiralar']] as const
 const sec = ref<string>('s-view'), mainEl = ref<HTMLElement>()
 function go(id: string) { sec.value = id; mainEl.value?.querySelector('#' + id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }
 onMounted(load)
@@ -87,6 +95,13 @@ onMounted(load)
     <p class="muted">Barcha so'rovlar uchun sukut; har bir so'rov o'z Sozlamalar tabida qayta belgilashi mumkin.</p>
     <SettingsForm :model="gs" prefix="gset" @change="queueGlobal" />
     <p class="saved-note" role="status" data-testid="gset-saved"><template v-if="gsDirty">Saqlanmoqda…</template><template v-else-if="gsSaved">✓ Saqlandi</template><template v-else>O'zgarishlar avtomatik saqlanadi</template></p>
+    <h4 id="s-safety">Xavfsizlik (Runner va yuborish)</h4>
+    <p class="muted" style="max-width:720px">Himoya so'rovning <b>o'ziga</b> qaraydi: Runner sukut bo'yicha faqat GET/HEAD/OPTIONS ni belgilaydi; POST/PUT/PATCH/DELETE tanlansa har doim tasdiq dialogi chiqadi. <code>localhost</code>, <code>127.0.0.1</code>, <code>*.local</code>, <code>*.test</code> va quyidagi ro'yxat «test/dev host» hisoblanadi; boshqa har qanday host (hujjat.uz, api.… ) xavfli.</p>
+    <label class="bf" style="max-width:520px"><span class="bl">Test/dev host'lar (har qatorda bittadan; <code>*.staging.company.uz</code> ham mumkin)</span>
+      <textarea v-model="sf.hosts" rows="4" spellcheck="false" data-testid="safety-hosts" aria-label="Test host'lar" @change="saveSafetyNow" /></label>
+    <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" v-model="sf.host_confirm" data-testid="safety-host-confirm" @change="saveSafetyNow"> Yozuvchi so'rovni test/dev bo'lmagan host'ga yuborishda tasdiq so'rash (muhit sozlamasiga qo'shimcha)</label>
+    <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" v-model="sf.dev_runner_writes" data-testid="safety-dev-writes" @change="saveSafetyNow"> Dev/Test muhitda Runner hamma metodlarni belgilangan holda ochsin (tasdiq dialogi baribir chiqadi)</label>
+    <p class="saved-note" role="status" data-testid="safety-saved"><template v-if="sfSaved">✓ Saqlandi</template><template v-else>O'zgarishlar avtomatik saqlanadi.</template></p>
     <h4 id="s-scripts">Skriptlar</h4>
     <p v-if="ws.scripts.available" class="muted" data-testid="script-status">Pre-request va Tests skriptlari yoqilgan (<code>quickjs-ng {{ ws.scripts.version }}</code>). Skriptlar fayl tizimi va tarmoqqa (<code>pm.sendRequest</code> dan tashqari) kira olmaydi; workspace'ni faqat <code>pm.environment/globals/collectionVariables</code> orqali o'zgartiradi.</p>
     <div v-else class="script-off" role="alert" data-testid="script-status"><b>Skriptlar o'chiq:</b> <code>quickjs-ng</code> o'rnatilmagan. Skript tablari ko'rinadi va matn saqlanadi, lekin bajarilmaydi. O'rnatish:

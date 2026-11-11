@@ -100,6 +100,10 @@ def test_folder_overview_counts_variables_scripts_and_last_run_dots(ui):
     for cb in ui.locator("[data-testid=runner-item] input[type=checkbox]").all():
         cb.check()
     T(ui, "runner-run").click()
+    expect(T(ui, "runguard")).to_be_visible()                                   # tanlovda yozuvchi metod bor — har doim tasdiq
+    T(ui, "rg-all").check()
+    T(ui, "rg-type").fill("tasdiqlayman")
+    T(ui, "rg-run-all").click()
     expect(T(ui, "runner-s-done")).to_contain_text("5 / 5")
     expect(T(ui, "runner-run")).to_be_enabled()
     ui.locator("[data-name='Fold']").dblclick()

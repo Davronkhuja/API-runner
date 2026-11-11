@@ -152,3 +152,19 @@ def test_escape_closes_only_the_topmost_of_stacked_dialogs(app, page):
     page.keyboard.press("Escape")
     expect(T(page, "confirm-dialog")).to_have_count(0)
     expect(T(page, "monitor-dialog")).to_be_visible()
+
+
+def test_onboarding_only_for_empty_workspace_or_forced(app, page):
+    boot(app, page, "?onboarding=auto")                                  # bo'sh workspace (faqat bo'sh sukut collection)
+    expect(T(page, "onboarding")).to_be_visible()
+    T(page, "onb-skip").click()
+    page.evaluate("localStorage.removeItem('apirunner.onboarded')")
+    cid = app.api("GET", "/api/workspace")["collections"][0]["id"]
+    col = app.api("GET", f"/api/collections/{cid}")
+    col["item"] = [{"id": "r1", "name": "R", "request": {"method": "GET", "header": [], "url": {"raw": "http://localhost/x"}}, "response": []}]
+    app.api("PUT", f"/api/collections/{cid}", col)
+    boot(app, page, "?onboarding=auto")                                  # endi so'rov bor — chiqmaydi
+    expect(T(page, "tree-row").first).to_be_visible()
+    expect(T(page, "onboarding")).to_have_count(0)
+    boot(app, page, "?onboarding=1")                                     # majburan
+    expect(T(page, "onboarding")).to_be_visible()

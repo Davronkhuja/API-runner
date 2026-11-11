@@ -112,13 +112,16 @@ function flushTree() { if (uiTimer) { clearTimeout(uiTimer); uiTimer = null; put
 function flushTreeOnUnload() { if (uiTimer) { clearTimeout(uiTimer); uiTimer = null; keepalivePut('/api/ui-state', { expanded: tree.expandedOverride }) } }
 
 const isEditable = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || !!t.closest('.cm-editor'))
-// Tanishtiruv: faqat birinchi ochilishda; avtomatlashtirilgan brauzerda (testlar) ko'rsatilmaydi, `?onboarding=1` majburlaydi
+// Tanishtiruv: faqat workspace BO'SH bo'lganda (so'rovlar soni 0) va hali ko'rsatilmagan bo'lsa; `?onboarding=1` majburlaydi; avtomatlashtirilgan brauzerda (testlar) o'zi chiqmaydi
 const ONB_KEY = 'apirunner.onboarded'
 const onboarding = ref(false)
+const countRequests = (items: any[]): number => items.reduce((n, i) => n + (i.item ? countRequests(i.item) : 1), 0)
 function maybeOnboard() {
   try {
-    const force = new URLSearchParams(location.search).has('onboarding')
-    if (force || (!navigator.webdriver && !localStorage.getItem(ONB_KEY))) onboarding.value = true
+    const qp = new URLSearchParams(location.search).get('onboarding')
+    const force = qp !== null && qp !== 'auto'                      // `?onboarding=auto` — avtomatik qoidani (bo'sh workspace) avtomatlashtirilgan brauzerda ham yoqadi (testlar)
+    const empty = Object.values(tree.cols).reduce((n, c: any) => n + countRequests(c?.item ?? []), 0) === 0
+    if (force || (empty && (qp === 'auto' || !navigator.webdriver) && !localStorage.getItem(ONB_KEY))) onboarding.value = true
   } catch { /* localStorage yo'q */ }
 }
 function finishOnboarding() { onboarding.value = false; try { localStorage.setItem(ONB_KEY, '1') } catch { /* ixtiyoriy */ } }
@@ -137,10 +140,10 @@ function onKey(e: KeyboardEvent) {
 // Hozircha faqat tab/daraxt yorliqlari; Cmd+T brauzerda band bo'lishi mumkin — Alt muqobili ham
 onMounted(async () => {
   window.addEventListener('keydown', onKey)
-  maybeOnboard()
   window.addEventListener('pagehide', flushTreeOnUnload)
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushTreeOnUnload() })
   await Promise.all([tree.load(), ws.load(), hist.load()])
+  maybeOnboard()
   const st = await get('/api/ui-state').catch(() => ({}))
   if (st.expanded) tree.expandedOverride = st.expanded
   await tabs.restore()

@@ -13,3 +13,7 @@ export function cleanSettings(s: ReqSettings | undefined | null): ReqSettings {
 }
 /** So'rov sozlamalari globalni bosadi. */
 export const mergeSettings = (global: ReqSettings | undefined, own: ReqSettings | undefined): ReqSettings => ({ ...cleanSettings(global), ...cleanSettings(own) })
+
+/** Host/metod xavfsizligi (workspace meta.safety). */
+export interface Safety { test_hosts: string[]; host_confirm: boolean; dev_runner_writes: boolean }
+export const DEFAULT_SAFETY: Safety = { test_hosts: [], host_confirm: true, dev_runner_writes: false }

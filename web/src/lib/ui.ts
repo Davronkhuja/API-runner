@@ -34,9 +34,10 @@ export const askConfirm = (msg: string, ok = 'Ha') => new Promise<boolean>(res =
 
 /** Prod'da Runner ishga tushirishdan oldingi dialog (RunGuard): 'get' — faqat GET, 'all' — hammasi, null — bekor. */
 export type GuardAnswer = 'get' | 'all' | null
-export const runGuard = ref<{ envName: string; counts: Record<string, number>; total: number; resolve: (a: GuardAnswer) => void } | null>(null)
-export const askRunGuard = (envName: string, counts: Record<string, number>) => new Promise<GuardAnswer>(res => {
-  runGuard.value = { envName, counts, total: Object.values(counts).reduce((a, b) => a + b, 0), resolve: a => { runGuard.value = null; res(a) } }
+export interface GuardHost { host: string | null; count: number; writes: number; safe: boolean }
+export const runGuard = ref<{ envName: string; envKind: string; counts: Record<string, number>; hosts: GuardHost[]; total: number; resolve: (a: GuardAnswer) => void } | null>(null)
+export const askRunGuard = (envName: string, envKind: string, counts: Record<string, number>, hosts: GuardHost[]) => new Promise<GuardAnswer>(res => {
+  runGuard.value = { envName, envKind, counts, hosts, total: Object.values(counts).reduce((a, b) => a + b, 0), resolve: a => { runGuard.value = null; res(a) } }
 })
 
 export const fmtBytes = (n: number) => (n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(1) + ' MB')
