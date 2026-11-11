@@ -258,12 +258,14 @@ def test_21_trash(vp, app):
     vp.reload()
     vp.wait_for_selector("[data-testid=app]")
     vp.add_style_tag(content=HIDE + "[data-testid=trash-days]{visibility:hidden!important}")
+    T(vp, "sb-more").click()
     T(vp, "trash-open").click()
     expect(T(vp, "trash-row")).to_have_count(1)
     snap(vp, "21-trash")
 
 
 def test_22_find_replace(vp):
+    T(vp, "sb-more").click()
     T(vp, "find-open").click()
     T(vp, "fr-query").fill("api.example.test")
     T(vp, "fr-replacement").fill("api.new.test")

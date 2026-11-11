@@ -57,6 +57,7 @@ def test_create_switch_isolation_rename_delete_and_restore(ui, app):
     expect(T(ui, "ws-item")).to_have_count(1)
     expect(ui.locator("[data-testid=ws-item] [data-testid=ws-delete]")).to_have_count(0)    # sukut va faol o'chirilmaydi
     ui.keyboard.press("Escape")
+    T(ui, "sb-more").click()
     T(ui, "trash-open").click()
     expect(T(ui, "trash-row")).to_contain_text("Mijoz B")
     T(ui, "trash-restore").click()

@@ -731,3 +731,6 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 
 .mon-form{display:flex;flex-direction:column;gap:var(--sp-3)}.mon-row{display:flex;gap:var(--sp-3);flex-wrap:wrap}.mon-row .bf{flex:1;min-width:180px}.mon-presets{display:flex;gap:var(--sp-2);flex-wrap:wrap}
 .mon-chk{display:flex;align-items:center;gap:var(--sp-2)}.mon-table{width:100%}.mon-table td,.mon-table th{overflow-wrap:anywhere}.mon-table tr.off{opacity:.6}.mon-act{display:flex;gap:var(--sp-1);flex-wrap:wrap}
+
+.sb-more{position:relative}.sb-more-menu{position:absolute;right:0;top:calc(100% + 4px);min-width:220px;z-index:60}.sb-more-menu button{display:flex;align-items:center;gap:var(--sp-2);width:100%;text-align:left}
+.sc-group h3{margin:var(--sp-3) 0 var(--sp-1);font-size:var(--fs-md)}

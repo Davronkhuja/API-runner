@@ -256,7 +256,7 @@ def test_console_shows_unsupported_api_warnings(ui):
     write(ui, "test", "pm.visualizer.set('<b>x</b>'); require('cheerio');")
     send(ui)
     T(ui, "console-btn").click()
-    warns = T(ui, "console-entry").filter(has=ui.locator("[data-level=warn]"))
+    expect(T(ui, "console-text").filter(has_text="cheerio").first).to_be_visible(timeout=10000)      # konsol yozuvlari asinxron keladi: avval kutamiz, keyin o'qiymiz
     texts = " ".join(T(ui, "console-text").all_inner_texts())
     assert "pm.visualizer" in texts and "cheerio" in texts and "qo'llab-quvvatlanmaydi" in texts
 

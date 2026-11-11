@@ -5,7 +5,7 @@ import { useTree } from './stores/tree'
 import { useWorkspace } from './stores/workspace'
 import { useHistory } from './stores/history'
 import { put, get, keepalivePut } from './api/client'
-import { askClose, closeDialog, confirmDialog, exportOf, findOpen, mockOf, monitorOpen, proxyOpen, wsExportOpen, importOpen, toast, trashOpen } from './lib/ui'
+import { askClose, closeDialog, confirmDialog, exportOf, findOpen, mockOf, monitorOpen, proxyOpen, shortcutsOpen, wsExportOpen, importOpen, toast, trashOpen } from './lib/ui'
 import { suggestName } from './lib/rename'
 import { clamp, drag } from './lib/resize'
 import { createRequestIn, saveAsHandler, saveTab, sendTab, openRequest } from './lib/actions'
@@ -21,6 +21,8 @@ import WorkspaceExportDialog from './components/WorkspaceExportDialog.vue'
 import MockDialog from './components/MockDialog.vue'
 import MonitorDialog from './components/MonitorDialog.vue'
 import ProxyDialog from './components/ProxyDialog.vue'
+import ShortcutsDialog from './components/ShortcutsDialog.vue'
+import Onboarding from './components/Onboarding.vue'
 import ExportDialog from './components/ExportDialog.vue'
 import FindReplaceDialog from './components/FindReplaceDialog.vue'
 import TrashDialog from './components/TrashDialog.vue'
@@ -109,10 +111,22 @@ function persistTree() { if (uiTimer) clearTimeout(uiTimer); uiTimer = setTimeou
 function flushTree() { if (uiTimer) { clearTimeout(uiTimer); uiTimer = null; put('/api/ui-state', { expanded: tree.expandedOverride }).catch(() => {}) } }
 function flushTreeOnUnload() { if (uiTimer) { clearTimeout(uiTimer); uiTimer = null; keepalivePut('/api/ui-state', { expanded: tree.expandedOverride }) } }
 
+const isEditable = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || !!t.closest('.cm-editor'))
+// Tanishtiruv: faqat birinchi ochilishda; avtomatlashtirilgan brauzerda (testlar) ko'rsatilmaydi, `?onboarding=1` majburlaydi
+const ONB_KEY = 'apirunner.onboarded'
+const onboarding = ref(false)
+function maybeOnboard() {
+  try {
+    const force = new URLSearchParams(location.search).has('onboarding')
+    if (force || (!navigator.webdriver && !localStorage.getItem(ONB_KEY))) onboarding.value = true
+  } catch { /* localStorage yo'q */ }
+}
+function finishOnboarding() { onboarding.value = false; try { localStorage.setItem(ONB_KEY, '1') } catch { /* ixtiyoriy */ } }
 function onKey(e: KeyboardEvent) {
   const mod = e.metaKey || e.ctrlKey
   const k = e.key.toLowerCase()
-  if (e.ctrlKey && e.key === 'Tab') { e.preventDefault(); tabs.next(e.shiftKey ? -1 : 1) }
+  if (e.key === '?' && !mod && !e.altKey && !isEditable(e.target)) { e.preventDefault(); shortcutsOpen.value = !shortcutsOpen.value }
+  else if (e.ctrlKey && e.key === 'Tab') { e.preventDefault(); tabs.next(e.shiftKey ? -1 : 1) }
   else if (mod && k === 'k') { e.preventDefault(); cmdkOpen.value = !cmdkOpen.value }
   else if (mod && k === 't' && e.shiftKey) { e.preventDefault(); tabs.reopenClosed() }
   else if (mod && k === 't') { e.preventDefault(); tabs.openNew() }
@@ -123,6 +137,7 @@ function onKey(e: KeyboardEvent) {
 // Hozircha faqat tab/daraxt yorliqlari; Cmd+T brauzerda band bo'lishi mumkin — Alt muqobili ham
 onMounted(async () => {
   window.addEventListener('keydown', onKey)
+  maybeOnboard()
   window.addEventListener('pagehide', flushTreeOnUnload)
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushTreeOnUnload() })
   await Promise.all([tree.load(), ws.load(), hist.load()])
@@ -230,6 +245,8 @@ function openRunnerWithData(name: string, text: string) {
     <MockDialog v-if="mockOf" :cid="mockOf.cid" :name="mockOf.name" @close="mockOf = null" />
     <ExportDialog v-if="exportOf" :cid="exportOf.cid" :name="exportOf.name" :requests="exportOf.requests" @close="exportOf = null" />
     <FindReplaceDialog v-if="findOpen" @close="findOpen = false" />
+    <ShortcutsDialog v-if="shortcutsOpen" @close="shortcutsOpen = false" />
+    <Onboarding v-if="onboarding" @close="finishOnboarding" />
     <ProxyDialog v-if="proxyOpen" @close="proxyOpen = false" />
     <MonitorDialog v-if="monitorOpen" @close="monitorOpen = false" />
     <TrashDialog v-if="trashOpen" @close="trashOpen = false" />

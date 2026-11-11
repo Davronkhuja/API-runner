@@ -241,9 +241,9 @@ def scenes(base, echo):
     def docs_edit(p):
         open_req(p, "Oddiy so'rov"); p.click("[data-testid=docs-btn]"); p.click("[data-testid=req-docs-edit]")
     S["docs-panel-edit"] = docs_edit
-    S["trash-dialog"] = lambda p: (p.click("[data-testid=trash-open]"), p.wait_for_selector("[data-testid=trash-row]"))
+    S["trash-dialog"] = lambda p: (p.click("[data-testid=sb-more]"), p.click("[data-testid=trash-open]"), p.wait_for_selector("[data-testid=trash-row]"))
     def find_dlg(p):
-        p.click("[data-testid=find-open]"); p.fill("[data-testid=fr-query]", "echo"); p.fill("[data-testid=fr-replacement]", "echo2"); p.wait_for_selector("[data-testid=fr-row]")
+        p.click("[data-testid=sb-more]"); p.click("[data-testid=find-open]"); p.fill("[data-testid=fr-query]", "echo"); p.fill("[data-testid=fr-replacement]", "echo2"); p.wait_for_selector("[data-testid=fr-row]")
     S["find-replace"] = find_dlg
     def setvar(p):
         open_req(p, "Oddiy so'rov"); p.click("[data-testid=url]"); p.keyboard.press("End")

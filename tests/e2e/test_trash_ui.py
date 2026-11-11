@@ -33,6 +33,7 @@ def delete_row(p, name):
 
 def test_deleted_request_is_in_trash_and_restores_into_its_folder(ui):
     delete_row(ui, "Alpha")
+    T(ui, "sb-more").click()
     T(ui, "trash-open").click()
     expect(T(ui, "trash-row")).to_have_count(1)
     expect(T(ui, "trash-name")).to_have_text("Alpha")
@@ -49,6 +50,7 @@ def test_deleted_request_is_in_trash_and_restores_into_its_folder(ui):
 def test_forever_and_empty_trash_ask_confirmation(ui):
     delete_row(ui, "Gamma")
     delete_row(ui, "Fold")
+    T(ui, "sb-more").click()
     T(ui, "trash-open").click()
     expect(T(ui, "trash-row")).to_have_count(2)
     T(ui, "trash-forever").first.click()
@@ -70,6 +72,7 @@ def test_deleted_environment_goes_to_trash_and_comes_back(ui):
     T(ui, "confirm-ok").click()
     expect(T(ui, "env-row").filter(has_text="Temp env")).to_have_count(0)
     ui.click("[data-testid=sb-collections]")
+    T(ui, "sb-more").click()
     T(ui, "trash-open").click()
     expect(T(ui, "trash-row")).to_contain_text("Temp env")
     T(ui, "trash-restore").click()
@@ -87,12 +90,14 @@ def test_collection_delete_from_context_menu_shows_request_count_and_goes_to_tra
     expect(T(ui, "confirm-dialog")).to_contain_text("3 ta so'rov")
     expect(T(ui, "confirm-dialog")).to_contain_text("Savatga")
     ui.keyboard.press("Escape")
+    expect(T(ui, "confirm-dialog")).to_have_count(0)                                       # overlay to'liq yopilgach qayta bosamiz
     expect(ui.locator("[data-testid=tree-row][data-name='Col']")).to_have_count(1)         # bekor qilindi
     ui.locator("[data-testid=tree-row][data-name='Col']").click(button="right")
     ui.click("[data-act=delete-collection]")
     T(ui, "confirm-ok").click()
     expect(ui.locator("[data-testid=tree-row][data-name='Col']")).to_have_count(0)
     expect(T(ui, "request-editor")).to_have_count(0)
+    T(ui, "sb-more").click()
     T(ui, "trash-open").click()
     expect(T(ui, "trash-row")).to_contain_text("Col")
     expect(T(ui, "trash-row")).to_contain_text("3 ta so'rov")

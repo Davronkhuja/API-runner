@@ -37,7 +37,7 @@ def edit_url(p, text="http://edited"):
 def test_open_many_tabs_simultaneously(ui):
     for n in ("Alfa", "Beta", "Gamma", "Delta"):
         open_perm(ui, n)
-    assert titles(ui) == ["Alfa", "Beta", "Gamma", "Delta"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Alfa", "Beta", "Gamma", "Delta"])
     for _ in range(6):
         ui.click("[data-testid=new-tab]")
     expect(ui.locator(TABS)).to_have_count(10)
@@ -48,7 +48,7 @@ def test_single_click_opens_preview_tab_italic_replaced_by_next_click(ui):
     expect(ui.locator(f"{TABS}.preview")).to_have_count(1)
     assert ui.locator(f"{TABS}.preview .title").evaluate("e => getComputedStyle(e).fontStyle") == "italic"
     row(ui, "Delta").click()
-    assert titles(ui) == ["Delta"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Delta"])
 
 
 def test_double_click_makes_tab_permanent(ui):
@@ -56,7 +56,7 @@ def test_double_click_makes_tab_permanent(ui):
     row(ui, "Gamma").dblclick()
     expect(ui.locator(f"{TABS}.preview")).to_have_count(0)
     row(ui, "Delta").click()
-    assert titles(ui) == ["Gamma", "Delta"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Gamma", "Delta"])
 
 
 def test_editing_preview_tab_makes_it_permanent(ui):
@@ -64,7 +64,7 @@ def test_editing_preview_tab_makes_it_permanent(ui):
     edit_url(ui)
     expect(ui.locator(f"{TABS}.preview")).to_have_count(0)
     row(ui, "Delta").click()
-    assert titles(ui) == ["Gamma", "Delta"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Gamma", "Delta"])
 
 
 def test_each_tab_keeps_independent_state_url_params_body_auth_scripts_response_scroll(ui, echo_server):
@@ -174,25 +174,25 @@ def _three(p):
 def test_context_menu_duplicate(ui):
     open_perm(ui, "Gamma")
     _ctx(ui, "Gamma", "dup")
-    assert titles(ui) == ["Gamma", "Gamma Copy"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Gamma", "Gamma Copy"])
 
 
 def test_context_menu_close(ui):
     _three(ui)
     _ctx(ui, "Gamma", "close")
-    assert titles(ui) == ["Alfa", "Delta"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Alfa", "Delta"])
 
 
 def test_context_menu_close_others(ui):
     _three(ui)
     _ctx(ui, "Gamma", "others")
-    assert titles(ui) == ["Gamma"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Gamma"])
 
 
 def test_context_menu_close_to_the_right(ui):
     _three(ui)
     _ctx(ui, "Gamma", "right")
-    assert titles(ui) == ["Alfa", "Gamma"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Alfa", "Gamma"])
 
 
 def test_context_menu_close_all(ui):
@@ -214,7 +214,7 @@ def test_context_menu_reveal_in_collection(ui):
 def test_drag_and_drop_reorder_tabs(ui):
     _three(ui)
     ui.locator(TABS, has_text="Delta").drag_to(ui.locator(TABS, has_text="Alfa"), target_position={"x": 3, "y": 10})
-    assert titles(ui) == ["Delta", "Alfa", "Gamma"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Delta", "Alfa", "Gamma"])
 
 
 def test_many_tabs_horizontal_scroll(ui):
@@ -243,7 +243,7 @@ def test_open_tabs_and_active_tab_restored_after_page_reload(ui):
     edit_url(ui, "http://drafted")
     ui.reload()                                        # DARHOL: kutish yo'q — pagehide'da flush qilinadi
     ui.wait_for_selector(TABS)
-    assert titles(ui) == ["Alfa", "Gamma", "Delta"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Alfa", "Gamma", "Delta"])
     expect(ui.locator(f"{TABS}.active .title")).to_have_text("Gamma")
     expect(ui.locator("[data-testid=url]")).to_have_text("http://drafted")
 
@@ -255,7 +255,7 @@ def test_open_tabs_and_active_tab_restored_after_server_restart(ui, app):
     app.restart()
     ui.goto(app.url)
     ui.wait_for_selector(TABS)
-    assert titles(ui) == ["Alfa", "Gamma", "Delta"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Alfa", "Gamma", "Delta"])
     expect(ui.locator(f"{TABS}.active .title")).to_have_text("Delta")
 
 
@@ -269,7 +269,7 @@ def test_shortcut_cmd_t_new_tab(ui):
 def test_shortcut_cmd_w_close_tab(ui):
     _three(ui)
     ui.keyboard.press("Control+w")
-    assert titles(ui) == ["Alfa", "Gamma"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Alfa", "Gamma"])
 
 
 def test_shortcut_ctrl_tab_next_and_ctrl_shift_tab_previous(ui):
@@ -283,15 +283,15 @@ def test_shortcut_ctrl_tab_next_and_ctrl_shift_tab_previous(ui):
 def test_shortcut_cmd_shift_t_reopen_closed_tab(ui):
     _three(ui)
     ui.keyboard.press("Control+w")
-    assert titles(ui) == ["Alfa", "Gamma"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Alfa", "Gamma"])
     ui.keyboard.press("Control+Shift+t")
-    assert titles(ui) == ["Alfa", "Gamma", "Delta"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Alfa", "Gamma", "Delta"])
 
 
 def test_opening_same_request_twice_switches_to_existing_tab(ui):
     _three(ui)
     row(ui, "Alfa").click()
-    assert titles(ui) == ["Alfa", "Gamma", "Delta"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Alfa", "Gamma", "Delta"])
     expect(ui.locator(f"{TABS}.active .title")).to_have_text("Alfa")
 
 
@@ -299,13 +299,13 @@ def test_environment_opens_as_tab(ui):
     ui.click("[data-testid=sb-environments]")
     ui.click("[data-testid=new-env]")
     expect(ui.locator("[data-testid=env-tab]")).to_be_visible()
-    assert "Yangi muhit" in titles(ui)
+    expect(ui.locator(f"{TABS} .title", has_text="Yangi muhit")).to_have_count(1)
 
 
 def test_collection_opens_as_tab(ui):
     ui.locator("[data-testid=tree-row][data-kind=collection]").dblclick()
     expect(ui.locator("[data-testid=tab-collection]")).to_be_visible()
-    assert titles(ui) == ["Col"]
+    expect(ui.locator(f"{TABS} .title")).to_have_text(["Col"])
 
 
 def test_runner_opens_as_tab(ui):
