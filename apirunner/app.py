@@ -5,8 +5,9 @@ import webbrowser
 
 from flask import Flask, Response, request, send_from_directory
 
-from .api import admin_api, importexport_api, monitors_api, protocols_api, workspaces_api, legacy, oauth, runs_api, security, workspace_api
+from .api import admin_api, importexport_api, monitors_api, protocols_api, proxy_api, workspaces_api, legacy, oauth, runs_api, security, workspace_api
 from .core.jobs import JobManager
+from .proxy import ProxyManager
 from .monitor import MonitorStore, Scheduler
 from .core.run_engine import RunManager
 from .storage.cookies import CookieStore
@@ -59,6 +60,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.config["STARTED_AT"] = time.time()
     app.extensions["protocols"] = ProtocolManager()
     app.extensions["mocks"] = MockManager()
+    app.extensions["proxy"] = ProxyManager()
     app.config.update(UPLOAD_DIR=upload_dir)
     result = bind_workspace(app, registry.active_dir(), saved_file if registry.active == DEFAULT_ID else "", backup_dir, upload_dir)
     app.config.update(SESSION_TOKEN=session_token or security.new_token(), MIGRATION=result["legacy"], MIGRATION_RESULT=result)
@@ -75,6 +77,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.register_blueprint(protocols_api.bp)
     app.register_blueprint(workspaces_api.bp)
     app.register_blueprint(monitors_api.bp)
+    app.register_blueprint(proxy_api.bp)
     app.register_blueprint(oauth.bp)
 
     static = os.path.join(PKG_DIR, "static")

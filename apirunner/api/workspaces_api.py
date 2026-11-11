@@ -65,6 +65,7 @@ def activate(wid):
     for r in ext["run_manager"].active():
         r.stop.set()
     ext["mocks"].stop_all()
+    ext["proxy"].stop()
     ext["protocols"].shutdown()
     ext["protocols"].sessions.clear()
     target = reg.get(wid)["path"]

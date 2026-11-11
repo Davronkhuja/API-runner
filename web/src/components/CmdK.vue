@@ -6,7 +6,7 @@ import { useTree } from '../stores/tree'
 import { useWorkspace } from '../stores/workspace'
 import { openRequest } from '../lib/actions'
 import { methodOf } from '../lib/draft'
-import { cmdkOpen, findOpen, wsExportOpen, importOpen, sidePanel, trashOpen, monitorOpen } from '../lib/ui'
+import { cmdkOpen, findOpen, wsExportOpen, importOpen, sidePanel, trashOpen, monitorOpen, proxyOpen } from '../lib/ui'
 import { toggleTheme } from '../lib/theme'
 import { isFolder, type RequestItem, type TreeItem } from '../types/model'
 import Icon from './Icon.vue'
@@ -38,6 +38,7 @@ const others = computed<Hit[]>(() => [
   { key: 'a:export-ws', kind: 'action', label: 'Eksport: workspace zaxirasi (zip)', sub: '', run: () => { wsExportOpen.value = true } },
   { key: 'a:trash', kind: 'action', label: 'Savat', sub: '30 kun', run: () => { trashOpen.value = true } },
   { key: 'a:monitor', kind: 'action', label: 'Monitor', sub: 'Rejalashtirilgan run\'lar', run: () => { monitorOpen.value = true } },
+  { key: 'a:proxy', kind: 'action', label: 'Proxy capture', sub: 'Trafikni yozib olish', run: () => { proxyOpen.value = true } },
   { key: 'a:theme', kind: 'action', label: 'Temani almashtirish', sub: '', run: toggleTheme },
   { key: 'a:import', kind: 'action', label: 'Import (Postman, OpenAPI)', sub: '.json', run: () => { importOpen.value = true } },
   { key: 'a:runner', kind: 'action', label: 'Runner', sub: 'Collection Runner', run: () => { sidePanel.value = 'runner'; const m = tree.metas[0]; if (m) tabs.open('runner', m.id, 'Runner: ' + m.name, { permanent: true }) } },
