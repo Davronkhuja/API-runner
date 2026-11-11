@@ -10,6 +10,7 @@ from .core.jobs import JobManager
 from .core.run_engine import RunManager
 from .storage.cookies import CookieStore
 from .core.protocols import ProtocolManager
+from .mock import MockManager
 from .storage.db import StateDB
 from .storage.runs import RunStore
 from . import __version__
@@ -38,6 +39,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.config["STARTED_AT"] = time.time()
     app.extensions["trash"] = ws.trash
     app.extensions["protocols"] = ProtocolManager()
+    app.extensions["mocks"] = MockManager()
     app.extensions["trash"].purge_expired()                          # 30 kundan oshganlar ishga tushganda tozalanadi
     app.extensions["db"] = StateDB(os.path.join(ws.root, "state.db"))
     app.extensions["backup_dir"] = backup_dir

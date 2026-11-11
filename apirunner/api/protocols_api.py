@@ -152,3 +152,47 @@ def export(sid):
     else:
         body, mime, ext = json.dumps({"session": s.summary(), "events": evs}, indent=2, ensure_ascii=False), "application/json", "json"
     return Response(body, mimetype=mime, headers={"Content-Disposition": f'attachment; filename="{s.kind}-{sid}.{ext}"'})
+
+
+# ── Mock server (UI'dan ishga tushirish) ──
+def _mocks():
+    return current_app.extensions["mocks"]
+
+
+def _mock_json(m):
+    return {"id": m.id, "url": m.url, "port": m.port, "collection": m.collection, "collection_id": m.collection_id, "delay_ms": m.delay_ms, "routes": m.summary_routes(), "running": True}
+
+
+@bp.post("/mocks")
+def mock_start():
+    d = request.get_json(silent=True) or {}
+    try:
+        col = current_app.extensions["workspace"].get_collection(d.get("collection_id") or "")
+    except Exception:                               # noqa: BLE001
+        return jsonify({"error": "Collection topilmadi"}), 404
+    port = d.get("port") or 0
+    if not isinstance(port, int) or not 0 <= port <= 65535:
+        return jsonify({"error": "Port 0–65535 oralig'ida bo'lsin (0 — avtomatik)"}), 400
+    try:
+        m = _mocks().start(col, port, d.get("delay_ms") or 0, d.get("folder") or None)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(_mock_json(m))
+
+
+@bp.get("/mocks")
+def mock_list():
+    return jsonify([_mock_json(m) for m in _mocks().mocks.values()])
+
+
+@bp.get("/mocks/<mid>/log")
+def mock_log(mid):
+    m = _mocks().get(mid)
+    if not m:
+        return jsonify({"entries": [], "running": False})
+    return jsonify({"entries": m.entries(request.args.get("from", 0, type=int)), "running": True, "next": m.seq})
+
+
+@bp.post("/mocks/<mid>/stop")
+def mock_stop(mid):
+    return jsonify({"ok": _mocks().stop(mid)})
