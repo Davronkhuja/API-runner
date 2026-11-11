@@ -164,3 +164,24 @@ def test_code_dialog_height_follows_the_content(page):
     tall = page.locator(".dialog.dlg").bounding_box()
     assert short < 330 and tall["height"] > short + 200                                              # qisqa kodda katta oq maydon yo'q, uzunida o'sadi
     assert tall["height"] <= page.viewport_size["height"] - 60
+
+
+@pytest.mark.parametrize("name", ["runner", "runner-results", "runner-compare"])
+def test_runner_results_table_stays_usable_at_125_percent_zoom(world, browser, name):
+    """Yakuniy audit topilmasi (v3.0.0): 1152×720 (125% zoom) da natijalar jadvali ~40 px ga siqilib, ustun sarlavhalari ustma-ust tushardi."""
+    app, echo = world
+    ctx = browser.new_context(viewport={"width": 1152, "height": 720}, locale="uz")
+    p = ctx.new_page()
+    p.goto(app.url)
+    p.wait_for_selector("[data-testid=app]")
+    p.add_style_tag(content="*{caret-color:transparent!important;animation:none!important;transition:none!important}")
+    p.echo, p.app = echo, app
+    go(p, name)
+    h = p.locator(".result-table").bounding_box()["height"]
+    assert h >= 250, h
+    heads = p.locator(".res.head span").evaluate_all("els => els.map(e => { const r = e.getBoundingClientRect(); return [r.left, r.right] })")
+    for a, b in zip(heads, heads[1:]):
+        assert a[1] <= b[0] + 1, heads                                  # sarlavhalar ustma-ust tushmaydi
+    found = p.evaluate(DETECT)
+    assert not [f for f in found if f["kind"] in ("clipped-text", "page-hscroll")], found
+    ctx.close()

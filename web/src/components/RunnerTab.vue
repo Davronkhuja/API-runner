@@ -204,7 +204,7 @@ defineExpose({ loadData })
           </div>
         </div>
         <div class="res head"><span>Iter.</span><span>Metod</span><span>So'rov</span><span>Status</span><span>Vaqt</span><span>Testlar</span></div>
-        <div class="scroll" style="flex:1;overflow-y:auto" data-testid="runner-results">
+        <div class="scroll" style="flex:1;overflow-y:auto" data-testid="runner-results" tabindex="0" role="region" aria-label="Natijalar jadvali">
           <template v-for="r in filtered" :key="keyOf(r)">
             <div class="res" data-testid="runner-row" role="button" tabindex="0" :aria-expanded="expanded.has(keyOf(r))" @click="toggle(r)" @keydown.enter="toggle(r)">
               <span class="muted" style="font-family:var(--font-mono)">#{{ r.iter }}</span>
