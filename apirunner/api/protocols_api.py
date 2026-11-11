@@ -1,5 +1,6 @@
 """WebSocket / SSE sessiyalari: ulanish (server tomonida), oqim, yuborish, yopish, eksport. GraphQL sxema keshi."""
 import json
+import time
 
 import httpx
 from flask import Blueprint, Response, current_app, jsonify, request, stream_with_context
@@ -196,3 +197,51 @@ def mock_log(mid):
 @bp.post("/mocks/<mid>/stop")
 def mock_stop(mid):
     return jsonify({"ok": _mocks().stop(mid)})
+
+
+# ── GraphQL sxema keshi (diskda: workspace/schemas/) ──
+def _schema_path(key):
+    import hashlib
+    import os
+    ws = current_app.extensions["workspace"]
+    d = os.path.join(ws.root, "schemas")
+    os.makedirs(d, exist_ok=True)
+    return os.path.join(d, hashlib.sha256(key.encode("utf-8")).hexdigest()[:32] + ".json")
+
+
+@bp.get("/graphql/schema")
+def gql_schema_get():
+    import os
+    key = (request.args.get("key") or "").strip()
+    if not key:
+        return jsonify({"error": "key kerak"}), 400
+    p = _schema_path(key)
+    if not os.path.exists(p):
+        return jsonify({"cached": False})
+    try:
+        with open(p, encoding="utf-8") as f:
+            return jsonify({"cached": True, **json.load(f)})
+    except (OSError, ValueError):
+        return jsonify({"cached": False})
+
+
+@bp.put("/graphql/schema")
+def gql_schema_put():
+    from ..storage.atomic import atomic_write_json
+    d = request.get_json(silent=True) or {}
+    key, intro = (d.get("key") or "").strip(), d.get("introspection")
+    if not key or not isinstance(intro, dict) or "__schema" not in intro:
+        return jsonify({"error": "key va introspection (data.__schema) kerak"}), 400
+    if len(json.dumps(intro)) > 20 * 1024 * 1024:
+        return jsonify({"error": "Sxema 20 MB dan katta"}), 400
+    atomic_write_json(_schema_path(key), {"key": key, "fetched_at": time.time(), "introspection": intro})
+    return jsonify({"ok": True})
+
+
+@bp.delete("/graphql/schema")
+def gql_schema_delete():
+    import os
+    p = _schema_path((request.args.get("key") or "").strip())
+    if os.path.exists(p):
+        os.remove(p)
+    return jsonify({"ok": True})
