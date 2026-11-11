@@ -1,3 +1,7 @@
+<script lang="ts">
+const stack: symbol[] = []            // ochiq dialoglar (eng ustkisi oxirida); modul darajasida — hamma nusxa uchun umumiy
+</script>
+
 <script setup lang="ts">
 /**
  * YAGONA dialog komponenti: sarlavha va pastki tugmalar doim ko'rinadi, faqat tana scroll bo'ladi (max-height: viewport − 64px).
@@ -5,20 +9,25 @@
  */
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
+
 const props = withDefaults(defineProps<{ title?: string; testid?: string; width?: string; closable?: boolean; top?: boolean; bodyClass?: string }>(), { width: '520px', closable: true })
 const emit = defineEmits<{ close: [] }>()
 const box = ref<HTMLElement>()
 let prev: HTMLElement | null = null
+const me = Symbol('dialog')
+// Fokus dialog ichidagi element o'chib ketsa (masalan «Qayta urinish») body'ga tushadi — Esc baribir eng ustki dialogni yopsin
+const onDocKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented && props.closable && stack[stack.length - 1] === me) { e.preventDefault(); emit('close') } }
 const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]),[contenteditable=true]'
 const focusables = () => [...(box.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])].filter(e => e.offsetParent !== null)
 
 onMounted(async () => {
+  stack.push(me); document.addEventListener('keydown', onDocKey)
   prev = document.activeElement as HTMLElement | null
   await nextTick()
   const el = box.value?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables().find(e => !e.closest('.dlg-head')) ?? box.value
   el?.focus()
 })
-onBeforeUnmount(() => { if (prev && document.contains(prev)) prev.focus() })
+onBeforeUnmount(() => { document.removeEventListener('keydown', onDocKey); const i = stack.indexOf(me); if (i >= 0) stack.splice(i, 1); if (prev && document.contains(prev)) prev.focus() })
 
 function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape' && props.closable) { e.stopPropagation(); e.preventDefault(); emit('close'); return }

@@ -7,6 +7,7 @@ import { useWorkspace } from '../stores/workspace'
 import SettingsForm from './SettingsForm.vue'
 import { dense, layout } from '../lib/view'
 import Icon from './Icon.vue'
+import StateBlock from './StateBlock.vue'
 import { exportLegacy, importLocalStorage } from '../lib/migrate'
 import type { ReqSettings } from '../lib/settings'
 
@@ -23,10 +24,10 @@ async function cleanFiles() {
   try { const r = await post('/api/files/cleanup'); showToast(`${r.removed} ta fayl o'chirildi (${fmtBytes(r.freed)})`, 'success'); await loadFiles() }
   catch (e: any) { showToast(e.message, 'error') }
 }
+const loadErr = ref('')
 async function load() {
   loadFiles()
-  backups.value = await get('/api/backups')
-  status.value = await get('/api/status')
+  try { backups.value = await get('/api/backups'); status.value = await get('/api/status'); loadErr.value = '' } catch (e: any) { loadErr.value = e.message || 'Server javob bermadi' }
 }
 async function create() {
   busy.value = true
@@ -71,6 +72,7 @@ onMounted(load)
       <button v-for="n in NAV" :key="n[0]" :class="{ on: sec === n[0] }" :data-nav="n[0]" @click="go(n[0])">{{ n[1] }}</button>
     </nav>
     <div class="settings-main" ref="mainEl">
+      <StateBlock v-if="loadErr" kind="error" :text="`Zaxira va holat ma'lumotlarini o'qib bo'lmadi: ${loadErr}`" testid="settings-load-error" @retry="load" />
     <div class="muted" data-testid="settings-status" v-if="status">Versiya {{ status.version }} · sxema {{ status.schemaVersion }}</div>
     <h4 id="s-view">Ko'rinish</h4>
     <div class="view-opts" data-testid="view-settings">

@@ -65,3 +65,90 @@ def test_onboarding_steps_skip_and_remembered(app, page):
 def test_no_onboarding_in_automated_browser_by_default(app, page):
     boot(app, page)
     expect(T(page, "onboarding")).to_have_count(0)
+
+
+# ── yuklanish / xato / bo'sh holatlari ──
+def fail_once(page, pattern):
+    state = {"n": 0}
+
+    def handler(route):
+        state["n"] += 1
+        if state["n"] == 1:
+            route.fulfill(status=500, content_type="application/json", body='{"error": "Server xatosi"}')
+        else:
+            route.continue_()
+    page.route(pattern, handler)
+
+
+def test_trash_shows_loading_then_error_with_retry_then_empty(app, page):
+    boot(app, page)
+    state = {"n": 0}
+
+    def handler(route):
+        state["n"] += 1
+        if state["n"] == 1:
+            page.wait_for_timeout(400)                                        # yuklanish holati ko'rinsin
+            route.fulfill(status=500, content_type="application/json", body='{"error": "Server xatosi"}')
+        else:
+            route.continue_()
+    page.route("**/api/trash", handler)
+    T(page, "sb-more").click()
+    T(page, "trash-open").click()
+    expect(T(page, "trash-loading")).to_be_visible()
+    expect(T(page, "trash-error")).to_contain_text("Server xatosi")
+    expect(T(page, "trash-empty")).to_have_count(0)                           # xato «Savat bo'sh» deb ko'rsatilmaydi
+    T(page, "trash-error").locator("[data-testid=state-retry]").click()
+    expect(T(page, "trash-empty")).to_be_visible()
+
+
+def test_monitor_and_cookies_show_error_and_recover(app, page):
+    boot(app, page)
+    fail_once(page, "**/api/monitors")
+    T(page, "monitor-open").click()
+    expect(T(page, "mon-load-error")).to_be_visible()
+    T(page, "mon-load-error").locator("[data-testid=state-retry]").click()
+    expect(T(page, "mon-empty")).to_be_visible()
+    page.keyboard.press("Escape")
+    fail_once(page, "**/api/cookies")
+    T(page, "cookies-btn").click()
+    expect(T(page, "cookies-error")).to_be_visible()
+    T(page, "cookies-error").locator("[data-testid=state-retry]").click()
+    expect(T(page, "cookies-empty")).to_be_visible()
+
+
+def test_settings_load_error_is_shown_not_swallowed(app, page):
+    boot(app, page)
+    fail_once(page, "**/api/backups")
+    T(page, "settings-btn").click()
+    expect(T(page, "settings-load-error")).to_be_visible()
+    T(page, "settings-load-error").locator("[data-testid=state-retry]").click()
+    expect(T(page, "settings-load-error")).to_have_count(0)
+
+
+def test_escape_closes_dialog_even_when_focused_button_was_removed(app, page):
+    boot(app, page)
+    app.api("POST", "/api/collections", {"name": "C"})
+    page.reload()
+    page.wait_for_selector("[data-testid=app]")
+    T(page, "monitor-open").click()
+    T(page, "mon-new").click()                                            # fokusdagi tugma («Yangi monitor») DOM'dan o'chadi
+    expect(T(page, "monitor-form")).to_be_visible()
+    page.keyboard.press("Escape")
+    expect(T(page, "monitor-dialog")).to_have_count(0)
+
+
+def test_escape_closes_only_the_topmost_of_stacked_dialogs(app, page):
+    boot(app, page)
+    app.api("POST", "/api/collections", {"name": "C"})
+    page.reload()
+    page.wait_for_selector("[data-testid=app]")
+    T(page, "monitor-open").click()
+    T(page, "mon-new").click()
+    T(page, "mon-save").click()
+    expect(T(page, "mon-item")).to_have_count(1)
+    T(page, "mon-del").click()                                            # ustiga tasdiq dialogi
+    expect(T(page, "confirm-dialog")).to_be_visible()
+    page.evaluate("document.activeElement && document.activeElement.blur()")     # fokus body'ga tushdi
+    page.keyboard.press("Escape")
+    expect(T(page, "confirm-dialog")).to_have_count(0)
+    expect(T(page, "monitor-dialog")).to_be_visible()
