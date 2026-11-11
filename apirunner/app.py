@@ -5,8 +5,9 @@ import webbrowser
 
 from flask import Flask, Response, request, send_from_directory
 
-from .api import admin_api, importexport_api, protocols_api, workspaces_api, legacy, oauth, runs_api, security, workspace_api
+from .api import admin_api, importexport_api, monitors_api, protocols_api, workspaces_api, legacy, oauth, runs_api, security, workspace_api
 from .core.jobs import JobManager
+from .monitor import MonitorStore, Scheduler
 from .core.run_engine import RunManager
 from .storage.cookies import CookieStore
 from .core.protocols import ProtocolManager
@@ -35,6 +36,7 @@ def bind_workspace(app, ws_dir, saved_file, backup_dir, upload_dir):
     ext["cookies"] = CookieStore(os.path.join(ws.root, "state.db"))
     ext["runs"] = RunStore(ext["db"])
     ext["run_manager"] = RunManager(ext["runs"], ext["db"], ws, ext["cookies"], (upload_dir, ws.root))
+    ext["monitors"] = MonitorStore(ws.root)
     ext["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root), cookies=ext["cookies"], workspace=ws)
     return result
 
@@ -61,6 +63,9 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     result = bind_workspace(app, registry.active_dir(), saved_file if registry.active == DEFAULT_ID else "", backup_dir, upload_dir)
     app.config.update(SESSION_TOKEN=session_token or security.new_token(), MIGRATION=result["legacy"], MIGRATION_RESULT=result)
 
+    app.extensions["scheduler"] = Scheduler(app)
+    if not os.environ.get("APIRUNNER_TESTING"):
+        app.extensions["scheduler"].start()          # testlarda tick() qo'lda chaqiriladi
     security.install(app)
     app.register_blueprint(legacy.bp)
     app.register_blueprint(workspace_api.bp)
@@ -69,6 +74,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.register_blueprint(importexport_api.bp)
     app.register_blueprint(protocols_api.bp)
     app.register_blueprint(workspaces_api.bp)
+    app.register_blueprint(monitors_api.bp)
     app.register_blueprint(oauth.bp)
 
     static = os.path.join(PKG_DIR, "static")

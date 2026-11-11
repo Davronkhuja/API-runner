@@ -5,7 +5,7 @@ import { useTree } from './stores/tree'
 import { useWorkspace } from './stores/workspace'
 import { useHistory } from './stores/history'
 import { put, get, keepalivePut } from './api/client'
-import { askClose, closeDialog, confirmDialog, exportOf, findOpen, mockOf, wsExportOpen, importOpen, toast, trashOpen } from './lib/ui'
+import { askClose, closeDialog, confirmDialog, exportOf, findOpen, mockOf, monitorOpen, wsExportOpen, importOpen, toast, trashOpen } from './lib/ui'
 import { suggestName } from './lib/rename'
 import { clamp, drag } from './lib/resize'
 import { createRequestIn, saveAsHandler, saveTab, sendTab, openRequest } from './lib/actions'
@@ -19,6 +19,7 @@ import ExampleTab from './components/ExampleTab.vue'
 import RestartOverlay from './components/RestartOverlay.vue'
 import WorkspaceExportDialog from './components/WorkspaceExportDialog.vue'
 import MockDialog from './components/MockDialog.vue'
+import MonitorDialog from './components/MonitorDialog.vue'
 import ExportDialog from './components/ExportDialog.vue'
 import FindReplaceDialog from './components/FindReplaceDialog.vue'
 import TrashDialog from './components/TrashDialog.vue'
@@ -228,6 +229,7 @@ function openRunnerWithData(name: string, text: string) {
     <MockDialog v-if="mockOf" :cid="mockOf.cid" :name="mockOf.name" @close="mockOf = null" />
     <ExportDialog v-if="exportOf" :cid="exportOf.cid" :name="exportOf.name" :requests="exportOf.requests" @close="exportOf = null" />
     <FindReplaceDialog v-if="findOpen" @close="findOpen = false" />
+    <MonitorDialog v-if="monitorOpen" @close="monitorOpen = false" />
     <TrashDialog v-if="trashOpen" @close="trashOpen = false" />
     <Dialog v-if="saveAs" title="So'rovni saqlash" testid="saveas-dialog" width="460px" @close="saveAs.resolve(false); saveAs = null">
       <label class="dlg-field"><span>Nomi</span><input v-model="saveAs.name" style="width:100%" data-testid="saveas-name" data-autofocus @keydown.enter="confirmSaveAs"></label>

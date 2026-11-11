@@ -13,6 +13,7 @@ export const mockOf = ref<{ cid: string; name: string } | null>(null)
 export const wsExportOpen = ref(false)
 export const exportOf = ref<{ cid: string; name: string; requests?: number } | null>(null)
 export const trashOpen = ref(false)
+export const monitorOpen = ref(false)
 
 export const toast = ref<{ msg: string; kind: string } | null>(null)
 let tt: ReturnType<typeof setTimeout>
