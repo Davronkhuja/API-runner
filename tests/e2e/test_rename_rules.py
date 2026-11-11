@@ -2,6 +2,8 @@
 import pytest
 from playwright.sync_api import expect
 
+from tests.e2e.conftest import eventually
+
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
 URL_NAME = "https://api.online-mahalla.uz/v1/hm/projects/item?x=1"
 
@@ -44,12 +46,14 @@ def test_get_and_post_can_share_a_name_in_one_folder_and_be_renamed_again(ui, ap
     rename(ui, "other", "v1/hm/projects")                                                      # POST ham GET bilan bir xil nom
     T(ui, "rename-input").press("Enter")
     expect(T(ui, "rename-input")).to_have_count(0)
+    eventually(lambda: (lambda n: n["g"] == n["p"] == "v1/hm/projects")(names(app, ui.cid)))         # saqlash asinxron
     n = names(app, ui.cid)
     assert n["g"] == n["p"] == "v1/hm/projects"
     expect(ui.locator("[data-name='v1/hm/projects']")).to_have_count(2)
     ui.locator("[data-name='v1/hm/projects']").nth(1).press("F2")                              # qayta nomlash ham ishlaydi
     T(ui, "rename-input").fill("renamed")
     T(ui, "rename-input").press("Enter")
+    eventually(lambda: names(app, ui.cid)["p"] == "renamed")
     n = names(app, ui.cid)
     assert n["g"] == "v1/hm/projects" and n["p"] == "renamed"
 
@@ -65,11 +69,11 @@ def test_same_name_and_method_shows_soft_gray_warning_but_saves(ui, app):
     rename(ui, "tmp", "same")                                                                  # GET + GET, nom bir xil
     expect(T(ui, "name-warn")).to_contain_text("nomi va metodi (GET) bir xil")
     T(ui, "rename-input").press("Enter")
-    assert names(app, ui.cid)["g3"] == "same"                                                  # bloklanmadi
+    eventually(lambda: names(app, ui.cid)["g3"] == "same")                                                  # bloklanmadi
     rename(ui, "other", "same")                                                                # POST — metod boshqa: ogohlantirish yo'q
     expect(T(ui, "name-warn")).to_have_count(0)
     T(ui, "rename-input").press("Enter")
-    assert names(app, ui.cid)["p"] == "same"
+    eventually(lambda: names(app, ui.cid)["p"] == "same")
 
 
 def test_folders_follow_the_same_rule(ui, app):
@@ -77,6 +81,7 @@ def test_folders_follow_the_same_rule(ui, app):
     expect(T(ui, "name-warn")).to_contain_text("shu nomli papka")
     T(ui, "rename-input").press("Enter")
     expect(T(ui, "rename-input")).to_have_count(0)
+    eventually(lambda: (lambda n: n["f"] == n["f2"] == "Fold")(names(app, ui.cid)))
     n = names(app, ui.cid)
     assert n["f"] == n["f2"] == "Fold"
 
@@ -85,7 +90,7 @@ def test_url_named_request_gets_short_host_less_suggestion_on_rename(ui, app):
     ui.locator(f"[data-name='{URL_NAME}']").first.press("F2")
     expect(T(ui, "rename-input")).to_have_value("v1/hm/projects/item")                         # host va query yo'q
     T(ui, "rename-input").press("Enter")
-    assert names(app, ui.cid)["u"] == "v1/hm/projects/item"
+    eventually(lambda: names(app, ui.cid)["u"] == "v1/hm/projects/item")
 
 
 def test_save_dialog_suggests_path_name_for_unnamed_request(ui, app):
