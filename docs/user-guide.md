@@ -48,7 +48,7 @@ Yozuvchi so'rovlar (POST/PUT/DELETE) **Prod** muhitda yuborilganda tasdiq so'ral
 Matnni belgilab **«Set as variable»** bilan o'zgaruvchi yarating. Dinamik: `{{$guid}}`, `{{$timestamp}}`, `{{$randomInt}}` va boshqalar.
 
 ## 5. Collection, papka, Example, hujjat
-- Daraxtda sudrab ko'chirish (DnD), nomini o'zgartirish (F2/ikki marta bosish), nusxa, ko'chirish, ko'p tanlash.
+- Daraxtda sudrab ko'chirish (DnD), nomini o'zgartirish, nusxa, ko'chirish, ko'p tanlash.
 - **Papka/Collection Overview:** statistika, meros auth, tavsif (Markdown), **Runner** va **Mock server**, **Hujjat yaratish** tugmalari.
 ![Overview](img/folder-overview-80.png)
 - **Example** — saqlangan javob namunasi; daraxtda so'rov ostida ko'rinadi, alohida tabda tahrirlanadi (status, header, body). Mock server shulardan ishlaydi.
