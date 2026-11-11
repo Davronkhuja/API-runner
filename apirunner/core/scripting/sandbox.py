@@ -127,18 +127,19 @@ class ScriptSession:
         if quickjs is None:
             raise RuntimeError("quickjs-ng o'rnatilmagan")
         self.limits, self.host = limits, host
-        self.deadline = time.monotonic() + limits.timeout_ms / 1000.0
+        self.deadline = float("inf")                       # foydalanuvchi skripti byudjeti kontekst tayyor bo'lgach boshlanadi (quyida)
         self.sent = 0
         self.aborted = False
         self.errors = []
         self.ctx = quickjs.Context()
         self.ctx.set_memory_limit(limits.memory_mb * 1024 * 1024)
         self.ctx.set_max_stack_size(limits.stack_kb * 1024)
-        self._eval("globalThis.__LIBS=" + _libs_json())            # matn sifatida (baholanmaydi): JS tomonida lazy eval
-        self._eval("globalThis.__POOL=" + json.dumps(list(os.urandom(8192))))   # crypto.getRandomValues uchun
-        self._eval(_read("__prelude__"))
-        self._eval("__init(%s)" % json.dumps(json.dumps({
+        self._host_eval("globalThis.__LIBS=" + _libs_json())            # matn sifatida (baholanmaydi): JS tomonida lazy eval
+        self._host_eval("globalThis.__POOL=" + json.dumps(list(os.urandom(8192))))   # crypto.getRandomValues uchun
+        self._host_eval(_read("__prelude__"))
+        self._host_eval("__init(%s)" % json.dumps(json.dumps({
             "scopes": scopes, "request": request, "info": info, "activeEnv": active_env, "envName": env_name, "cookies": cookies or []})))
+        self.deadline = time.monotonic() + limits.timeout_ms / 1000.0         # vaqt chegarasi faqat foydalanuvchi skriptlariga: tayyorlash (yuklama ostida sekin bo'lishi mumkin) uni yemaydi
 
     # ── host navbati ──
     def _serve(self, item):
@@ -159,6 +160,13 @@ class ScriptSession:
     # ── bajarish ──
     def _remaining(self):
         return self.deadline - time.monotonic()
+
+    HOST_LIMIT = 10.0                                      # ichki (host) chaqiruvlar: skript byudjetiga bog'liq emas
+
+    def _host_eval(self, code):
+        """Sandbox'ni tayyorlash/holat berish: foydalanuvchi vaqt byudjetidan mustaqil, qisqa mutlaq chegara bilan."""
+        self.ctx.set_time_limit(self.HOST_LIMIT)
+        return self.ctx.eval(code)
 
     def _eval(self, code):
         rem = self._remaining()
@@ -215,7 +223,7 @@ class ScriptSession:
             self._eval("__runDueTimers()")
 
     def set_response(self, response):
-        self._eval("__setResponse(%s)" % json.dumps(json.dumps(response)))
+        self._host_eval("__setResponse(%s)" % json.dumps(json.dumps(response)))
 
     def run(self, script):
         self._seq = getattr(self, "_seq", 0) + 1
@@ -233,10 +241,10 @@ class ScriptSession:
 
     def set_sent_request(self, view):
         """Test skriptlari uchun: pm.request — yuborilgan (o'zgaruvchilari yechilgan) so'rov."""
-        self._eval("__setSent(%s)" % json.dumps(json.dumps(view)))
+        self._host_eval("__setSent(%s)" % json.dumps(json.dumps(view)))
 
     def set_event(self, name):
-        self._eval("__setEvent(%s)" % json.dumps(name))
+        self._host_eval("__setEvent(%s)" % json.dumps(name))
 
     def collect_state(self):
         """Oraliq holat (pre-request tugagach): scope'lar, o'zgargan so'rov, skip. Kontekst tirik qoladi."""

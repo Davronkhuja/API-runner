@@ -2,6 +2,14 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.7.2] — 2026-11-09 — Fix: skript sandbox vaqt byudjeti (beqaror test sababi)
+### Fixed
+- **Skript sandbox:** `ScriptSession` vaqt chegarasi (`timeout_ms`) kontekstni tayyorlash (kutubxonalar, prelude) va ichki chaqiruvlar (`set_event`, `set_response`, `set_sent_request`) davomida ham yurardi. Yuklama ostida bu 100 ms+ ketsa, ichki chaqiruvlar tutilmagan `ScriptTimeout` bilan **500 xato** berardi (`test_limits_api_clamps_and_applies` ning beqarorligi shundan edi: 24 parallel jarayonda 22 tasi yiqildi). Endi byudjet tayyorlash tugagach boshlanadi, ichki chaqiruvlar alohida mutlaq chegara bilan ishlaydi; foydalanuvchi skripti chegaradan oshsa oldingidek `TimeoutError` hisobotiga tushadi.
+- Regressiya testi `test_sandbox_bookkeeping_is_not_bounded_by_the_script_time_budget` (tuzatishsiz yiqiladi).
+- Vizual testlar fixture'iga diagnostika: UI yuklanmasa (bir marta kuzatilgan, qayta ishlab chiqarilmadi: JS bundle so'ralmagan, `[data-testid=app]` 30 s kutildi) xatoga konsol/sahifa/so'rov xatolari qo'shiladi.
+### Added
+- `CLAUDE.md`: loyiha, git, ma'lumot xavfsizligi, "tayyor" mezoni (to'liq majmua bir butun holda, beqaror testlar sababi topiladi) va UI qoidalari.
+
 ## [2.7.1] — 2026-11-09 — Workspace zip: sukut bo'yicha maxfiysiz, ixtiyoriy shifrlash
 ### Changed
 - **Workspace zip eksporti sukut bo'yicha** maxfiy (secret) o'zgaruvchi qiymatlari, **Current** qiymatlar (muhit, globals, collection) va auth hisob ma'lumotlari (token, parol, secret kalitlar; login nomi qoladi) **bo'sh** ketadi. Tarix/javoblar/cookie bazasi (`state.db`) ham sukut bo'yicha kirmaydi (ularda token bo'lishi mumkin) va faqat maxfiylar yoqilganda qo'shilishi mumkin.

@@ -42,9 +42,17 @@ def vp(request, app, browser):
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, device_scale_factor=1, locale="uz")
     ctx.add_init_script(f"try {{ localStorage.setItem('apiRunnerTheme', '{request.param}') }} catch (e) {{}}")
     page = ctx.new_page()
+    diag = []
+    page.on("console", lambda m: diag.append(f"console.{m.type}: {m.text}") if m.type in ("error", "warning") else None)
+    page.on("pageerror", lambda e: diag.append(f"pageerror: {e}"))
+    page.on("requestfailed", lambda r: diag.append(f"requestfailed: {r.url} {r.failure}"))
+    page.on("crash", lambda: diag.append("PAGE CRASHED"))
     page.route("**/run_one", canned())
     page.goto(app.url)
-    page.wait_for_selector("[data-testid=app]")
+    try:
+        page.wait_for_selector("[data-testid=app]")
+    except Exception as exc:                          # beqaror yuklanish: sababni xabarga chiqaramiz (jim "boshqa yurishda o'tdi" bo'lmasin)
+        raise AssertionError(f"UI yuklanmadi ({request.param}): {exc}\nDiagnostika: {diag}\nHTML uzunligi: {len(page.content())}, URL: {page.url}") from exc
     page.add_style_tag(content=HIDE)
     page.theme = request.param
     yield page
