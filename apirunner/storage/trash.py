@@ -10,7 +10,7 @@ from . import model, tree_ops
 from .atomic import atomic_write_json  # noqa: F401  (workspace bilan bir xil yozuv)
 
 RETENTION_DAYS = 30
-KINDS = ("item", "collection", "environment")
+KINDS = ("item", "collection", "environment", "workspace")
 
 
 class TrashError(ValueError):
@@ -54,6 +54,10 @@ class Trash:
     def add_environment(self, env):
         return self._put("environment", env.get("name", ""), env, {"environment_id": env.get("id"), "values": len(env.get("values", []))})
 
+    def add_workspace(self, item, moved_to):
+        """O'chirilgan workspace: papka `.trash/` ga ko'chirilgan; bu yerda faqat yozuv (tiklash/tozalash uchun yo'l)."""
+        return self._put("workspace", item["name"], {"item": item, "moved_to": moved_to}, {"workspace_id": item["id"]})
+
     # ── o'qish ──
     def _read_all(self):
         out = []
@@ -69,7 +73,7 @@ class Trash:
         n = 0
         for d in self._read_all():
             if d.get("expires_at", 0) < self.now():
-                self._remove(d["id"])
+                self._remove(d["id"], purge=True)
                 n += 1
         return n
 
@@ -91,7 +95,15 @@ class Trash:
             raise TrashError("Savat elementi topilmadi")
         return self.ws._read(p)
 
-    def _remove(self, tid):
+    def _remove(self, tid, purge=False):
+        if purge:
+            try:
+                d = self._load(tid)
+                if d.get("kind") == "workspace" and os.path.isdir(d["payload"].get("moved_to", "")):
+                    import shutil
+                    shutil.rmtree(d["payload"]["moved_to"], ignore_errors=True)         # savatdan butunlay o'chirilganda/muddati o'tganda
+            except (TrashError, OSError, ValueError):
+                pass
         try:
             os.remove(self._path(tid))
         except FileNotFoundError:
@@ -99,12 +111,12 @@ class Trash:
 
     def delete(self, tid):
         self._load(tid)
-        self._remove(tid)
+        self._remove(tid, purge=True)
 
     def empty(self):
         n = 0
         for d in self._read_all():
-            self._remove(d["id"])
+            self._remove(d["id"], purge=True)
             n += 1
         return n
 
@@ -122,6 +134,15 @@ class Trash:
                     col["info"]["name"] += " (tiklangan)"
                 ws.save_collection(col)
                 res = {"kind": "collection", "collection_id": model.collection_id(col)}
+            elif d["kind"] == "workspace":
+                reg = getattr(self, "registry", None)
+                if reg is None:
+                    raise TrashError("Workspace ro'yxati mavjud emas")
+                try:
+                    wid = reg.restore(d["payload"]["item"], d["payload"]["moved_to"])
+                except ValueError as e:
+                    raise TrashError(str(e)) from e
+                res = {"kind": "workspace", "workspace_id": wid}
             else:
                 env = d["payload"]
                 if os.path.exists(ws._p("environments", env["id"] + ".json")):

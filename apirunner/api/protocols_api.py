@@ -10,6 +10,7 @@ from ..core.engine import ExecContext, _build_kwargs
 from ..core.protocols import ProtocolError, decode_payload
 from ..core.scripted import Services, run_prerequest
 from ..core.variables import replace_variables
+from ..storage import schema_cache
 
 bp = Blueprint("protocols", __name__, url_prefix="/api")
 
@@ -200,48 +201,28 @@ def mock_stop(mid):
 
 
 # ── GraphQL sxema keshi (diskda: workspace/schemas/) ──
-def _schema_path(key):
-    import hashlib
-    import os
-    ws = current_app.extensions["workspace"]
-    d = os.path.join(ws.root, "schemas")
-    os.makedirs(d, exist_ok=True)
-    return os.path.join(d, hashlib.sha256(key.encode("utf-8")).hexdigest()[:32] + ".json")
-
-
 @bp.get("/graphql/schema")
 def gql_schema_get():
-    import os
     key = (request.args.get("key") or "").strip()
     if not key:
         return jsonify({"error": "key kerak"}), 400
-    p = _schema_path(key)
-    if not os.path.exists(p):
-        return jsonify({"cached": False})
-    try:
-        with open(p, encoding="utf-8") as f:
-            return jsonify({"cached": True, **json.load(f)})
-    except (OSError, ValueError):
-        return jsonify({"cached": False})
+    d = schema_cache.get(current_app.extensions["workspace"].root, key)
+    return jsonify({"cached": True, **d} if d else {"cached": False})
 
 
 @bp.put("/graphql/schema")
 def gql_schema_put():
-    from ..storage.atomic import atomic_write_json
     d = request.get_json(silent=True) or {}
     key, intro = (d.get("key") or "").strip(), d.get("introspection")
     if not key or not isinstance(intro, dict) or "__schema" not in intro:
         return jsonify({"error": "key va introspection (data.__schema) kerak"}), 400
     if len(json.dumps(intro)) > 20 * 1024 * 1024:
         return jsonify({"error": "Sxema 20 MB dan katta"}), 400
-    atomic_write_json(_schema_path(key), {"key": key, "fetched_at": time.time(), "introspection": intro})
+    schema_cache.put(current_app.extensions["workspace"].root, key, intro)
     return jsonify({"ok": True})
 
 
 @bp.delete("/graphql/schema")
 def gql_schema_delete():
-    import os
-    p = _schema_path((request.args.get("key") or "").strip())
-    if os.path.exists(p):
-        os.remove(p)
+    schema_cache.delete(current_app.extensions["workspace"].root, (request.args.get("key") or "").strip())
     return jsonify({"ok": True})

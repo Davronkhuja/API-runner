@@ -5,7 +5,7 @@ import webbrowser
 
 from flask import Flask, Response, request, send_from_directory
 
-from .api import admin_api, importexport_api, protocols_api, legacy, oauth, runs_api, security, workspace_api
+from .api import admin_api, importexport_api, protocols_api, workspaces_api, legacy, oauth, runs_api, security, workspace_api
 from .core.jobs import JobManager
 from .core.run_engine import RunManager
 from .storage.cookies import CookieStore
@@ -15,10 +15,28 @@ from .storage.db import StateDB
 from .storage.runs import RunStore
 from . import __version__
 from .storage import migrations
+from .storage.registry import DEFAULT_ID, WorkspaceRegistry
 from .storage.workspace import Workspace
 
 PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(PKG_DIR)
+
+
+def bind_workspace(app, ws_dir, saved_file, backup_dir, upload_dir):
+    """Faol workspace'ga bog'liq hamma narsani (storage, SQLite, run/job menejerlari, cookie'lar, savat) qayta quradi. Ishga tushganda va almashtirganda."""
+    ws = Workspace(ws_dir)
+    result = migrations.run_all(ws, saved_file, backup_dir, __version__)       # zaxira, sonlar tekshiruvi va rollback bilan
+    ext = app.extensions
+    ext["workspace"] = ws
+    ext["trash"] = ws.trash
+    ws.trash.registry = ext.get("registry")
+    ws.trash.purge_expired()                                                    # 30 kundan oshganlar tozalanadi
+    ext["db"] = StateDB(os.path.join(ws.root, "state.db"))
+    ext["cookies"] = CookieStore(os.path.join(ws.root, "state.db"))
+    ext["runs"] = RunStore(ext["db"])
+    ext["run_manager"] = RunManager(ext["runs"], ext["db"], ws, ext["cookies"], (upload_dir, ws.root))
+    ext["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root), cookies=ext["cookies"], workspace=ws)
+    return result
 
 
 def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_token=None, backup_dir=None):
@@ -32,24 +50,16 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     upload_dir = upload_dir or os.path.join(ROOT_DIR, ".tmp_uploads")
 
     backup_dir = backup_dir or os.path.join(ROOT_DIR, "backups")
-    ws = Workspace(workspace_dir)
-    # barcha migratsiyalar (saved_requests.json import, sxema) — zaxira, sonlar tekshiruvi va rollback bilan
-    result = migrations.run_all(ws, saved_file, backup_dir, __version__)
-    app.extensions["workspace"] = ws
-    app.config["STARTED_AT"] = time.time()
-    app.extensions["trash"] = ws.trash
-    app.extensions["protocols"] = ProtocolManager()
-    app.extensions["mocks"] = MockManager()
-    app.extensions["trash"].purge_expired()                          # 30 kundan oshganlar ishga tushganda tozalanadi
-    app.extensions["db"] = StateDB(os.path.join(ws.root, "state.db"))
+    registry = WorkspaceRegistry(os.path.join(os.path.dirname(os.path.abspath(workspace_dir)), "workspaces.json"), workspace_dir)
+    app.extensions["registry"] = registry
     app.extensions["backup_dir"] = backup_dir
     app.extensions["saved_file"] = saved_file
-    app.extensions["cookies"] = CookieStore(os.path.join(ws.root, "state.db"))
-    app.extensions["runs"] = RunStore(app.extensions["db"])
-    app.extensions["run_manager"] = RunManager(app.extensions["runs"], app.extensions["db"], ws, app.extensions["cookies"], (upload_dir, ws.root))
-    app.extensions["jobs"] = JobManager(allowed_file_roots=(upload_dir, ws.root), cookies=app.extensions["cookies"], workspace=ws)
-    app.config.update(UPLOAD_DIR=upload_dir, SESSION_TOKEN=session_token or security.new_token(),
-                      MIGRATION=result["legacy"], MIGRATION_RESULT=result)
+    app.config["STARTED_AT"] = time.time()
+    app.extensions["protocols"] = ProtocolManager()
+    app.extensions["mocks"] = MockManager()
+    app.config.update(UPLOAD_DIR=upload_dir)
+    result = bind_workspace(app, registry.active_dir(), saved_file if registry.active == DEFAULT_ID else "", backup_dir, upload_dir)
+    app.config.update(SESSION_TOKEN=session_token or security.new_token(), MIGRATION=result["legacy"], MIGRATION_RESULT=result)
 
     security.install(app)
     app.register_blueprint(legacy.bp)
@@ -58,6 +68,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.register_blueprint(admin_api.bp)
     app.register_blueprint(importexport_api.bp)
     app.register_blueprint(protocols_api.bp)
+    app.register_blueprint(workspaces_api.bp)
     app.register_blueprint(oauth.bp)
 
     static = os.path.join(PKG_DIR, "static")
