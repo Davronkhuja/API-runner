@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { get, post } from '../api/client'
+import { get, post, put } from '../api/client'
 import { askConfirm, fmtBytes, importOpen, showToast, wsExportOpen } from '../lib/ui'
 import { downloadFrom } from '../lib/exporter'
 import { useWorkspace } from '../stores/workspace'
@@ -23,6 +23,15 @@ async function cleanFiles() {
   if (!u?.unused_count || !(await askConfirm(`${u.unused_count} ta ishlatilmayotgan fayl (${fmtBytes(u.unused_size)}) o'chiriladi. Hech bir so'rov, muhit yoki ochiq tab ularga havola qilmaydi. Davom etilsinmi?`, "Tozalash"))) return
   try { const r = await post('/api/files/cleanup'); showToast(`${r.removed} ta fayl o'chirildi (${fmtBytes(r.freed)})`, 'success'); await loadFiles() }
   catch (e: any) { showToast(e.message, 'error') }
+}
+const dsk = ref<{ desktop: boolean; workspace_dir: string } | null>(null), wsDir = ref(''), wsMsg = ref(''), wsErr = ref('')
+get('/api/desktop').then((d: any) => { dsk.value = d; wsDir.value = d.workspace_dir }).catch(() => {})
+async function saveWsDir() {
+  wsErr.value = ''; wsMsg.value = ''
+  try {
+    const r = await put('/api/desktop/workspace', { workspace_dir: wsDir.value })
+    wsMsg.value = `Saqlandi. Ilovani yoping va qayta oching.${r.locked_by ? ` ⚠ Bu papka hozir boshqa nusxada ochiq (pid ${r.locked_by.pid ?? '?'}) — avval uni yoping.` : ''}`
+  } catch (e: any) { wsErr.value = e.message }
 }
 const loadErr = ref('')
 async function load() {
@@ -67,7 +76,7 @@ const gsSaved = ref(false)
 let gsTimer: ReturnType<typeof setTimeout> | undefined
 async function saveGlobal() { try { await ws.saveSettings(gs.value); gsDirty.value = false; gsSaved.value = true } catch (e: any) { showToast(e.message, 'error') } }
 function queueGlobal() { gsDirty.value = true; gsSaved.value = false; clearTimeout(gsTimer); gsTimer = setTimeout(saveGlobal, 500) }
-const NAV = [['s-view', "Ko'rinish"], ['s-request', "So'rov"], ['s-safety', 'Xavfsizlik'], ['s-scripts', 'Skriptlar'], ['s-files', 'Fayllar'], ['s-data', "Ma'lumotlar"], ['s-io', 'Import / Eksport'], ['s-backups', 'Zaxiralar']] as const
+const NAV = [['s-view', "Ko'rinish"], ['s-request', "So'rov"], ['s-safety', 'Xavfsizlik'], ['s-workspace', 'Workspace papkasi'], ['s-scripts', 'Skriptlar'], ['s-files', 'Fayllar'], ['s-data', "Ma'lumotlar"], ['s-io', 'Import / Eksport'], ['s-backups', 'Zaxiralar']] as const
 const sec = ref<string>('s-view'), mainEl = ref<HTMLElement>()
 function go(id: string) { sec.value = id; mainEl.value?.querySelector('#' + id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }
 onMounted(load)
@@ -102,6 +111,15 @@ onMounted(load)
     <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" v-model="sf.host_confirm" data-testid="safety-host-confirm" @change="saveSafetyNow"> Yozuvchi so'rovni test/dev bo'lmagan host'ga yuborishda tasdiq so'rash (muhit sozlamasiga qo'shimcha)</label>
     <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" v-model="sf.dev_runner_writes" data-testid="safety-dev-writes" @change="saveSafetyNow"> Dev/Test muhitda Runner hamma metodlarni belgilangan holda ochsin (tasdiq dialogi baribir chiqadi)</label>
     <p class="saved-note" role="status" data-testid="safety-saved"><template v-if="sfSaved">✓ Saqlandi</template><template v-else>O'zgarishlar avtomatik saqlanadi.</template></p>
+    <h4 id="s-workspace">Workspace papkasi</h4>
+    <p class="muted" style="max-width:720px">Joriy ma'lumotlar papkasi: <code data-testid="ws-dir-current">{{ dsk?.workspace_dir }}</code></p>
+    <template v-if="dsk?.desktop">
+      <label class="bf" style="max-width:620px"><span class="bl">Yangi papka (to'liq yo'l; mavjud workspace yoki bo'sh papka)</span><input v-model="wsDir" data-testid="ws-dir-input" aria-label="Workspace papkasi" spellcheck="false"></label>
+      <p style="display:flex;gap:10px;align-items:center"><button data-testid="ws-dir-save" @click="saveWsDir">O'zgartirish</button></p>
+      <p v-if="wsMsg" class="saved-note" role="status" data-testid="ws-dir-msg">{{ wsMsg }}</p>
+      <p v-if="wsErr" class="state-error" role="alert" data-testid="ws-dir-err" style="padding:6px 10px">{{ wsErr }}</p>
+    </template>
+    <p v-else class="muted" style="max-width:720px">Oddiy server rejimida papka <code>APIRUNNER_WORKSPACE</code> muhit o'zgaruvchisi bilan beriladi (sukut: loyiha ichidagi <code>workspace/</code>). O'zgartirish desktop (.app) rejimida mumkin.</p>
     <h4 id="s-scripts">Skriptlar</h4>
     <p v-if="ws.scripts.available" class="muted" data-testid="script-status">Pre-request va Tests skriptlari yoqilgan (<code>quickjs-ng {{ ws.scripts.version }}</code>). Skriptlar fayl tizimi va tarmoqqa (<code>pm.sendRequest</code> dan tashqari) kira olmaydi; workspace'ni faqat <code>pm.environment/globals/collectionVariables</code> orqali o'zgartiradi.</p>
     <div v-else class="script-off" role="alert" data-testid="script-status"><b>Skriptlar o'chiq:</b> <code>quickjs-ng</code> o'rnatilmagan. Skript tablari ko'rinadi va matn saqlanadi, lekin bajarilmaydi. O'rnatish:

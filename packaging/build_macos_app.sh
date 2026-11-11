@@ -23,11 +23,14 @@ for s in 16 32 64 128 256 512; do
 done
 iconutil -c icns "$ICONSET" -o build/icon.icns
 
+# repo workspace yo'li: birinchi ishga tushishda «mavjud ma'lumotdan foydalanish / nusxa olish» tanlovi uchun
+printf '{"repo_workspace": "%s"}' "$PWD/workspace" > build/desktop_hints.json
+
 VERSION="$(python -c 'import apirunner; print(apirunner.__version__)')"
 pyinstaller --noconfirm --clean --windowed --name "API Runner" \
   --icon "$PWD/build/icon.icns" \
   --osx-bundle-identifier uz.localhost.apirunner \
-  --add-data "$PWD/apirunner/static:apirunner/static" \
+  --add-data "$PWD/apirunner/static:apirunner/static" --add-data "$PWD/build/desktop_hints.json:apirunner" \
   --paths "$PWD" --hidden-import quickjs --collect-submodules apirunner --collect-all webview \
   --distpath "$PWD/dist" --workpath "$PWD/build/pyi" --specpath "$PWD/build" \
   "$PWD/packaging/desktop_entry.py"

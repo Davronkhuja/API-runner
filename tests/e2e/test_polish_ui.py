@@ -168,3 +168,31 @@ def test_onboarding_only_for_empty_workspace_or_forced(app, page):
     expect(T(page, "onboarding")).to_have_count(0)
     boot(app, page, "?onboarding=1")                                     # majburan
     expect(T(page, "onboarding")).to_be_visible()
+
+
+def test_instance_conflict_banner_and_workspace_folder_setting(app, page, monkeypatch):
+    monkeypatch.setenv("APIRUNNER_INSTANCE_LOCK", "1")
+    import os
+    from apirunner.app import create_app
+    # ikkinchi nusxa: xuddi shu workspace papkasi (ayni jarayon ichida ham flock to'qnashadi)
+    from apirunner.storage import instance
+    held = instance.InstanceLock(str(app.tmp / "workspace"), "2.9.0", "desktop")
+    assert held.owned
+    app2 = create_app(workspace_dir=str(app.tmp / "workspace"), saved_file=str(app.tmp / "s2.json"), upload_dir=str(app.tmp / "uploads"), session_token="t2", backup_dir=str(app.tmp / "backups"))
+    from werkzeug.serving import make_server
+    import threading
+    srv = make_server("127.0.0.1", 0, app2, threaded=True)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        page.goto(f"http://127.0.0.1:{srv.server_port}/")
+        page.wait_for_selector("[data-testid=app]")
+        expect(T(page, "instance-conflict")).to_contain_text("boshqa API Runner nusxasida")
+        expect(T(page, "instance-conflict")).to_contain_text(str(os.getpid()))
+        T(page, "instance-dismiss").click()
+        expect(T(page, "instance-conflict")).to_have_count(0)
+        T(page, "settings-btn").click()
+        expect(T(page, "ws-dir-current")).to_contain_text("workspace")
+        expect(T(page, "ws-dir-input")).to_have_count(0)                    # oddiy server rejimida o'zgartirib bo'lmaydi
+    finally:
+        srv.shutdown()
+        held.release()

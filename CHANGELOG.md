@@ -2,6 +2,20 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [3.0.1] — 2026-11-11 — Fix: so'rov asosidagi xavfsizlik (Runner/Batch), tanishtiruv, .app workspace tanlovi
+### Fixed
+- **KRITIK — Runner muhit turiga qarab himoyalanardi:** muhitsiz (yoki Dev) holatda butun collection (POST/PATCH/DELETE bilan) prod host'larga belgilangan holda ochilardi. Endi himoya **so'rovning o'ziga** (metod + host) qaraydi:
+  - Runner **sukut bo'yicha faqat GET/HEAD/OPTIONS** ni belgilaydi (har qanday muhit va muhitsiz). Istisno: muhit Dev/Test **va** Sozlamalar → Xavfsizlik da ruxsat berilgan.
+  - Tanlovda POST/PUT/PATCH/DELETE bo'lsa **har doim RunGuard**: metodlar bo'yicha sonlar, host'lar ro'yxati (test/dev yoki prod/noma'lum), «Faqat xavfsiz metodlar» (tavsiya); «Hammasi» tasdiq so'zini talab qiladi (`prod` — Prod muhitda, aks holda `tasdiqlayman`).
+  - Host tasnifi: `localhost`, `127.0.0.1`, `::1`, `*.local`, `*.test`, `*.localhost` va foydalanuvchi ro'yxati (`*.staging.x.uz` ham mumkin) — test/dev; **boshqa hamma host (hal qilinmagan o'zgaruvchi ham) xavfli**.
+  - Yagona so'rov va Batch: yozuvchi metod test/dev bo'lmagan host'ga ketsa — muhit sozlamasiga **qo'shimcha** tasdiq (Batch'da qatorlar soni bilan); Sozlamalar → Xavfsizlik da o'chirish mumkin.
+  - Muhitdagi «Runner'da sukut bo'yicha faqat GET» belgisi olib tashlandi (umumiy qoida bilan almashtirildi).
+- Tanishtiruv faqat **workspace bo'sh** (so'rovlar soni 0) bo'lganda yoki `?onboarding=1` bilan chiqadi (`?onboarding=auto` — faqat qoida, testlar uchun).
+### Added
+- **.app: birinchi ishga tushishda mavjud workspace** (repo `workspace/`, PM2 `api-runner` nusxasi) topilsa tanlov: **Shu ma'lumotlardan foydalanish / Nusxa olish (tavsiya, manba tegilmaydi) / Yangi bo'sh**; tanlov `desktop.json` da.
+- **Sessiya qulfi** (`.session.lock`): bir workspace'ni ikki nusxa (masalan PM2 + .app) bir vaqtda ochsa, tanlov oynasida va ilova ichida aniq ogohlantirish (pid, versiya). Ochilish to'xtatilmaydi.
+- Sozlamalar → **Workspace papkasi** (desktop rejimida o'zgartirish; qayta ochish kerak) va **Xavfsizlik** (test host'lar, host tasdig'i, Dev'da Runner ruxsati).
+
 ## [3.0.0] — 2026-11-11 — Bosqich 8: sayqal va sifat (reliz)
 ### 2.x dan beri asosiy o'zgarishlar (xulosa)
 - **Poydevor (2.1):** modulli backend (`apirunner/`), Postman v2.1 superseti modeli, SQLite (`state.db`), avtomatik zaxira, atomik yozuv, migratsiya + rollback, Savat (30 kun), token/Host himoyasi.

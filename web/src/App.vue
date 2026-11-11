@@ -115,6 +115,7 @@ const isEditable = (t: EventTarget | null) => t instanceof HTMLElement && (t.isC
 // Tanishtiruv: faqat workspace BO'SH bo'lganda (so'rovlar soni 0) va hali ko'rsatilmagan bo'lsa; `?onboarding=1` majburlaydi; avtomatlashtirilgan brauzerda (testlar) o'zi chiqmaydi
 const ONB_KEY = 'apirunner.onboarded'
 const onboarding = ref(false)
+const instanceConflict = ref<{ pid?: number; version?: string; mode?: string } | null>(null)
 const countRequests = (items: any[]): number => items.reduce((n, i) => n + (i.item ? countRequests(i.item) : 1), 0)
 function maybeOnboard() {
   try {
@@ -144,6 +145,7 @@ onMounted(async () => {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushTreeOnUnload() })
   await Promise.all([tree.load(), ws.load(), hist.load()])
   maybeOnboard()
+  get('/api/instance').then((i: any) => { if (i.conflict) instanceConflict.value = i.holder ?? {} }).catch(() => {})
   const st = await get('/api/ui-state').catch(() => ({}))
   if (st.expanded) tree.expandedOverride = st.expanded
   await tabs.restore()
@@ -200,6 +202,11 @@ function openRunnerWithData(name: string, text: string) {
 <template>
   <div v-if="ready && migrationWarning" class="toast" style="position:static;background:var(--err);color:var(--on-accent);border-radius:0;padding:8px 14px" data-testid="migration-warning" role="alert">⚠ {{ migrationWarning }}</div>
   <div class="app" data-testid="app" :class="{ 'dropzone-active': dropping }" @dragover="onWindowDragOver" @dragleave="dropping = false" @drop="onWindowDrop" v-if="ready">
+    <div v-if="instanceConflict" class="instance-warn" role="alert" data-testid="instance-conflict">
+      <b>Bu workspace boshqa API Runner nusxasida ham ochiq</b> (pid {{ instanceConflict.pid ?? '?' }}{{ instanceConflict.version ? ', v' + instanceConflict.version : '' }}{{ instanceConflict.mode ? ', ' + instanceConflict.mode : '' }}).
+      Ikkala nusxa bir vaqtda yozsa, o'zgarishlar to'qnashadi yoki yo'qoladi. Birini yoping (yoki Sozlamalar → Workspace papkasi orqali alohida nusxadan foydalaning).
+      <button class="sm" data-testid="instance-dismiss" @click="instanceConflict = null">Tushunarli</button>
+    </div>
     <AppHeader />
     <div class="shell">
       <IconRail />

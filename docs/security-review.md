@@ -29,3 +29,6 @@ Testlar: `tests/test_security.py`, `tests/test_security_review.py`.
 - Token `GET /` javobida beriladi: shu kompyuterda loopback'ga ulana oladigan **boshqa jarayon** uni o'qiy oladi (bir foydalanuvchi modeli; OS darajasidagi himoya doirasida).
 - Proxy capture har qanday URL'ga yo'naltiradi (faqat loopback'dan kirish mumkin).
 - Foydalanuvchi skripti `pm.sendRequest` bilan lokal tarmoqqa so'rov yubora oladi (Postman bilan bir xil, mo'ljallangan xatti-harakat).
+
+## Qo'shimcha (v3.0.1): Runner va yuborish himoyasi so'rovga qaraydi
+Qo'lda tekshiruvda topildi: Runner muhit turiga qarab himoyalanardi — muhitsiz holatda 67/67 so'rov (POST/PATCH/DELETE bilan) prod host'larga belgilab ochilgan. Tuzatish: sukut faqat GET/HEAD/OPTIONS; yozuvchi metod tanlansa har doim RunGuard (host'lar ro'yxati, tasdiq so'zi); host bo'yicha tasdiq (test/dev ro'yxatidan tashqari hamma host xavfli, hal qilinmagan o'zgaruvchi ham); yagona so'rov va Batch uchun ham. Testlar: `tests/e2e/test_prod_safety.py`, `web/src/lib/safety.test.ts`. Ikki nusxa bir workspace'da: sessiya qulfi (`storage/instance.py`).

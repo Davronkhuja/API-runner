@@ -5,9 +5,10 @@ import webbrowser
 
 from flask import Flask, Response, request, send_from_directory
 
-from .api import admin_api, importexport_api, monitors_api, protocols_api, proxy_api, workspaces_api, legacy, oauth, runs_api, security, workspace_api
+from .api import admin_api, importexport_api, desktop_api, monitors_api, protocols_api, proxy_api, workspaces_api, legacy, oauth, runs_api, security, workspace_api
 from .core.jobs import JobManager
 from .proxy import ProxyManager
+from .storage.instance import InstanceLock
 from .monitor import MonitorStore, Scheduler
 from .core.run_engine import RunManager
 from .storage.cookies import CookieStore
@@ -30,6 +31,9 @@ def bind_workspace(app, ws_dir, saved_file, backup_dir, upload_dir):
     result = migrations.run_all(ws, saved_file, backup_dir, __version__)       # zaxira, sonlar tekshiruvi va rollback bilan
     ext = app.extensions
     ext["workspace"] = ws
+    if ext.get("instance"):
+        ext["instance"].release()                       # workspace almashtirilganda eskisining sessiya qulfi qo'yib yuboriladi
+    ext["instance"] = InstanceLock(ws.root, __version__, "desktop" if app.config.get("DESKTOP") else "server")
     ext["trash"] = ws.trash
     ws.trash.registry = ext.get("registry")
     ws.trash.purge_expired()                                                    # 30 kundan oshganlar tozalanadi
@@ -43,7 +47,7 @@ def bind_workspace(app, ws_dir, saved_file, backup_dir, upload_dir):
     return result
 
 
-def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_token=None, backup_dir=None):
+def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_token=None, backup_dir=None, desktop=None):
     """Flask ilovasini yaratadi. Barcha yo'llar argument bilan almashtiriladi (testlar uchun)."""
     if os.environ.get("APIRUNNER_TESTING") and None in (workspace_dir, saved_file, upload_dir, backup_dir):
         # testlar hech qachon haqiqiy ma'lumotga (saved_requests.json, workspace/, backups/) tegmasligi uchun
@@ -59,6 +63,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.extensions["backup_dir"] = backup_dir
     app.extensions["saved_file"] = saved_file
     app.config["STARTED_AT"] = time.time()
+    app.config["DESKTOP"] = desktop                      # {"home": …} — desktop (.app) rejimida; None — oddiy server
     app.extensions["protocols"] = ProtocolManager()
     app.extensions["mocks"] = MockManager()
     app.extensions["proxy"] = ProxyManager()
@@ -78,6 +83,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.register_blueprint(protocols_api.bp)
     app.register_blueprint(workspaces_api.bp)
     app.register_blueprint(monitors_api.bp)
+    app.register_blueprint(desktop_api.bp)
     app.register_blueprint(proxy_api.bp)
     app.register_blueprint(oauth.bp)
 
