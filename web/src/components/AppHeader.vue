@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WorkspaceSwitcher from './WorkspaceSwitcher.vue'
 import { ref } from 'vue'
 import { post as apiPost } from '../api/client'
 import { useTabs } from '../stores/tabs'
@@ -32,7 +33,7 @@ function openVars() {
       <div class="logo"><Icon name="bolt" :size="15" /></div>
       <span class="brand">API Runner</span>
       <span class="sep" aria-hidden="true">/</span>
-      <span style="font-weight:500;font-size:var(--fs-md);padding:0 6px">Shaxsiy workspace</span>
+      <WorkspaceSwitcher />
     </div>
     <div style="flex:1;display:flex;justify-content:center">
       <div class="search">

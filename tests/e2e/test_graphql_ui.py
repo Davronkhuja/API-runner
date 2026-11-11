@@ -106,3 +106,19 @@ def test_invalid_variables_json_is_flagged(ui):
     T(ui, "gql-vars").click()
     ui.keyboard.type("{bad")
     expect(T(ui, "gql-issues")).to_contain_text("JSON noto'g'ri")
+
+
+def test_schema_is_cached_on_disk_and_reused_after_reload(ui, app, gql_server):
+    T(ui, "gql-introspect").click()
+    expect(T(ui, "gql-cache-info")).to_contain_text("yuklandi")
+    ui.wait_for_timeout(500)
+    assert app.api("GET", "/api/graphql/schema?key=" + gql_server + "/graphql")["cached"] is True
+    ui.wait_for_timeout(600)                                                               # tab holati serverga yozilsin
+    ui.reload()
+    ui.wait_for_selector("[data-testid=app]")
+    expect(T(ui, "gql-cache-info")).to_contain_text("diskdagi keshdan")                  # tarmoqsiz, kesh orqali
+    T(ui, "gql-explorer-toggle").click()
+    expect(T(ui, "gql-field").first).to_be_visible()
+    T(ui, "gql-cache-clear").click()
+    expect(T(ui, "gql-schema-info")).to_have_count(0)
+    assert app.api("GET", "/api/graphql/schema?key=" + gql_server + "/graphql")["cached"] is False

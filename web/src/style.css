@@ -714,3 +714,20 @@ table.kv.rp-headers{overflow:visible;border-radius:0}
 .plog.msg{cursor:default}
 .pline{min-height:var(--ctl-xs);align-items:center}.plog.msg{padding-top:0;padding-bottom:0}
 .plog .t{font-variant-numeric:tabular-nums;min-width:84px;white-space:nowrap}
+
+/* ── Mock server ── */
+.mock-form{display:flex;flex-direction:column;gap:var(--sp-3)}.mock-form .bf{max-width:260px}
+.mock-head{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-3)}
+.mock-routes{width:100%}.mock-routes td,.mock-routes th{overflow-wrap:anywhere}
+.mock-log{max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);font-size:var(--fs-sm)}
+.mock-row{display:flex;align-items:center;gap:var(--sp-3);padding:3px var(--sp-3);border-bottom:1px solid var(--border);min-height:var(--ctl-xs)}.mock-row .mp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono)}.mock-row .mm{flex:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── Workspace almashtirgich ── */
+.ws-switch{position:relative}.ws-btn{display:inline-flex;align-items:center;gap:var(--sp-1);height:var(--ctl-sm);padding:0 var(--sp-2);border:0;background:transparent;font-weight:500;font-size:var(--fs-md);max-width:220px}.ws-btn:hover{background:var(--hover)}
+.ws-menu{position:absolute;left:0;top:calc(100% + 4px);min-width:260px;max-height:60vh;overflow:auto;z-index:60}
+.ws-row{display:flex;align-items:center;gap:2px}.ws-row .ws-pick{flex:1;width:auto;display:flex;align-items:center;gap:var(--sp-2);text-align:left;min-width:0}.ws-row .ib{opacity:.0;flex:none;width:var(--ctl-sm)}.ws-row:hover .ib,.ws-row:focus-within .ib{opacity:1}
+.ws-chk{width:14px;flex:none;color:var(--accent-text)}.ws-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ws-row.on .ws-name{font-weight:600}
+.ws-new{display:flex;align-items:center;gap:var(--sp-2);width:100%;border-top:1px solid var(--border);margin-top:var(--sp-1);padding-top:var(--sp-1);color:var(--accent-text)}
+
+.mon-form{display:flex;flex-direction:column;gap:var(--sp-3)}.mon-row{display:flex;gap:var(--sp-3);flex-wrap:wrap}.mon-row .bf{flex:1;min-width:180px}.mon-presets{display:flex;gap:var(--sp-2);flex-wrap:wrap}
+.mon-chk{display:flex;align-items:center;gap:var(--sp-2)}.mon-table{width:100%}.mon-table td,.mon-table th{overflow-wrap:anywhere}.mon-table tr.off{opacity:.6}.mon-act{display:flex;gap:var(--sp-1);flex-wrap:wrap}

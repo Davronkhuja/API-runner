@@ -1,13 +1,36 @@
 /** GraphQL: introspection, sxema keshi (tab bo'yicha), so'rov skeleti va variables tekshiruvi. */
 import { markRaw, reactive } from 'vue'
 import { buildClientSchema, getIntrospectionQuery, isNonNullType, isObjectType, isInterfaceType, getNamedType, isLeafType, parse, print, type GraphQLField, type GraphQLNamedType, type GraphQLSchema, type OperationDefinitionNode } from 'graphql'
-import { post } from '../api/client'
+import { del, get, post, put } from '../api/client'
+import { flatVars } from './scope'
 import { prepareAuth, specFor } from './scope'
 import type { Tab } from '../stores/tabs'
 
-export interface GqlState { schema: GraphQLSchema | null; loading: boolean; error: string; at: number }
+export interface GqlState { schema: GraphQLSchema | null; loading: boolean; error: string; at: number; fromCache: boolean; key: string }
 export const gqlStates = reactive<Record<string, GqlState>>({})
-export const gqlState = (tabId: string): GqlState => (gqlStates[tabId] ??= { schema: null, loading: false, error: '', at: 0 })
+export const gqlState = (tabId: string): GqlState => (gqlStates[tabId] ??= { schema: null, loading: false, error: '', at: 0, fromCache: false, key: '' })
+
+/** Kesh kaliti: o'zgaruvchilari yechilgan URL (query'siz) — bir endpoint'ning so'rovlari bitta sxemani bo'lishadi. */
+export function cacheKey(tab: Tab): string {
+  const vars = flatVars(tab.ref)
+  return tab.draft!.url.trim().split('?')[0].replace(/\{\{\s*([^}]+?)\s*\}\}/g, (m, k) => vars[k] ?? m)
+}
+
+/** Diskdagi keshdan sxemani yuklaydi (bo'lsa). */
+export async function loadCached(tab: Tab): Promise<void> {
+  const st = gqlState(tab.id)
+  const key = cacheKey(tab)
+  if (!key || st.schema && st.key === key) return
+  try {
+    const r = await get(`/api/graphql/schema?key=${encodeURIComponent(key)}`)
+    if (r.cached) { st.schema = markRaw(buildClientSchema(r.introspection)); st.at = r.fetched_at * 1000; st.fromCache = true; st.key = key }
+  } catch { /* kesh o'qilmadi — qayta yuklash mumkin */ }
+}
+export async function clearCached(tab: Tab): Promise<void> {
+  const st = gqlState(tab.id)
+  await del(`/api/graphql/schema?key=${encodeURIComponent(cacheKey(tab))}`).catch(() => {})
+  st.schema = null; st.fromCache = false
+}
 
 /** Hozirgi so'rov URL/headers/auth bilan introspection yuboradi (`/run_one`). */
 export async function introspect(tab: Tab): Promise<void> {
@@ -23,7 +46,8 @@ export async function introspect(tab: Tab): Promise<void> {
     const body = typeof r.response === 'string' ? JSON.parse(r.response) : r.response
     if (body?.errors?.length && !body.data) throw new Error((r.status >= 400 ? `HTTP ${r.status}: ` : '') + (body.errors[0].message ?? 'Introspection xatosi'))
     if (!body?.data?.__schema) throw new Error(r.status >= 400 ? `Server HTTP ${r.status} qaytardi` : 'Javobda sxema yo\'q (introspection o\'chirilgan bo\'lishi mumkin)')
-    st.schema = markRaw(buildClientSchema(body.data)); st.at = Date.now()
+    st.schema = markRaw(buildClientSchema(body.data)); st.at = Date.now(); st.fromCache = false; st.key = cacheKey(tab)
+    put('/api/graphql/schema', { key: st.key, introspection: body.data }).catch(() => {})            // diskka saqlanadi
   } catch (e: any) { st.error = e.message } finally { st.loading = false }
 }
 

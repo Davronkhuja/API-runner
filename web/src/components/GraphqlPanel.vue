@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /** GraphQL tanasi: sxemani yuklash (introspection), schema explorer, so'rov muharriri (avtoto'ldirish + validatsiya), variables tekshiruvi. */
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import CodeEditor from './CodeEditor.vue'
 import GraphqlEditor from './GraphqlEditor.vue'
-import { fieldsOf, gqlState, introspect, rootTypes, skeleton, skeletonVariables, userTypes, variableIssues } from '../lib/graphql'
+import { clearCached, fieldsOf, gqlState, introspect, loadCached, rootTypes, skeleton, skeletonVariables, userTypes, variableIssues } from '../lib/graphql'
 import { getNamedType, isEnumType, isInputObjectType, type GraphQLField, type GraphQLNamedType } from 'graphql'
 import { useTabs, type Tab } from '../stores/tabs'
 
@@ -13,6 +13,8 @@ const d = computed(() => props.tab.draft!)
 const st = computed(() => gqlState(props.tab.id))
 const touch = () => tabs.touch(props.tab.id)
 const open = ref(false)
+onMounted(() => { loadCached(props.tab) })
+const when = computed(() => (st.value.at ? new Date(st.value.at).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''))
 const q = ref('')
 const picked = ref<any>(null)
 const roots = computed(() => (st.value.schema ? rootTypes(st.value.schema) : []))
@@ -31,7 +33,8 @@ const kindOf = (t: GraphQLNamedType) => (isEnumType(t) ? 'enum' : isInputObjectT
     <div class="gql-bar">
       <button data-testid="gql-introspect" :disabled="st.loading" @click="introspect(tab)">{{ st.loading ? 'Yuklanmoqda…' : st.schema ? 'Sxemani yangilash' : 'Sxemani yuklash (introspection)' }}</button>
       <button :class="{ on: open }" :aria-pressed="open" :disabled="!st.schema" data-testid="gql-explorer-toggle" @click="open = !open">Schema explorer</button>
-      <span v-if="st.schema" class="muted" data-testid="gql-schema-info">{{ userTypes(st.schema).length }} ta tur · {{ roots.map(r => r[0]).join(', ') }}</span>
+      <span v-if="st.schema" class="muted" data-testid="gql-schema-info">{{ userTypes(st.schema).length }} ta tur · {{ roots.map(r => r[0]).join(', ') }} · <span data-testid="gql-cache-info">{{ st.fromCache ? 'diskdagi keshdan' : 'yuklandi' }} ({{ when }})</span></span>
+      <button v-if="st.schema" class="ghost" data-testid="gql-cache-clear" title="Diskdagi sxema keshini o'chirish" @click="clearCached(tab)">Keshni tozalash</button>
       <span v-else-if="!st.error" class="muted">Sxema yuklanmagan — avtoto'ldirish va validatsiya o'chiq.</span>
       <span v-if="st.error" class="err" role="alert" data-testid="gql-error">{{ st.error }}</span>
     </div>

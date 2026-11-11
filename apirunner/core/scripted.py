@@ -327,7 +327,13 @@ def run_item(spec, services, scripts=None, ref=None, row=None, info=None, ctx_kw
         base.update(kw)
         return ExecContext(variables=variables, keep_text=keep_text, **base)
 
-    plain_vars = {**(spec.get("env_vars") or {}), **{k: _s(v) for k, v in (row or {}).items()}}      # skriptsiz: data qatori o'zgaruvchi sifatida
+    plain_vars = {**(spec.get("env_vars") or {})}
+    if services.ws is not None and ref:                                                         # skriptsiz so'rov ham server holatini ko'radi (oldingi skriptlar o'rnatgan o'zgaruvchilar, CLI)
+        try:
+            plain_vars.update(merged(load_scopes(services.ws, ref, row)[0]))
+        except Exception:        # noqa: BLE001
+            pass
+    plain_vars.update({k: _s(v) for k, v in (row or {}).items()})                                # data qatori o'zgaruvchi sifatida
     if not (pre or post):
         return execute(spec, make_ctx(plain_vars))
     if not scripting.available():

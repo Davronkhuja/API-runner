@@ -73,7 +73,7 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] C: Folder/Collection Overview, Env (Initial/Current, secret, tur), Tarix (kunlar, ×N, filtr, diff), Ko'rinish (yonma-yon/ustma-ust, zich rejim), Body segmentlari (POST/PUT — raw JSON), Batch formasi 2 qatorli grid — v2.3.8
 - [x] **Batch formasini Runner tabiga ko'chirish** (v2.5.0: yagona `RunSettings`) (ko'rib chiqildi: Runner v2 sozlamalari — parallel, kechikish, retry, timeout, data fayl — Batch bilan bir xil, shuning uchun Bosqich 4 da yagona "Run sozlamalari" paneliga birlashtiriladi; so'rov tabidagi "Batch / Runner" esa shu panelni bitta so'rov uchun ochuvchi qisqa yo'l bo'lib qoladi)
 - [x] Folder Overview: "Eksport" tugmasi — v2.7.0
-- [ ] Folder Overview: "Hujjat yaratish" tugmasi (Bosqich 7 — hujjatlar generatsiyasi)
+- [x] Folder Overview: "Hujjat yaratish" tugmasi (statik HTML) — v2.9.0
 
 - [x] **UI audit va tuzatishlar** (v2.4.0): `docs/ui-audit.md`; yagona Dialog, Import dialogi, muhit popover, muharrirlar (qator raqami/fold/qidiruv/JSON xatosi), Headers tabi, Sozlamalar avtosaqlash, umumiy Tarix komponenti, nomlarni tozalash, dizayn tokenlari; himoya: vizual regressiya, layout, axe, fixed-height lint
 - [ ] UI audit qoldiqlari: javob ko'rinishida fold (hozir qator raqami va ⌘F-siz qidiruv paneli), `.tabs-scroll` axe istisnosi
@@ -99,11 +99,14 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [ ] gRPC (ixtiyoriy)
 
 ## Bosqich 7 — Kengaytirilgan imkoniyatlar
-- [ ] CLI, mock server, hujjatlar generatsiyasi, paketlash
-- [ ] **Rejalashtirilgan run'lar (monitor)**: collection'ni jadval bo'yicha avtomatik ishga tushirish, natijalar tarixi va xato haqida ogohlantirish
-- [ ] **Proxy capture**: lokal proxy orqali o'tgan trafikni so'rov sifatida yozib olish va collection'ga saqlash
+- [x] **CLI** (`apirunner run`, newman analogi; cli/json/junit/html hisobot, `--bail`, `-d`, `-n`, exit code 1; pipx entry point) — v2.9.0
+- [x] **Mock server** (collection Example'laridan; CLI va UI; port, kechikish, so'rovlar jurnali) — v2.9.0
+- [x] **Hujjat generatsiyasi** (statik HTML; CLI `apirunner docs` va Overview tugmasi) — v2.9.0
+- [x] GraphQL sxema keshi diskda (`workspace/schemas`) — v2.9.0
+- [x] **Rejalashtirilgan run'lar (monitor)**: cron, macOS bildirishnomasi, natijalar run tarixida (`kind=monitor`) — v2.9.0
+- [x] **Proxy capture**: lokal HTTP proxy, ushlangan so'rovlar ro'yxati, collection'ga saqlash — v2.9.0 (HTTPS faqat tunnel: ichi ko'rinmaydi; MITM sertifikati ochiq)
 - [x] Cmd+K qidiruv palitrasi (v2.2.1)
-- [ ] **Workspace almashtirgich** (header'dagi "Shaxsiy workspace" hozir oddiy matn; bir nechta workspace yaratish/almashtirish)
+- [x] **Workspace almashtirgich**: bir nechta izolyatsiyalangan workspace (yaratish, nomlash, almashtirish, o'chirish — Savatga) — v2.9.0
 
 ## Dizayn va yorliqlar (v2.2.1–2.2.2)
 - [x] Yangi dizayn tizimi (`docs/design/*.dc.html` maketlari, tokenlar, lokal shriftlar, ⌘K, bosh sahifa, Runner maketi)

@@ -165,3 +165,19 @@ def export_workspace_post():
     if pw is not None and (not isinstance(pw, str) or len(pw) < 8):
         return jsonify({"error": "Parol kamida 8 belgi bo'lsin"}), 400
     return _zip_response(bool(d.get("secrets")), bool(d.get("state")), pw)
+
+
+@bp.get("/collections/<cid>/docs")
+def collection_docs(cid):
+    """Statik HTML hujjat (`?folder=<nom|id>`; `?inline=1` — brauzerda ko'rish)."""
+    from ..docs_gen import build_docs
+    try:
+        col = _ws().get_collection(cid)
+        text = build_docs(col, request.args.get("folder") or None)
+    except NotFound:
+        return jsonify({"error": "Collection topilmadi"}), 404
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    if request.args.get("inline"):
+        return Response(text, mimetype="text/html")
+    return _download(text, _fname(col["info"]["name"], "docs.html"), "text/html")

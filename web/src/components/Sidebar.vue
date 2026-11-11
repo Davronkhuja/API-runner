@@ -11,7 +11,7 @@ import { useWorkspace } from '../stores/workspace'
 import { useHistory } from '../stores/history'
 import { openFromHistory } from '../lib/history'
 import { openRequest } from '../lib/actions'
-import { askConfirm, exportOf, findOpen, showToast, sidePanel, trashOpen } from '../lib/ui'
+import { askConfirm, exportOf, mockOf, findOpen, showToast, sidePanel, trashOpen } from '../lib/ui'
 import Icon from './Icon.vue'
 import { authName, hasRealAuth, openNodeTab } from '../lib/nodes'
 import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
@@ -134,6 +134,7 @@ async function menuAct(a: string) {
   else if (a === 'newfolder') { await tree.addItem(r.collectionId, { name: 'Yangi papka', item: [] }, r.isCollection ? null : r.id) }
   else if (a === 'move') { moveDlg.value = { keys: tree.selection.length ? [...tree.selection] : [keyOf(r)] }; moveTarget.value = '' }
   else if (a === 'dup') await duplicate(r)
+  else if (a === 'mock') mockOf.value = { cid: r.collectionId, name: r.name }
   else if (a === 'export') exportOf.value = { cid: r.collectionId, name: r.name, requests: tree.metas.find(m => m.id === r.collectionId)?.requests }
   else if (a === 'delete-collection') {
     const n = tree.metas.find(m => m.id === r.collectionId)?.requests ?? 0
@@ -315,6 +316,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
         <button v-if="!menu.row.isCollection" data-act="dup" @click="menuAct('dup')">Dublikat</button>
         <button v-if="!menu.row.isCollection" data-act="move" @click="menuAct('move')">Ko'chirish…</button>
         <button v-if="!menu.row.isCollection" data-act="delete" @click="menuAct('delete')">O'chirish</button>
+        <button v-if="menu.row.isCollection" data-act="mock" @click="menuAct('mock')">Mock server…</button>
         <button v-if="menu.row.isCollection" data-act="export" @click="menuAct('export')">Eksport…</button>
         <button v-if="menu.row.isCollection" data-act="delete-collection" @click="menuAct('delete-collection')">O'chirish (Savatga)</button>
         </template>

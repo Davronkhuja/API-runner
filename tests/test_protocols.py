@@ -261,3 +261,17 @@ def test_prerequest_script_changes_header_before_connect(client, ws_server):
     d = wait(client, r["id"], lambda d: len(msgs(d, "in")) == 1)
     assert {k.lower(): v for k, v in json.loads(msgs(d, "in")[0]["data"])["headers"].items()}["x-from-script"] == "yes"
     client.post(f"/api/protocols/{r['id']}/close")
+
+
+# ── GraphQL sxema keshi (disk) ──
+def test_graphql_schema_cache_roundtrip_validation_and_delete(client):
+    intro = {"__schema": {"queryType": {"name": "Query"}, "types": []}}
+    assert client.get("/api/graphql/schema?key=http://x/graphql").get_json() == {"cached": False}
+    assert client.put("/api/graphql/schema", json={"key": "http://x/graphql", "introspection": {"nope": 1}}).status_code == 400
+    assert client.put("/api/graphql/schema", json={"key": "", "introspection": intro}).status_code == 400
+    assert client.put("/api/graphql/schema", json={"key": "http://x/graphql", "introspection": intro}).get_json()["ok"]
+    d = client.get("/api/graphql/schema?key=http://x/graphql").get_json()
+    assert d["cached"] and d["introspection"] == intro and d["fetched_at"] > 0
+    assert client.get("/api/graphql/schema?key=http://other/graphql").get_json() == {"cached": False}       # kalit bo'yicha alohida
+    client.delete("/api/graphql/schema?key=http://x/graphql")
+    assert client.get("/api/graphql/schema?key=http://x/graphql").get_json() == {"cached": False}

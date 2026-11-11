@@ -151,6 +151,10 @@ def apply_auth_config(cfg, v, method, url, headers, params, payload):
         key = sub("key").strip()
         if key:
             (params if cfg.get("in") == "query" else headers)[key] = sub("value")
+    elif t == "bearer":
+        headers["Authorization"] = "Bearer " + sub("token")
+    elif t == "basic":
+        headers["Authorization"] = "Basic " + base64.b64encode((sub("username") + ":" + sub("password")).encode("utf-8")).decode()
     elif t == "jwt":
         token = make_jwt(cfg, v)
         if cfg.get("addTo") == "query":
