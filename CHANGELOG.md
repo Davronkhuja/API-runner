@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [2.8.0] — 2026-11-09 — Bosqich 6: WebSocket, SSE, GraphQL
+### Added
+- **WebSocket tabi:** ulanish (headers, auth: Bearer/Basic/API Key/JWT/Hawk/SigV4, subprotokollar, ping), xabar yuborish (matn / JSON validatsiyasi bilan / binary hex·base64, ⌘↵), xabarlar oqimi (vaqt, yo'nalish, hajm; filtr: yo'nalish, tizim hodisalari; qidiruv + regex; kengaytirish — JSON chiroyli, binary hex dump; avto-scroll, tozalash, JSON/TXT eksport), **saqlangan xabar shablonlari**, **avtomatik qayta ulanish**, collection'ga saqlash, tarix, multi-tab (ulanish tab almashganda uzilmaydi), sahifa yangilangach jurnal tiklanadi.
+- **SSE tabi:** ulanish (GET/POST/PUT + tana, headers, auth), event'lar oqimi (tur, id, data, izohlar), event turi bo'yicha filtr va qidiruv, `Last-Event-ID` bilan davom ettirish, server `retry:`, Content-Type ogohlantirishi, HTTP xatolari tanasi bilan.
+- **GraphQL:** introspection (joriy URL/headers/auth bilan), schema explorer (root maydonlar → tayyor operatsiya + variables, tur brauzeri: enum/input/obyekt), sxemaga asoslangan **avtoto'ldirish** va **validatsiya** (lint), variables tekshiruvi (JSON xatosi, majburiy o'zgaruvchilar).
+- Backend: `core/protocols.py`, `api/protocols_api.py` (`/api/protocols/*`), `run_prerequest` (skriptlar ulanishdan oldin). `websockets` (runtime), `graphql-core` (faqat test serveri), npm: `graphql`, `cm6-graphql`.
+- Testlar: lokal WS/SSE/GraphQL serverlari (`tests/servers.py`); `test_protocols` (18), e2e `test_protocols_ui` (10), `test_graphql_ui` (5), vitest `protocols`; vizual baseline 27–29; layout/axe sahnalari.
+### Changed
+- Tree/⌘K/Overview'da metod o'rnida `WS`/`SSE`; so'rov metodi tanlagichiga `WS`, `SSE` qo'shildi.
+- Ochiq (bajarilmagan): Socket.IO, gRPC.
+
 ## [2.7.2] — 2026-11-09 — Fix: skript sandbox vaqt byudjeti (beqaror test sababi)
 ### Fixed
 - **Skript sandbox:** `ScriptSession` vaqt chegarasi (`timeout_ms`) kontekstni tayyorlash (kutubxonalar, prelude) va ichki chaqiruvlar (`set_event`, `set_response`, `set_sent_request`) davomida ham yurardi. Yuklama ostida bu 100 ms+ ketsa, ichki chaqiruvlar tutilmagan `ScriptTimeout` bilan **500 xato** berardi (`test_limits_api_clamps_and_applies` ning beqarorligi shundan edi: 24 parallel jarayonda 22 tasi yiqildi). Endi byudjet tayyorlash tugagach boshlanadi, ichki chaqiruvlar alohida mutlaq chegara bilan ishlaydi; foydalanuvchi skripti chegaradan oshsa oldingidek `TimeoutError` hisobotiga tushadi.

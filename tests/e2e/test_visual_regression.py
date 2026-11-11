@@ -309,3 +309,51 @@ def test_26_workspace_export_dialog(vp):
     T(vp, "wsexport-encrypt").check()
     expect(T(vp, "wsexport-warning")).to_be_visible()
     snap(vp, "26-wsexport-dialog")
+
+
+MASK_PROTO = ".plog .t,[data-testid=url],.cm-content[data-testid=url]{visibility:hidden!important}"
+
+
+def _proto(vp, kind, url):
+    T(vp, "new-tab").click()
+    vp.select_option("[data-testid=method]", kind)
+    T(vp, "url").click()
+    vp.keyboard.press("ControlOrMeta+a")
+    vp.keyboard.type(url)
+    vp.keyboard.press("Escape")
+    T(vp, "proto-connect").click()
+    vp.add_style_tag(content=MASK_PROTO)                                                   # URL'da tasodifiy port bor
+
+
+def test_27_websocket_session(vp, ws_server):
+    _proto(vp, "WS", ws_server.url + "/echo")
+    expect(T(vp, "proto-status")).to_have_text("Ulangan")
+    T(vp, "proto-compose-text").click()
+    vp.keyboard.type("salom")
+    T(vp, "proto-send").click()
+    expect(T(vp, "proto-msg")).to_have_count(2)
+    T(vp, "proto-msg").nth(1).locator(".pline").click()
+    snap(vp, "27-websocket")
+
+
+def test_28_sse_session(vp, sse_server):
+    _proto(vp, "SSE", sse_server + "/sse/basic")
+    expect(T(vp, "proto-msg")).to_have_count(3)
+    T(vp, "proto-msg").nth(1).locator(".pline").click()
+    snap(vp, "28-sse")
+
+
+def test_29_graphql_explorer(vp, gql_server):
+    vp.unroute("**/run_one")                                                                # haqiqiy introspection kerak
+    T(vp, "new-tab").click()
+    vp.select_option("[data-testid=method]", "POST")
+    T(vp, "url").click()
+    vp.keyboard.type(gql_server + "/graphql")
+    vp.keyboard.press("Escape")
+    vp.add_style_tag(content=MASK_PROTO)
+    vp.click("[data-section=body]")
+    vp.click("[data-testid=body-mode] [data-mode=graphql]")
+    T(vp, "gql-introspect").click()
+    expect(T(vp, "gql-schema-info")).to_be_visible()
+    T(vp, "gql-explorer-toggle").click()
+    snap(vp, "29-graphql")

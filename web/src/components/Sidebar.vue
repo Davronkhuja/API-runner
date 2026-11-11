@@ -15,6 +15,7 @@ import { askConfirm, exportOf, findOpen, showToast, sidePanel, trashOpen } from 
 import Icon from './Icon.vue'
 import { authName, hasRealAuth, openNodeTab } from '../lib/nodes'
 import { nameWarning, renameNode, suggestName, validateName } from '../lib/rename'
+import { methodOf } from '../lib/draft'
 import { exId, ensureExampleIds, openExample } from '../lib/examples'
 import { isFolder, type DropPosition, type RequestItem, type TreeItem } from '../types/model'
 import { draftFromItem } from '../lib/draft'
@@ -263,7 +264,7 @@ async function newEnv() { const id = await ws.createEnv('Yangi muhit'); openEnv(
           <span v-if="r.hasExamples" class="ico ex-chev" data-testid="ex-chevron" role="button" :aria-label="r.expanded ? 'Namunalarni yopish' : 'Namunalarni ochish'" :style="{ transform: r.expanded ? 'rotate(90deg)' : 'none' }" @click.stop="tree.setExpanded(keyOf(r), !r.expanded)"><Icon name="chevron-right" :size="12" /></span>
           <span v-if="r.isCollection" class="ico" style="width:18px;height:18px;border-radius:5px;background:var(--accent-weak);color:var(--accent-text);align-items:center;justify-content:center"><Icon name="layers" :size="12" /></span>
           <span v-else-if="r.folder" class="ico"><Icon name="folder" :size="15" /></span>
-          <span v-else class="m" :class="'m-' + (r.item as any).request.method">{{ (r.item as any).request.method }}</span>
+          <span v-else class="m" :class="'m-' + methodOf(r.item)">{{ methodOf(r.item) }}</span>
           <input v-if="renaming === rowKey(r.collectionId, r.id)" v-model="renameVal" v-focus-select aria-label="Yangi nom" style="flex:1;height:var(--ctl-xs);padding:0 6px" data-testid="rename-input"
                  @click.stop @keydown.stop @keydown.enter.prevent="commitRename(r, 'enter')" @keydown.esc.prevent="cancelRename" @blur="commitRename(r, 'blur')">
           <small v-if="renaming === rowKey(r.collectionId, r.id) && renameWarn(r)" class="name-warn name-warn-abs" data-testid="name-warn" role="status">{{ renameWarn(r) }}</small>

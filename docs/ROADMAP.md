@@ -94,7 +94,9 @@ Belgilar: [x] bajarildi va e2e bilan qoplangan · [~] qisman / ataylab boshqacha
 - [x] Postman v2.0/2.1, env/globals, OpenAPI/Swagger, Insomnia, HAR, cURL; export (Postman, OpenAPI, workspace zip); round-trip testlar — v2.7.0 (`docs/adr/0008-import-export.md`)
 
 ## Bosqich 6 — Boshqa protokollar
-- [ ] GraphQL, WebSocket, SSE, Socket.IO (ixtiyoriy), gRPC (ixtiyoriy)
+- [x] GraphQL, WebSocket, SSE — v2.8.0 (`docs/adr/0009-protocols.md`)
+- [ ] Socket.IO (ixtiyoriy)
+- [ ] gRPC (ixtiyoriy)
 
 ## Bosqich 7 — Kengaytirilgan imkoniyatlar
 - [ ] CLI, mock server, hujjatlar generatsiyasi, paketlash

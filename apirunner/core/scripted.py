@@ -379,6 +379,41 @@ def run_item(spec, services, scripts=None, ref=None, row=None, info=None, ctx_kw
     return result
 
 
+def run_prerequest(spec, services, scripts=None, ref=None, row=None, info=None):
+    """Faqat pre-request skriptlari (WebSocket/SSE ulanishidan oldin): so'rov (url/header/param) va o'zgaruvchilarni o'zgartirishi mumkin.
+
+    Qaytaradi: (spec2, variables, report) — report `run_item` dagi `scripts` bilan bir xil shaklda."""
+    scripts = scripts or {}
+    pre = [_src(x, "prerequest") for x in scripts.get("prerequest") or []]
+    spec = {k: v for k, v in spec.items() if k not in ("scripts", "ref", "scripts_info")}
+    base_vars = dict(spec.get("env_vars") or {})
+    if not pre:
+        return spec, base_vars, None
+    if not scripting.available():
+        return spec, base_vars, {"available": False, "message": "Skriptlar o'chiq: quickjs-ng o'rnatilmagan", "install": scripting.INSTALL_HINT, "tests": [], "console": [], "errors": []}
+    ws = services.ws
+    limits = Limits.from_meta(ws.meta() if ws is not None else {})
+    settings = (ws.meta().get("settings") if ws is not None else None) or {}
+    scopes, env_id, env_name, active_env = load_scopes(ws, ref, row)
+    before = json.loads(json.dumps(scopes))
+    host = EngineHost(services, merged(scopes), settings)
+    view = request_view(spec)
+    session = ScriptSession(scopes, view, {**dict(info or {}), "eventName": "prerequest"}, limits, host, active_env, env_name)
+    for sc in pre:
+        session.run(sc)
+    mid = session.collect_state()
+    spec2 = apply_request(spec, mid["request"], view) if mid["request"] else spec
+    report = session.collect()
+    written = []
+    try:
+        written = persist(ws, ref, env_id, before, report.scopes, report.changed)
+    except Exception as exc:        # noqa: BLE001
+        report.errors.append({"name": "PersistError", "message": "O'zgaruvchilarni saqlab bo'lmadi: %s" % exc, "stack": "", "line": None, "origin": {"kind": "persist", "scope": "", "name": "", "id": ""}})
+    variables = {**base_vars, **merged(mid["scopes"])}
+    return spec2, variables, {"available": True, "tests": report.tests, "console": report.logs, "errors": report.errors, "skipped": mid["skip"], "changed": written, "aborted": report.aborted, "limits": limits.as_dict(),
+                              "variables": {k: {kk: _s(vv) for kk, vv in report.scopes.get(k, {}).items()} for k in ("environment", "globals", "collection")} if report.changed else {}}
+
+
 def _src(x, kind):
     if isinstance(x, ScriptSource):
         return x

@@ -25,7 +25,7 @@ const scopeNode = computed<any>(() => (fid ? tree.findItem(cid, fid) : tree.cols
 const scopeName = computed(() => scopeNode.value?.name ?? scopeNode.value?.info?.name ?? '')
 
 function flat(items: TreeItem[], path = ''): { id: string; name: string; method: string; path: string; item: RequestItem }[] {
-  return items.flatMap(i => isFolder(i) ? flat(i.item, path + i.name + ' / ') : [{ id: i.id, name: i.name, method: i.request.method, path, item: i }])
+  return items.flatMap(i => isFolder(i) ? flat(i.item, path + i.name + ' / ') : (i as any)['x-apirunner']?.protocol ? [] : [{ id: i.id, name: i.name, method: i.request.method, path, item: i }])
 }
 const base = computed(() => flat((fid ? (scopeNode.value?.item ?? []) : (tree.cols[cid]?.item ?? []))))
 const items = computed(() => {

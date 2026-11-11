@@ -23,7 +23,7 @@ export interface RequestItem {
   request: PmRequest
   response: unknown[] // Examples (lib/examples.ts: Example)
   event?: { listen: string; script: { type?: string; exec: string[] | string } }[]
-  'x-apirunner'?: { legacy?: Record<string, any>; files_migrated?: boolean; pre_files_body?: unknown; settings?: Record<string, any> }
+  'x-apirunner'?: { legacy?: Record<string, any>; files_migrated?: boolean; pre_files_body?: unknown; settings?: Record<string, any>; protocol?: 'ws' | 'sse'; proto?: any }
 }
 export interface FolderItem {
   id: string

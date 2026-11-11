@@ -8,6 +8,7 @@ import { authFromPm, authToPm, type AuthDraft } from '../lib/auth'
 import { exportOf, fmtMs, showToast, sidePanel } from '../lib/ui'
 import { openRequest } from '../lib/actions'
 import { lastResults } from '../lib/runs'
+import { methodOf } from '../lib/draft'
 import { eventsFromText, lastErrors, textFromEvents, type ScriptSet } from '../lib/scripts'
 import { authSource, folderPath } from '../lib/scope'
 import { authName, hasRealAuth, openNodeTab, overridableRequests, requestsIn, sameAuth, type Section } from '../lib/nodes'
@@ -67,7 +68,7 @@ const rows = computed(() => reqs.value.map(r => {
   const own = !!a?.type && a.type !== 'noauth'
   const res = lastRes.value[`${cid}:${r.item.id}`]
   return {
-    id: r.item.id, method: r.item.request.method, name: r.item.name, path: r.path,
+    id: r.item.id, method: methodOf(r.item), name: r.item.name, path: r.path,
     auth: a?.type === 'noauth' ? "Auth yo'q" : own ? `${authName(a)} (o'zi)` : '↑ Meros', own, none: a?.type === 'noauth',
     status: res?.status, ok: res ? isOkStatus(res.status) : null, time: res ? fmtMs(res.time) : '—',
   }

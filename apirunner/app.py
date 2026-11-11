@@ -5,10 +5,11 @@ import webbrowser
 
 from flask import Flask, Response, request, send_from_directory
 
-from .api import admin_api, importexport_api, legacy, oauth, runs_api, security, workspace_api
+from .api import admin_api, importexport_api, protocols_api, legacy, oauth, runs_api, security, workspace_api
 from .core.jobs import JobManager
 from .core.run_engine import RunManager
 from .storage.cookies import CookieStore
+from .core.protocols import ProtocolManager
 from .storage.db import StateDB
 from .storage.runs import RunStore
 from . import __version__
@@ -36,6 +37,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.extensions["workspace"] = ws
     app.config["STARTED_AT"] = time.time()
     app.extensions["trash"] = ws.trash
+    app.extensions["protocols"] = ProtocolManager()
     app.extensions["trash"].purge_expired()                          # 30 kundan oshganlar ishga tushganda tozalanadi
     app.extensions["db"] = StateDB(os.path.join(ws.root, "state.db"))
     app.extensions["backup_dir"] = backup_dir
@@ -53,6 +55,7 @@ def create_app(workspace_dir=None, saved_file=None, upload_dir=None, session_tok
     app.register_blueprint(runs_api.bp)
     app.register_blueprint(admin_api.bp)
     app.register_blueprint(importexport_api.bp)
+    app.register_blueprint(protocols_api.bp)
     app.register_blueprint(oauth.bp)
 
     static = os.path.join(PKG_DIR, "static")

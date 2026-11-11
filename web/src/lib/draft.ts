@@ -6,7 +6,25 @@ import { cleanSettings, type ReqSettings } from './settings'
 import { emptyScripts, eventsFromText, textFromEvents, type ScriptSet } from './scripts'
 import { authFromPm, authHeader, authToPm, emptyAuth, type AuthDraft, type AuthType } from './auth'
 export { authHeader, type AuthType }
+export type Protocol = 'http' | 'ws' | 'sse'
+export interface WsTemplate { id: string; name: string; kind: 'text' | 'json' | 'binary'; data: string; encoding: 'base64' | 'hex' }
+/** WebSocket / SSE sozlamalari (so'rov bilan birga collection'ga saqlanadi: `x-apirunner.proto`). */
+export interface ProtoDraft {
+  subprotocols: string
+  messages: WsTemplate[]
+  reconnect: { enabled: boolean; delay_ms: number; max_attempts: number; always: boolean }
+  lastEventId: string
+  pingInterval: number
+  sseMethod: 'GET' | 'POST' | 'PUT'
+}
+export const newProto = (): ProtoDraft => ({ subprotocols: '', messages: [], reconnect: { enabled: false, delay_ms: 1000, max_attempts: 5, always: false }, lastEventId: '', pingInterval: 0, sseMethod: 'GET' })
+export const protoLabel = (p: Protocol | undefined, method: string) => (p === 'ws' ? 'WS' : p === 'sse' ? 'SSE' : method)
+export const methodOf = (item: any): string => protoLabel(item?.['x-apirunner']?.protocol, item?.request?.method ?? 'GET')
+
 export interface RequestDraft {
+  /** `http` (sukut) | `ws` | `sse` */
+  protocol: Protocol
+  proto: ProtoDraft
   name: string
   /** Markdown tavsif (Postman `request.description`) */
   description: string
@@ -50,7 +68,7 @@ export function paramsFromUrl(url: string, existing: KV[]): KV[] {
 
 export function newDraft(name = 'Yangi so\'rov'): RequestDraft {
   return {
-    name, description: '', method: 'GET', url: '', params: [emptyKV()], headers: [emptyKV()],
+    name, description: '', protocol: 'http', proto: newProto(), method: 'GET', url: '', params: [emptyKV()], headers: [emptyKV()],
     auth: emptyAuth('inherit'), pathVars: [], settings: {}, scripts: emptyScripts(),
     body: { mode: 'none', raw: '', contentType: '', fields: [emptyKV()], file: { path: '', name: '' }, gql: { query: '', variables: '' } },
   }
@@ -62,6 +80,8 @@ const withTrailing = (rows: KV[]) => (rows.length && !rows[rows.length - 1].key 
 export function draftFromItem(item: RequestItem): RequestDraft {
   const d = newDraft(item.name)
   d.settings = cleanSettings(item['x-apirunner']?.settings)
+  const px = item['x-apirunner']
+  if (px?.protocol === 'ws' || px?.protocol === 'sse') { d.protocol = px.protocol; d.proto = { ...newProto(), ...(px.proto ?? {}), reconnect: { ...newProto().reconnect, ...(px.proto?.reconnect ?? {}) } } }
   d.scripts = textFromEvents(item)
   const lg = item['x-apirunner']?.files_migrated ? undefined : item['x-apirunner']?.legacy    // fayllar Body'ga ko'chirilgan so'rov — `request` manba
   if (lg) {
@@ -143,14 +163,17 @@ export function migrateParamFiles(d: any) {
 export function normalizeDraft(d: any): RequestDraft {
   const base = newDraft(d?.name)
   d = migrateParamFiles(d)
-  return { ...base, ...d, body: { ...base.body, ...(d?.body ?? {}) }, scripts: { ...base.scripts, ...(d?.scripts ?? {}) }, settings: d?.settings ?? {}, pathVars: d?.pathVars ?? [], auth: { ...base.auth, ...(d?.auth ?? {}) } }
+  return { ...base, ...d, body: { ...base.body, ...(d?.body ?? {}) }, scripts: { ...base.scripts, ...(d?.scripts ?? {}) }, proto: { ...base.proto, ...(d?.proto ?? {}), reconnect: { ...base.proto.reconnect, ...(d?.proto?.reconnect ?? {}) } }, settings: d?.settings ?? {}, pathVars: d?.pathVars ?? [], auth: { ...base.auth, ...(d?.auth ?? {}) } }
 }
 
 /** Saqlashda `event[]` (pre-request / tests). Boshqa event'lar saqlanadi. */
 export const eventsFromDraft = (d: RequestDraft, existing?: any[]) => eventsFromText(existing, d.scripts)
 
 /** Saqlashda `x-apirunner` kengaytmasi (faqat bo'sh bo'lmagan sozlamalar). */
-export const extFromDraft = (d: RequestDraft) => { const s = cleanSettings(d.settings); return Object.keys(s).length ? { settings: s } : {} }
+export const extFromDraft = (d: RequestDraft) => {
+  const s = cleanSettings(d.settings)
+  return { ...(Object.keys(s).length ? { settings: s } : {}), ...(d.protocol !== 'http' ? { protocol: d.protocol, proto: d.proto } : {}) }
+}
 
 /** Qoralama -> backend engine spec (/run_one, /run). Faqat yoqilgan qatorlar. */
 export function specFromDraft(d: RequestDraft, vars: Record<string, string> = {}) {

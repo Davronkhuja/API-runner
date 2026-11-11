@@ -9,6 +9,9 @@ import { layout } from '../lib/view'
 import { clampPane, drag, HANDLE, loadJSON, MIN_PANE, MIN_REQ, MIN_REQ_SIDE, MIN_RESP_SIDE, saveJSON } from '../lib/resize'
 import KvTable from './KvTable.vue'
 import DocsPanel from './DocsPanel.vue'
+import ProtocolPanel from './ProtocolPanel.vue'
+import GraphqlPanel from './GraphqlPanel.vue'
+import { useProtocols } from '../stores/protocols'
 import CodeEditor from './CodeEditor.vue'
 import ResponsePanel from './ResponsePanel.vue'
 import SettingsForm from './SettingsForm.vue'
@@ -38,6 +41,16 @@ const d = computed(() => props.tab.draft!)
 const section = computed({ get: () => props.tab.activeSection ?? 'params', set: v => (props.tab.activeSection = v) })
 const touch = () => tabs.touch(props.tab.id)
 const curlOpen = ref(false)
+const protos = useProtocols()
+const isProto = computed(() => d.value.protocol !== 'http')
+const plive = computed(() => ['connecting', 'open', 'reconnecting'].includes(protos.conns[props.tab.id]?.status ?? 'idle'))
+const methodSel = computed(() => (d.value.protocol === 'ws' ? 'WS' : d.value.protocol === 'sse' ? 'SSE' : d.value.method))
+function onMethodSel(e: Event) {
+  const v = (e.target as HTMLSelectElement).value
+  if (v === 'WS' || v === 'SSE') { d.value.protocol = v === 'WS' ? 'ws' : 'sse'; d.value.method = 'GET'; if (!d.value.url.trim()) d.value.url = v === 'WS' ? 'ws://' : '' }
+  else { d.value.protocol = 'http'; d.value.method = v }
+  onMethodChange(); touch()
+}
 const docsOpen = computed({ get: () => !!props.tab.state?.docsOpen, set: v => { (props.tab.state ??= {}).docsOpen = v; tabs.persistSoon() } })
 const sendMenu = ref(false)
 const sendSplit = ref<HTMLElement>()
@@ -229,22 +242,27 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       <div style="flex:1" />
       <button class="sm" data-testid="save" :disabled="!tab.dirty && !!tab.ref" aria-keyshortcuts="Control+S Meta+S" @click="saveTab(tab)"><Icon name="save" :size="14" />Saqlash <span class="muted" style="font-size:var(--fs-xs)">⌘S</span></button>
       <button class="sm" data-testid="docs-btn" :aria-pressed="docsOpen" title="Markdown tavsif (Docs)" @click="docsOpen = !docsOpen">Docs<span v-if="d.description?.trim()" class="dot-on" aria-label="tavsif bor" /></button>
-      <button class="sm" data-testid="curl-btn" title="Kod namunasi (cURL, Python, JS, Go, ...)" @click="curlOpen = true">&lt;/&gt; Kod</button>
+      <button v-if="!isProto" class="sm" data-testid="curl-btn" title="Kod namunasi (cURL, Python, JS, Go, ...)" @click="curlOpen = true">&lt;/&gt; Kod</button>
     </div>
     <div class="urlbar" style="position:relative">
       <div class="urlfield">
-        <select v-model="d.method" data-testid="method" aria-label="HTTP metod" :class="'m-' + d.method" @change="onMethodChange">
+        <select :value="methodSel" data-testid="method" aria-label="Metod yoki protokol" :class="'m-' + methodSel" @change="onMethodSel">
           <option v-for="m in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']" :key="m" :class="'m-' + m">{{ m }}</option>
+          <option value="WS" class="m-WS">WS</option><option value="SSE" class="m-SSE">SSE</option>
         </select>
         <div class="urlwrap">
           <UrlEditor ref="urlEl" v-model="d.url" :vars="urlVar" placeholder="https://api.example.com/endpoint/{{id}}  yoki  curl '...' ni bu yerga joylashtiring"
-                     @input="onUrlInput" @paste="onUrlPaste" @focus="showHist = true; hist.load()" @blur="hideHist" @enter="sendTab(tab)" @tip="chipTip = $event" />
+                     @input="onUrlInput" @paste="onUrlPaste" @focus="showHist = true; hist.load()" @blur="hideHist" @enter="isProto ? (plive || protos.connect(tab)) : sendTab(tab)" @tip="chipTip = $event" />
         </div>
       </div>
       <div v-if="showHist && urlHist.length" class="menu" style="position:absolute;left:18px;top:42px;right:150px" data-testid="url-history" role="listbox" aria-label="URL tarixi">
         <button v-for="(h, i) in urlHist" :key="i" role="option" @mousedown.prevent="d.method = h.method; d.url = h.url; d.pathVars = syncPathVars(d.url, d.pathVars); touch()"><b class="m" :class="'m-' + h.method" style="font:700 var(--fs-xs) var(--font-mono);width:52px;text-align:left">{{ h.method }}</b> {{ h.url }}</button>
       </div>
-      <span ref="sendSplit" class="send-split" @keydown.esc="sendMenu = false">
+      <span v-if="isProto" class="send-split">
+        <button v-if="!plive" class="primary" data-testid="proto-connect" :disabled="!d.url.trim()" @click="protos.connect(tab)"><Icon name="bolt" :size="15" />Ulanish</button>
+        <button v-else class="primary stop" data-testid="proto-disconnect" @click="protos.disconnect(tab)"><Icon name="x" :size="15" />Uzish</button>
+      </span>
+      <span v-else ref="sendSplit" class="send-split" @keydown.esc="sendMenu = false">
         <button class="primary" data-testid="send" :disabled="tab.response?.loading" aria-keyshortcuts="Control+Enter Meta+Enter" @click="sendTab(tab)"><Icon name="send" :size="15" />{{ tab.response?.loading ? 'Yuborilmoqda…' : 'Yuborish' }}</button>
         <button class="primary send-caret" data-testid="send-menu" aria-label="Yuborish variantlari" aria-haspopup="menu" :aria-expanded="sendMenu" :disabled="tab.response?.loading" @click="sendMenu = !sendMenu"><Icon name="chevron-down" :size="14" /></button>
         <div v-if="sendMenu" class="menu send-pop" role="menu"><button role="menuitem" data-testid="send-download" @click="sendMenu = false; sendTab(tab, { download: true })">Yuborish va yuklab olish</button></div>
@@ -255,7 +273,8 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
       <span v-for="v in extraVars" :key="v.name" class="var-chip" :class="v.ok ? 'var-ok' : 'var-undef'" data-testid="var-chip" :title="v.title">{{ v.name }}</span>
     </div>
     <div class="work-row">
-    <div ref="workEl" class="work" :class="{ side: layout === 'side', maxed: respMax }" data-testid="work">
+    <ProtocolPanel v-if="isProto" :tab="tab" />
+    <div v-else ref="workEl" class="work" :class="{ side: layout === 'side', maxed: respMax }" data-testid="work">
     <div class="req-pane">
     <div class="sections" data-testid="sections">
       <div class="sec-tabs" role="tablist" aria-label="So'rov bo'limlari" @keydown="onSectionKey">
@@ -311,10 +330,7 @@ watch(() => props.tab.id, async () => { await nextTick(); if (reqEl.value) reqEl
           <template v-else><span class="muted">Faylni shu yerga tashlang yoki</span><button data-testid="binary-pick" @click="binInput?.click()">Fayl tanlash…</button></template>
           <input ref="binInput" type="file" hidden data-testid="binary-file" @change="pickBinary">
         </div>
-        <div v-else-if="d.body.mode === 'graphql'" data-testid="graphql-panel" class="gql-panel">
-          <b>Query</b><CodeEditor v-model="d.body.gql.query" lang="raw" testid="gql-query" label="GraphQL query" placeholder="query { users { id name } }" class="body-editor gql-q" @update:model-value="touch" />
-          <b>Variables (JSON)</b><CodeEditor v-model="d.body.gql.variables" lang="json" testid="gql-vars" label="GraphQL variables" placeholder='{ "id": 1 }' class="body-editor gql-v" @update:model-value="touch" />
-        </div>
+        <GraphqlPanel v-else-if="d.body.mode === 'graphql'" :tab="tab" />
         <KvTable v-else-if="d.body.mode === 'form'" :rows="d.body.fields" testid="form-table" @change="touch" />
         <KvTable v-else-if="d.body.mode === 'multipart'" :rows="d.body.fields" formdata testid="formdata-table" @change="touch" />
       </div>
