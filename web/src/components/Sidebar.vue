@@ -81,8 +81,9 @@ function stopScroll() { scrollDir = 0; if (scrollRaf) cancelAnimationFrame(scrol
 onBeforeUnmount(stopScroll)
 const moreOpen = ref(false), moreRoot = ref<HTMLElement>()
 const onDocDown = (e: MouseEvent) => { if (moreOpen.value && !moreRoot.value?.contains(e.target as Node)) moreOpen.value = false }
-onMounted(() => document.addEventListener('mousedown', onDocDown))
-onBeforeUnmount(() => document.removeEventListener('mousedown', onDocDown))
+const onDocKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && moreOpen.value) { moreOpen.value = false; e.stopPropagation() } }
+onMounted(() => { document.addEventListener('mousedown', onDocDown); document.addEventListener('keydown', onDocKey, true) })
+onBeforeUnmount(() => { document.removeEventListener('mousedown', onDocDown); document.removeEventListener('keydown', onDocKey, true) })
 
 // ── Fayl tashlash (Postman/OpenAPI/CSV/cURL) — import Bosqich 5 da; hozir App.vue ushlaydi ──
 
