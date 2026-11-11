@@ -64,3 +64,22 @@ def test_busy_port_shows_error_and_overview_button(ui, app):
     T(ui, "mock-start").click()
     expect(T(ui, "mock-status")).to_be_visible()
     T(ui, "mock-stop").click()
+
+
+def test_generate_docs_button_downloads_html_for_collection_and_folder(ui, app):
+    col = app.api("GET", f"/api/collections/{ui.cid}")
+    col["item"].append({"id": "fo", "name": "Sub", "item": [{"id": "r9", "name": "Deep", "request": {"method": "GET", "header": [], "url": {"raw": "{{base}}/deep"}}, "response": []}]})
+    app.api("PUT", f"/api/collections/{ui.cid}", col)
+    ui.reload()
+    ui.wait_for_selector("[data-testid=app]")
+    ui.locator("[data-testid=tree-row][data-name='Mockable']").dblclick()
+    with ui.expect_download() as d:
+        T(ui, "scope-docs-gen").click()
+    assert d.value.suggested_filename == "Mockable.docs.html"
+    html = open(d.value.path(), encoding="utf-8").read()
+    assert "Get user" in html and "Deep" in html
+    ui.locator("[data-testid=tree-row][data-name='Sub']").dblclick()
+    with ui.expect_download() as d2:
+        T(ui, "scope-docs-gen").click()
+    html2 = open(d2.value.path(), encoding="utf-8").read()
+    assert "Deep" in html2 and "Get user" not in html2

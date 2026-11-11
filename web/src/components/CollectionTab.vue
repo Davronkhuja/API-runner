@@ -8,6 +8,7 @@ import { authFromPm, authToPm, type AuthDraft } from '../lib/auth'
 import { exportOf, mockOf, fmtMs, showToast, sidePanel } from '../lib/ui'
 import { openRequest } from '../lib/actions'
 import { lastResults } from '../lib/runs'
+import { downloadFrom } from '../lib/exporter'
 import { methodOf } from '../lib/draft'
 import { eventsFromText, lastErrors, textFromEvents, type ScriptSet } from '../lib/scripts'
 import { authSource, folderPath } from '../lib/scope'
@@ -133,6 +134,7 @@ async function save() {
     <div style="display:flex;gap:10px;align-items:center">
       <h3 style="flex:1;margin:0" data-testid="node-title"><InlineName v-model:editing="renamingTitle" testid="node-rename" :value="name" :warn="v => nameWarning(cid, isFolder ? fid : null, v)" :suggest="suggestName" :validate="v => validateName(cid, isFolder ? fid : null, v)" :commit="v => renameNode(cid, isFolder ? fid : null, v)" :label="isFolder ? 'Papka nomi' : 'Collection nomi'" /></h3>
       <button data-testid="scope-run-header" :disabled="!reqs.length" @click="tabs.open('runner', props.tab.ref!, 'Runner: ' + name, { permanent: true })"><Icon name="play" :size="14" />{{ isFolder ? 'Papkani' : "Collection'ni" }} ishga tushirish</button>
+      <button data-testid="scope-docs-gen" title="Tavsiflar va Example'lardan statik HTML hujjat" :disabled="!reqs.length" @click="downloadFrom(`/api/collections/${cid}/docs${isFolder ? '?folder=' + encodeURIComponent(fid) : ''}`)"><Icon name="file" :size="14" />Hujjat yaratish</button>
       <button v-if="!isFolder" data-testid="scope-mock" title="Example'lar asosida mock server" @click="mockOf = { cid, name }">Mock</button>
       <button v-if="!isFolder" data-testid="scope-export" title="Postman v2.1 / OpenAPI" @click="exportOf = { cid, name, requests: reqs.length }"><Icon name="download" :size="14" />Eksport</button>
       <button class="primary" data-testid="scope-save" :disabled="!tab.dirty" @click="save">Saqlash</button>
