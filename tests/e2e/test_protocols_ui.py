@@ -4,6 +4,8 @@ import json
 import pytest
 from playwright.sync_api import expect
 
+from tests.e2e.conftest import eventually
+
 from apirunner.core import scripting
 
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
@@ -265,7 +267,9 @@ def test_session_log_is_restored_after_page_reload_and_history_has_ws_entry(ui, 
     expect(msgs(ui)).to_have_count(1)                                                      # jurnal server sessiyasidan tiklandi
     expect(T(ui, "proto-status")).to_have_text("Ulangan")
     T(ui, "proto-disconnect").click()
-    hist = [h for h in app.api("GET", "/api/history?kind=request&limit=10") if h["payload"].get("protocol") == "ws"]
+    ws_hist = lambda: [h for h in app.api("GET", "/api/history?kind=request&limit=10") if h["payload"].get("protocol") == "ws"]  # noqa: E731
+    eventually(ws_hist)                                                                      # tarix yozuvi uzilishdan keyin asinxron yoziladi
+    hist = ws_hist()
     assert hist and hist[0]["payload"]["method"] == "WS" and hist[0]["payload"]["url"].endswith("/greet")
     ui.click("[data-testid=sb-history]")
     row = ui.locator("[data-testid=sh-row]").first if ui.locator("[data-testid=sh-row]").count() else None

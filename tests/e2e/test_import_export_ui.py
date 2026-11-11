@@ -60,6 +60,7 @@ def test_conflict_choices_merge_replace_copy_and_skip(ui, app):
     expect(T(ui, "import-confirm")).to_be_disabled()                                         # hech narsa tanlanmagan
     sel.select_option("merge")
     T(ui, "import-confirm").click()
+    expect(T(ui, "import-confirm")).to_have_count(0)                                           # import yakunlangach tekshiramiz
     assert len([c for c in app.api("GET", "/api/workspace")["collections"] if c["name"] != "Mening collection"]) == 1       # birlashtirish yangi collection yaratmadi
     open_import(ui)
     add_file(ui, "postman", "newman_reporter_sample.json")

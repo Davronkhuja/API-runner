@@ -81,6 +81,7 @@ def test_switch_asks_confirmation_when_connections_are_open(ui, app, ws_server):
     ui.locator("[data-testid=ws-item][data-name='Boshqa'] [data-testid=ws-pick]").click()
     expect(T(ui, "confirm-dialog")).to_contain_text("ulanishlari")
     ui.keyboard.press("Escape")
+    expect(T(ui, "confirm-dialog")).to_have_count(0)
     assert app.api("GET", "/api/workspaces")["active"] == "default"
     open_menu(ui)
     ui.locator("[data-testid=ws-item][data-name='Boshqa'] [data-testid=ws-pick]").click()

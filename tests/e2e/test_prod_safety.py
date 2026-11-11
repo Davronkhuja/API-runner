@@ -3,6 +3,8 @@ import pytest
 import requests
 from playwright.sync_api import expect
 
+from tests.e2e.conftest import eventually
+
 from conftest import E2E_TOKEN
 
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
@@ -63,6 +65,7 @@ def test_env_kind_and_confirm_setting_are_saved_and_validated(app, world, page):
     page.click("[data-kind=prod]")
     expect(T(page, "env-confirm-writes")).to_be_checked()                       # Prod uchun sukut bo'yicha yoqiq
     T(page, "env-save").click()
+    eventually(lambda: app.api("GET", f"/api/environments/{eid}")["kind"] == "prod")           # saqlash asinxron
     saved = app.api("GET", f"/api/environments/{eid}")
     assert saved["kind"] == "prod" and saved["confirm_writes"] is True
     r = requests.put(app.url + f"/api/environments/{eid}", json={**saved, "kind": "staging"}, headers={"X-Session-Token": E2E_TOKEN})

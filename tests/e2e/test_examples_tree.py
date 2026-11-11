@@ -4,6 +4,8 @@ import json
 import pytest
 from playwright.sync_api import expect
 
+from tests.e2e.conftest import eventually
+
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
 
 
@@ -59,6 +61,7 @@ def test_open_edit_and_save_example_assigns_ids_and_persists(ui, app, world):
     ui.locator("[data-cell='0:1']").fill("text/plain")
     expect(T(ui, "example-save")).to_be_enabled()
     T(ui, "example-save").click()
+    eventually(lambda: next(e for e in examples_on_server(app, world) if e["name"] == "Missing")["code"] == 410)       # saqlash asinxron: serverga yetguncha kutamiz
     exs = examples_on_server(app, world)
     assert all(e.get("id") for e in exs)                                   # eski id'siz example'larga id berildi
     miss = next(e for e in exs if e["name"] == "Missing")
@@ -76,7 +79,7 @@ def test_unsaved_edit_survives_tab_switch_and_close_dialog_saves(ui, app, world)
     expect(T(ui, "example-name")).to_have_value("Renamed")
     ui.locator("[data-testid=tab]", has_text="Success").locator("[data-testid=tab-close]").click()
     T(ui, "dlg-save").click()
-    assert any(e["name"] == "Renamed" for e in examples_on_server(app, world))
+    eventually(lambda: any(e["name"] == "Renamed" for e in examples_on_server(app, world)))
 
 
 def test_duplicate_and_delete_via_context_menu(ui, app, world):
@@ -99,6 +102,7 @@ def test_save_as_example_from_response_shows_up_in_tree(ui, app, world, echo_ser
         T(ui, "send").click()
     expect(T(ui, "resp-status")).to_have_text("200")
     T(ui, "save-example").click()
+    eventually(lambda: len(examples_on_server(app, world, "r2")) == 1)
     ex = examples_on_server(app, world, "r2")
     assert len(ex) == 1 and ex[0]["id"] and ex[0]["code"] == 200
     ui.locator("[data-name='Plain'] [data-testid=ex-chevron]").click()

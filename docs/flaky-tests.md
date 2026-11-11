@@ -19,6 +19,9 @@ Ya'ni **yuklama o'zi** bu beshta testni yiqitmaydi. Sabab boshqa joyda ekanini k
    - `test_multitab_spec::test_environment_opens_as_tab`: bir martalik `titles()` o'qish → `expect(...).to_have_count(1)`.
 3. **Ilova nuqsoni (tuzatildi, tadqiqot paytida topildi):** fokusdagi element (masalan «Qayta urinish») dialog ichida DOM'dan o'chsa, fokus `body`ga tushar va **Esc dialogni yopmasdi** (Dialog faqat o'z overlay'idagi `keydown`ni tinglardi). Endi eng ustki dialog Esc'ni hujjat darajasida ham ushlaydi (regressiya testlari `test_polish_ui`).
 
+## Yakuniy yurishda topilgan yana bir poyga va tizimli tozalash
+To'liq majmuaning yakuniy yurishida `test_examples_tree::test_open_edit_and_save_example_assigns_ids_and_persists` yiqildi (`assert 404 == 410`): «Saqlash» bosilgach test serverdagi holatni **darhol** o'qigan, PUT hali yetib bormagan. Bu bir xil sinf (bosish → bir martalik o'qish). Barcha `e2e` testlari skaner qilindi (bosish/yozish qatoridan keyingi qatorda `app.api("GET", …)`/`*_on_server`), 7 ta shunday joy topildi va `eventually(...)` yoki `expect(...)` bilan tuzatildi: `test_examples_tree` (3), `test_prod_safety`, `test_protocols_ui`, `test_screens`, `test_import_export_ui`, `test_workspaces_ui`.
+
 ## `test_postman_compat` haqida
 Bu sof backend testi (quickjs sandbox + lokal fake server). 54 ta yuklama ostidagi yurishda yiqilmadi; sandbox vaqt byudjeti (10 s devor vaqti, 2.7.2 tuzatishidan keyin faqat foydalanuvchi skripti uchun) yuklamada ham yetarli. Bitta yurishdagi yiqilish sababi **isbotlanmadi** — eng ehtimoliy izoh: shu yurish davomida `apirunner/core/*` fayllari tahrirlanayotgan edi (yarim yozilgan holat). Agar yana yiqilsa: `-n 0 -k nom`, to'liq traceback va vaqt belgisi bilan shu faylga qo'shing.
 

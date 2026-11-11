@@ -473,7 +473,7 @@ def test_export_to_legacy_format_button(ui, app):
 
 
 def test_version_label(ui):
-    expect(T(ui, "version")).to_contain_text("v2.")
+    expect(T(ui, "version")).to_have_text(re.compile(r"^v\d+\.\d+\.\d+"))
 
 
 def test_response_timing_dash_for_missing_values(ui, echo_server):

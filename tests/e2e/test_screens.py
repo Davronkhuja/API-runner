@@ -5,6 +5,8 @@ import time
 import pytest
 from playwright.sync_api import expect
 
+from tests.e2e.conftest import eventually
+
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
 
 
@@ -130,6 +132,7 @@ def test_env_initial_and_current_columns_current_is_used_and_initial_is_kept(app
     expect(T(ui, "env-active-badge")).to_be_visible()
     T(ui, "env-cur").first.fill("CURRENT")
     T(ui, "env-save").click()
+    eventually(lambda: app.api("GET", f"/api/environments/{env}")["values"][0]["current"] == "CURRENT")
     row = app.api("GET", f"/api/environments/{env}")["values"][0]
     assert row["value"] == "INITIAL" and row["current"] == "CURRENT"                         # boshlang'ich tegilmadi
     ui.locator("[data-testid=new-tab]").click()
