@@ -8,6 +8,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bo
 - **Migratsiya:** v3.0.1 dagi `safety.host_confirm` (sukut yoqiq edi) ishga tushganda o'chiriladi (`single_confirm=false`), idempotent.
 - **«Meros'ga o'tkazish» taklifi** faqat haqiqiy nomzod bo'lsa va faqat auth turi/tokeni haqiqatan o'zgarganda: o'z auth'i papkaning YANGI yoki ESKI auth'iga **aynan teng** (tur va token) so'rovlar; boshqacha auth'li so'rovlar sanalmaydi. Sukut — yengil **toast** («N ta so'rov eski tokenni ishlatyapti» + «Meros'ga o'tkazish» tugmasi, 8 s); dialog — Sozlamalar'da tanlanadi.
 - Dialogda **«Bu papka uchun boshqa so'ramaslik»**; «o'z auth'ida qoldirilgan» so'rovlar eslab qolinadi (workspace meta) va qayta taklif qilinmaydi; Sozlamalar'da ko'rinadi va qaytariladi. Overview'da kichik havola: «N ta so'rovda o'z auth'i — ko'rib chiqish».
+### Fixed
+- Sozlamalar → Xavfsizlik: ketma-ket tez o'zgartirishda (belgi + matn maydoni) oldingi saqlash javobi yangi yozilgan qiymatni bosib ketardi; saqlashlar endi navbat bilan bajariladi.
 ### Added
 - Toast'da amal tugmasi; tasdiq dialogida belgilar (`askConfirmChecks`).
 

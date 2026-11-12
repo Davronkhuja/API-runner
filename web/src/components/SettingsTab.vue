@@ -58,11 +58,19 @@ const fmt = (t: number | null) => (t ? new Date(t * 1000).toLocaleString() : 'â€
 const ws = useWorkspace(), tree = useTree()
 const sf = ref({ hosts: ws.safety.test_hosts.join('\n'), prod: ws.safety.prod_hosts.join('\n'), single_confirm: ws.safety.single_confirm, dev_runner_writes: ws.safety.dev_runner_writes }), sfSaved = ref(false)
 const lines = (t: string) => t.split(/[\n,]+/).map(x => x.trim()).filter(Boolean)
-async function saveSafetyNow(extra: Partial<typeof ws.safety> = {}) {
-  try {
-    await ws.saveSafety({ ...ws.safety, test_hosts: lines(sf.value.hosts), prod_hosts: lines(sf.value.prod), single_confirm: sf.value.single_confirm, dev_runner_writes: sf.value.dev_runner_writes, ...extra })
-    sf.value.hosts = ws.safety.test_hosts.join('\n'); sf.value.prod = ws.safety.prod_hosts.join('\n'); sfSaved.value = true
-  } catch (e: any) { showToast(e.message, 'error') }
+// Saqlashlar ketma-ket (navbat) bajariladi va server javobi matn maydonlarini faqat orada yangi tahrir bo'lmasa qayta yozadi â€” aks holda tez-tez o'zgartirishda yozilgan qiymat yo'qolardi.
+let sfChain: Promise<void> = Promise.resolve(), sfVersion = 0
+function saveSafetyNow(extra: Partial<typeof ws.safety> = {}) {
+  const v = ++sfVersion
+  const payload = { ...ws.safety, test_hosts: lines(sf.value.hosts), prod_hosts: lines(sf.value.prod), single_confirm: sf.value.single_confirm, dev_runner_writes: sf.value.dev_runner_writes, ...extra }
+  sfChain = sfChain.then(async () => {
+    try {
+      await ws.saveSafety({ ...payload, skip_hosts: extra.skip_hosts ?? ws.safety.skip_hosts })
+      if (v === sfVersion) { sf.value.hosts = ws.safety.test_hosts.join('\n'); sf.value.prod = ws.safety.prod_hosts.join('\n') }
+      sfSaved.value = true
+    } catch (e: any) { showToast(e.message, 'error') }
+  })
+  return sfChain
 }
 const unskip = (h: string) => saveSafetyNow({ skip_hosts: ws.safety.skip_hosts.filter(x => x !== h) })
 const clearSession = () => { sessionSkipHosts.clear() }
