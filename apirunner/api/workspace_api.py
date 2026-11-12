@@ -296,6 +296,25 @@ def put_ui_state():
     return jsonify({"ok": True})
 
 
+def _hosts(v):
+    return [h.strip().lower() for h in (v or []) if isinstance(h, str) and h.strip()][:200]
+
+
+def normalize_safety(sf):
+    """Xavfsizlik sozlamalari. `single_confirm` — yagona so'rovda DELETE tasdig'i (sukut O'CHIQ; faqat Prod muhit yoki `prod_hosts` uchun)."""
+    return {"test_hosts": _hosts(sf.get("test_hosts")), "prod_hosts": _hosts(sf.get("prod_hosts")), "skip_hosts": _hosts(sf.get("skip_hosts")),
+            "single_confirm": bool(sf.get("single_confirm", False)), "dev_runner_writes": bool(sf.get("dev_runner_writes", False))}
+
+
+def normalize_auth_offers(o):
+    """{mode: toast|dialog, nodes: {"cid:nodeId": {off: bool, kept: [request id]}}} — «Meros'ga o'tkazish» taklifi sozlamalari va rad etilgan so'rovlar."""
+    nodes = {}
+    for k, v in list((o.get("nodes") or {}).items())[:500]:
+        if isinstance(k, str) and isinstance(v, dict):
+            nodes[k[:200]] = {"off": bool(v.get("off")), "kept": [i[:100] for i in (v.get("kept") or []) if isinstance(i, str)][:2000]}
+    return {"mode": "dialog" if o.get("mode") == "dialog" else "toast", "nodes": nodes}
+
+
 @bp.put("/workspace/meta")
 def put_meta():
     d = request.get_json(silent=True) or {}
@@ -304,8 +323,9 @@ def put_meta():
         allowed["settings"] = d["settings"]
     if isinstance(d.get("safety"), dict):
         sf = d["safety"]
-        hosts = [h.strip().lower() for h in (sf.get("test_hosts") or []) if isinstance(h, str) and h.strip()][:200]
-        allowed["safety"] = {"test_hosts": hosts, "host_confirm": bool(sf.get("host_confirm", True)), "dev_runner_writes": bool(sf.get("dev_runner_writes", False))}
+        allowed["safety"] = normalize_safety(sf)
+    if isinstance(d.get("auth_offers"), dict):
+        allowed["auth_offers"] = normalize_auth_offers(d["auth_offers"])
     if isinstance(d.get("script_limits"), dict):
         allowed["script_limits"] = Limits.from_meta({"script_limits": d["script_limits"]}).as_dict()      # chegaralarga keltiriladi
     _ws().update_meta(**allowed)

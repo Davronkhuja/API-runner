@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { get, post, put } from '../api/client'
 import { askConfirm, fmtBytes, importOpen, showToast, wsExportOpen } from '../lib/ui'
 import { downloadFrom } from '../lib/exporter'
 import { useWorkspace } from '../stores/workspace'
+import { useTree } from '../stores/tree'
+import { sessionSkipHosts } from '../lib/envkind'
 import SettingsForm from './SettingsForm.vue'
 import { dense, layout } from '../lib/view'
 import Icon from './Icon.vue'
@@ -53,14 +55,21 @@ async function restore(b: Backup) {
   } catch (e: any) { showToast(e.message, 'error'); busy.value = false }
 }
 const fmt = (t: number | null) => (t ? new Date(t * 1000).toLocaleString() : '—')
-const ws = useWorkspace()
-const sf = ref({ hosts: ws.safety.test_hosts.join('\n'), host_confirm: ws.safety.host_confirm, dev_runner_writes: ws.safety.dev_runner_writes }), sfSaved = ref(false)
-async function saveSafetyNow() {
+const ws = useWorkspace(), tree = useTree()
+const sf = ref({ hosts: ws.safety.test_hosts.join('\n'), prod: ws.safety.prod_hosts.join('\n'), single_confirm: ws.safety.single_confirm, dev_runner_writes: ws.safety.dev_runner_writes }), sfSaved = ref(false)
+const lines = (t: string) => t.split(/[\n,]+/).map(x => x.trim()).filter(Boolean)
+async function saveSafetyNow(extra: Partial<typeof ws.safety> = {}) {
   try {
-    await ws.saveSafety({ test_hosts: sf.value.hosts.split(/[\n,]+/).map(x => x.trim()).filter(Boolean), host_confirm: sf.value.host_confirm, dev_runner_writes: sf.value.dev_runner_writes })
-    sf.value.hosts = ws.safety.test_hosts.join('\n'); sfSaved.value = true
+    await ws.saveSafety({ ...ws.safety, test_hosts: lines(sf.value.hosts), prod_hosts: lines(sf.value.prod), single_confirm: sf.value.single_confirm, dev_runner_writes: sf.value.dev_runner_writes, ...extra })
+    sf.value.hosts = ws.safety.test_hosts.join('\n'); sf.value.prod = ws.safety.prod_hosts.join('\n'); sfSaved.value = true
   } catch (e: any) { showToast(e.message, 'error') }
 }
+const unskip = (h: string) => saveSafetyNow({ skip_hosts: ws.safety.skip_hosts.filter(x => x !== h) })
+const clearSession = () => { sessionSkipHosts.clear() }
+const offerNodes = computed(() => Object.entries(ws.authOffers.nodes).filter(([, v]) => v.off || v.kept.length))
+async function setOfferMode(mode: 'toast' | 'dialog') { await ws.saveAuthOffers({ ...ws.authOffers, mode }) }
+async function resetOffer(key: string) { const nodes = { ...ws.authOffers.nodes }; delete nodes[key]; await ws.saveAuthOffers({ ...ws.authOffers, nodes }) }
+const offerLabel = (key: string) => { const [cid, id] = key.split(':'); return (id ? tree.findItem(cid, id)?.name : tree.cols[cid]?.info?.name) ?? key }
 
 const lim = ref({ ...ws.scripts.limits })
 const limDirty = ref(false)
@@ -104,12 +113,25 @@ onMounted(load)
     <p class="muted">Barcha so'rovlar uchun sukut; har bir so'rov o'z Sozlamalar tabida qayta belgilashi mumkin.</p>
     <SettingsForm :model="gs" prefix="gset" @change="queueGlobal" />
     <p class="saved-note" role="status" data-testid="gset-saved"><template v-if="gsDirty">Saqlanmoqda…</template><template v-else-if="gsSaved">✓ Saqlandi</template><template v-else>O'zgarishlar avtomatik saqlanadi</template></p>
-    <h4 id="s-safety">Xavfsizlik (Runner va yuborish)</h4>
-    <p class="muted" style="max-width:720px">Himoya so'rovning <b>o'ziga</b> qaraydi: Runner sukut bo'yicha faqat GET/HEAD/OPTIONS ni belgilaydi; POST/PUT/PATCH/DELETE tanlansa har doim tasdiq dialogi chiqadi. <code>localhost</code>, <code>127.0.0.1</code>, <code>*.local</code>, <code>*.test</code> va quyidagi ro'yxat «test/dev host» hisoblanadi; boshqa har qanday host (hujjat.uz, api.… ) xavfli.</p>
+    <h4 id="s-safety">Xavfsizlik va ogohlantirishlar</h4>
+    <p class="muted" style="max-width:720px"><b>Runner/Batch:</b> sukut bo'yicha faqat GET/HEAD/OPTIONS belgilanadi; POST/PUT/PATCH/DELETE tanlansa har doim RunGuard chiqadi. <code>localhost</code>, <code>127.0.0.1</code>, <code>*.local</code>, <code>*.test</code> va quyidagi ro'yxat «test/dev host» hisoblanadi; boshqa har qanday host xavfli.</p>
     <label class="bf" style="max-width:520px"><span class="bl">Test/dev host'lar (har qatorda bittadan; <code>*.staging.company.uz</code> ham mumkin)</span>
-      <textarea v-model="sf.hosts" rows="4" spellcheck="false" data-testid="safety-hosts" aria-label="Test host'lar" @change="saveSafetyNow" /></label>
-    <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" v-model="sf.host_confirm" data-testid="safety-host-confirm" @change="saveSafetyNow"> Yozuvchi so'rovni test/dev bo'lmagan host'ga yuborishda tasdiq so'rash (muhit sozlamasiga qo'shimcha)</label>
-    <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" v-model="sf.dev_runner_writes" data-testid="safety-dev-writes" @change="saveSafetyNow"> Dev/Test muhitda Runner hamma metodlarni belgilangan holda ochsin (tasdiq dialogi baribir chiqadi)</label>
+      <textarea v-model="sf.hosts" rows="3" spellcheck="false" data-testid="safety-hosts" aria-label="Test host'lar" @change="saveSafetyNow()" /></label>
+    <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" v-model="sf.dev_runner_writes" data-testid="safety-dev-writes" @change="saveSafetyNow()"> Dev/Test muhitda Runner hamma metodlarni belgilangan holda ochsin (RunGuard baribir chiqadi)</label>
+    <h5 style="margin:14px 0 4px">Yagona so'rov</h5>
+    <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" v-model="sf.single_confirm" data-testid="safety-single-confirm" @change="saveSafetyNow()"> <span>DELETE yuborishdan oldin tasdiq so'rash <span class="muted">(sukut: o'chiq; faqat Prod muhit yoki quyidagi «prod» host'lar uchun; POST/PUT/PATCH so'ralmaydi)</span></span></label>
+    <label class="bf" style="max-width:520px"><span class="bl">«Prod» host'lar (tasdiq uchun)</span>
+      <textarea v-model="sf.prod" rows="2" spellcheck="false" data-testid="safety-prod-hosts" aria-label="Prod host'lar" @change="saveSafetyNow()" /></label>
+    <div v-if="ws.safety.skip_hosts.length || sessionSkipHosts.size" data-testid="safety-skips" style="margin:8px 0">
+      <span class="muted">«Boshqa so'ramaslik» tanlangan:</span>
+      <span v-for="h in ws.safety.skip_hosts" :key="h" class="badge" style="margin:2px 4px" data-testid="safety-skip-host">{{ h }} <button class="ib" :aria-label="`${h} uchun qayta so'rashni yoqish`" data-testid="safety-skip-undo" @click="unskip(h)">×</button></span>
+      <span v-if="sessionSkipHosts.size" class="badge" style="margin:2px 4px" data-testid="safety-session-skip">shu sessiyada <button class="ib" aria-label="Sessiya tanlovini bekor qilish" data-testid="safety-session-undo" @click="clearSession">×</button></span>
+    </div>
+    <h5 style="margin:14px 0 4px">Papka auth'i: «Meros'ga o'tkazish» taklifi</h5>
+    <p class="muted" style="margin:0 0 6px;max-width:720px">Papka/collection auth'i o'zgarganda, o'z auth'i aynan eski yoki yangi bilan bir xil bo'lgan so'rovlar bo'lsa ko'rsatiladi.</p>
+    <label style="margin-right:12px"><input type="radio" name="offer-mode" :checked="ws.authOffers.mode === 'toast'" data-testid="offer-mode-toast" @change="setOfferMode('toast')"> Yengil xabar (toast, 8 s) — sukut</label>
+    <label><input type="radio" name="offer-mode" :checked="ws.authOffers.mode === 'dialog'" data-testid="offer-mode-dialog" @change="setOfferMode('dialog')"> Dialog</label>
+    <div v-if="offerNodes.length" data-testid="offer-memory" style="margin:8px 0"><div v-for="[k, v] in offerNodes" :key="k" data-testid="offer-memory-row" class="muted">«{{ offerLabel(k) }}»: {{ v.off ? "boshqa so'ralmaydi" : '' }}{{ v.off && v.kept.length ? ' · ' : '' }}{{ v.kept.length ? `${v.kept.length} ta so'rov o'z auth'ida qoldirilgan` : '' }} <button class="sm" data-testid="offer-reset" @click="resetOffer(k)">Qaytarish</button></div></div>
     <p class="saved-note" role="status" data-testid="safety-saved"><template v-if="sfSaved">✓ Saqlandi</template><template v-else>O'zgarishlar avtomatik saqlanadi.</template></p>
     <h4 id="s-workspace">Workspace papkasi</h4>
     <p class="muted" style="max-width:720px">Joriy ma'lumotlar papkasi: <code data-testid="ws-dir-current">{{ dsk?.workspace_dir }}</code></p>

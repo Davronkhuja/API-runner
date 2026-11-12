@@ -9,6 +9,7 @@ from .api import admin_api, importexport_api, desktop_api, monitors_api, protoco
 from .core.jobs import JobManager
 from .proxy import ProxyManager
 from .storage.instance import InstanceLock
+from .storage.prefs_migration import upgrade_safety_meta
 from .monitor import MonitorStore, Scheduler
 from .core.run_engine import RunManager
 from .storage.cookies import CookieStore
@@ -31,6 +32,7 @@ def bind_workspace(app, ws_dir, saved_file, backup_dir, upload_dir):
     result = migrations.run_all(ws, saved_file, backup_dir, __version__)       # zaxira, sonlar tekshiruvi va rollback bilan
     ext = app.extensions
     ext["workspace"] = ws
+    upgrade_safety_meta(ws)
     if ext.get("instance"):
         ext["instance"].release()                       # workspace almashtirilganda eskisining sessiya qulfi qo'yib yuboriladi
     ext["instance"] = InstanceLock(ws.root, __version__, "desktop" if app.config.get("DESKTOP") else "server")

@@ -115,6 +115,7 @@ const isEditable = (t: EventTarget | null) => t instanceof HTMLElement && (t.isC
 // Tanishtiruv: faqat workspace BO'SH bo'lganda (so'rovlar soni 0) va hali ko'rsatilmagan bo'lsa; `?onboarding=1` majburlaydi; avtomatlashtirilgan brauzerda (testlar) o'zi chiqmaydi
 const ONB_KEY = 'apirunner.onboarded'
 const onboarding = ref(false)
+function runToast() { const a = toast.value?.action; toast.value = null; a?.run() }
 const instanceConflict = ref<{ pid?: number; version?: string; mode?: string } | null>(null)
 const countRequests = (items: any[]): number => items.reduce((n, i) => n + (i.item ? countRequests(i.item) : 1), 0)
 function maybeOnboard() {
@@ -241,6 +242,7 @@ function openRunnerWithData(name: string, text: string) {
     </Dialog>
     <Dialog v-if="confirmDialog" title="Tasdiqlash" testid="confirm-dialog" width="460px" top @close="confirmDialog.resolve(false)">
       <p style="margin:0;line-height:1.5">{{ confirmDialog.msg }}</p>
+      <label v-for="c in confirmDialog.checks ?? []" :key="c.id" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input v-model="confirmDialog.checked![c.id]" type="checkbox" :data-testid="'confirm-check-' + c.id"> {{ c.label }}</label>
       <template #footer>
         <button @click="confirmDialog.resolve(false)">Bekor qilish</button>
         <button class="primary" data-testid="confirm-ok" data-autofocus @click="confirmDialog.resolve(true)">{{ confirmDialog.ok }}</button>
@@ -268,7 +270,7 @@ function openRunnerWithData(name: string, text: string) {
         <button class="primary" data-testid="saveas-ok" @click="confirmSaveAs">Saqlash</button>
       </template>
     </Dialog>
-    <div v-if="toast" class="toast" data-testid="toast">{{ toast.msg }}</div>
+    <div v-if="toast" class="toast" data-testid="toast" :role="toast.action ? 'alert' : 'status'">{{ toast.msg }}<button v-if="toast.action" class="toast-act" data-testid="toast-action" @click="runToast">{{ toast.action.label }}</button></div>
   </div>
   <div v-else class="empty">Yuklanmoqda…</div>
   <HistoryDrawer v-model="histOpen" />
