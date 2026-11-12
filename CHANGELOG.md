@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/). Versiyalash: SemVer (bosqich tugashi = MINOR, bosqich ichidagi funksiya/tuzatish = PATCH). Yagona manba: `apirunner/__init__.py`.
 
+## [3.0.2] — 2026-11-12 — Fix: ortiqcha ogohlantirishlar kamaytirildi
+### Changed
+- **Yagona so'rovdagi tasdiq — sukut O'CHIQ** (Postman'da yo'q; xavfli joy Runner/Batch — u yerda RunGuard o'zgarmadi). Sozlamalar → Xavfsizlik → «DELETE tasdig'i» yoqilsa ham: faqat **DELETE** (POST/PUT/PATCH kundalik ish), faqat **Prod muhit** yoki foydalanuvchi «prod» deb belgilagan host. Dialogda **«Bu host uchun boshqa so'ramaslik»** (saqlanadi) va **«Bu sessiyada boshqa so'ramaslik»** belgilari; tanlov Sozlamalar → Xavfsizlik'da ko'rinadi va qaytarib olinadi. Muhitdagi «POST/PUT/PATCH/DELETE tasdig'i» belgisi olib tashlandi.
+- **Migratsiya:** v3.0.1 dagi `safety.host_confirm` (sukut yoqiq edi) ishga tushganda o'chiriladi (`single_confirm=false`), idempotent.
+- **«Meros'ga o'tkazish» taklifi** faqat haqiqiy nomzod bo'lsa va faqat auth turi/tokeni haqiqatan o'zgarganda: o'z auth'i papkaning YANGI yoki ESKI auth'iga **aynan teng** (tur va token) so'rovlar; boshqacha auth'li so'rovlar sanalmaydi. Sukut — yengil **toast** («N ta so'rov eski tokenni ishlatyapti» + «Meros'ga o'tkazish» tugmasi, 8 s); dialog — Sozlamalar'da tanlanadi.
+- Dialogda **«Bu papka uchun boshqa so'ramaslik»**; «o'z auth'ida qoldirilgan» so'rovlar eslab qolinadi (workspace meta) va qayta taklif qilinmaydi; Sozlamalar'da ko'rinadi va qaytariladi. Overview'da kichik havola: «N ta so'rovda o'z auth'i — ko'rib chiqish».
+### Fixed
+- Sozlamalar → Xavfsizlik: ketma-ket tez o'zgartirishda (belgi + matn maydoni) oldingi saqlash javobi yangi yozilgan qiymatni bosib ketardi; saqlashlar endi navbat bilan bajariladi.
+### Added
+- Toast'da amal tugmasi; tasdiq dialogida belgilar (`askConfirmChecks`).
+
 ## [3.0.1] — 2026-11-11 — Fix: so'rov asosidagi xavfsizlik (Runner/Batch), tanishtiruv, .app workspace tanlovi
 ### Fixed
 - **KRITIK — Runner muhit turiga qarab himoyalanardi:** muhitsiz (yoki Dev) holatda butun collection (POST/PATCH/DELETE bilan) prod host'larga belgilangan holda ochilardi. Endi himoya **so'rovning o'ziga** (metod + host) qaraydi:

@@ -22,9 +22,11 @@ import { nameWarning, renameNode, suggestName, validateName } from '../lib/renam
 import AuthEditor from './AuthEditor.vue'
 import VarsTable from './VarsTable.vue'
 import BulkAuthDialog, { type Candidate } from './BulkAuthDialog.vue'
+import { offerCandidates, offerToast } from '../lib/authoffer'
+import { useWorkspace } from '../stores/workspace'
 
 const props = defineProps<{ tab: Tab }>()
-const tree = useTree(), tabs = useTabs()
+const tree = useTree(), tabs = useTabs(), ws = useWorkspace()
 /** Status '200' / 'ERR' (SQLite'da matn) — muvaffaqiyat: 2xx/3xx. */
 const isOkStatus = (s: number | string) => /^\d+$/.test(String(s)) && Number(s) < 400
 const [cid, fid] = (props.tab.ref ?? '').split(':')
@@ -118,9 +120,10 @@ async function save() {
     }
     tabs.markSaved(props.tab.id, { title: props.tab.title })
     showToast('Saqlandi', 'success')
-    if (hasRealAuth(newPm) && !sameAuth(oldPm, newPm)) {                // auth endi qo'yildi/o'zgardi: ichidagi o'z auth'i borlar haqida taklif
-      const cands = overridableRequests(cid, isFolder ? fid : null, newPm)
-      if (cands.length) bulk.value = { label: name.value, candidates: cands, newAuth: newPm }
+    const cands = offerCandidates(cid, isFolder ? fid : null, oldPm, newPm)         // faqat auth tur/tokeni o'zgarganda va haqiqiy nomzod bo'lsa
+    if (cands.length) {
+      if (ws.authOffers.mode === 'dialog') bulk.value = { label: name.value, candidates: cands, newAuth: newPm }
+      else offerToast(cid, cands)
     }
   } catch (e: any) { showToast(e.message, 'error') }
 }
@@ -175,7 +178,7 @@ async function save() {
             <div class="ov-stats"><span data-testid="ov-inherit">{{ inheritCount }} ta so'rov meros oladi</span><span>{{ ownAuthRequests }} tasida o'z auth'i</span></div>
             <p v-if="ownAuthRequests" class="muted" style="font-size:var(--fs-md);margin:8px 0 0" data-testid="ov-own-auth">{{ ownAuthRequests }} ta so'rovning o'z auth'i bor (daraxtda 🔒 belgisi bilan ko'rinadi).</p>
             <div v-if="sameTokenCount" class="ov-warn" data-testid="ov-same-token">{{ sameTokenCount }} ta so'rovda shu {{ isFolder ? 'papkadagi' : 'collection\'dagi' }} bilan bir xil token qo'lda yozilgan.</div>
-            <button v-if="hasRealAuth(node?.auth) && ownAuthRequests" class="ov-wide" data-testid="ov-to-inherit" @click="offerInherit">Ularni Meros'ga o'tkazish…</button>
+            <button v-if="hasRealAuth(node?.auth) && ownAuthRequests" class="linkbtn" style="margin-top:6px" data-testid="ov-to-inherit" @click="offerInherit">{{ ownAuthRequests }} ta so'rovda o'z auth'i — ko'rib chiqish</button>
           </section>
           <section class="ov-card ov-two">
             <button class="ov-stat" data-testid="ov-vars" @click="section = 'vars'"><div class="lbl">O'zgaruvchilar</div><div class="v">{{ form.vars.filter(v => v.key).length }}</div></button>
@@ -200,7 +203,7 @@ async function save() {
         <button class="primary" data-testid="scope-run-open" :disabled="!reqs.length" @click="tabs.open('runner', props.tab.ref!, 'Runner: ' + name, { permanent: true })">Runner'ni ochish</button>
       </div>
     </div>
-    <BulkAuthDialog v-if="bulk" :cid="cid" :label="bulk.label" :scope-label="isFolder ? 'papka' : 'collection'" :candidates="bulk.candidates" :new-auth="bulk.newAuth" @close="bulk = null" />
+    <BulkAuthDialog v-if="bulk" :cid="cid" :node-id="isFolder ? fid : null" :label="bulk.label" :scope-label="isFolder ? 'papka' : 'collection'" :candidates="bulk.candidates" :new-auth="bulk.newAuth" @close="bulk = null" />
   </div>
   <div v-else class="empty">Topilmadi</div>
 </template>

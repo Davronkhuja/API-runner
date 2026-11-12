@@ -100,4 +100,13 @@ def test_import_localstorage_tolerates_garbage(client):
 def test_version_endpoint_matches_package(client):
     import apirunner
     assert client.get("/api/version").get_json()["version"] == apirunner.__version__
-    assert apirunner.__version__ == "3.0.1"
+    assert apirunner.__version__ == "3.0.2"
+
+
+def test_meta_normalizes_safety_and_auth_offers(client):
+    r = client.put("/api/workspace/meta", json={"safety": {"test_hosts": [" A.uz ", 5, ""], "prod_hosts": ["P.uz"], "skip_hosts": ["s.uz"], "single_confirm": 1, "host_confirm": True, "bogus": 1},
+                                                 "auth_offers": {"mode": "weird", "nodes": {"c:f": {"off": 1, "kept": ["r1", 7]}}}})
+    m = r.get_json()["meta"]
+    assert m["safety"] == {"test_hosts": ["a.uz"], "prod_hosts": ["p.uz"], "skip_hosts": ["s.uz"], "single_confirm": True, "dev_runner_writes": False}
+    assert m["auth_offers"] == {"mode": "toast", "nodes": {"c:f": {"off": True, "kept": ["r1"]}}}
+    assert client.put("/api/workspace/meta", json={"safety": {}}).get_json()["meta"]["safety"]["single_confirm"] is False        # sukut o'chiq

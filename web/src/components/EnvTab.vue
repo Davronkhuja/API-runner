@@ -29,11 +29,8 @@ const removeRow = (i: number) => { env.value!.values.splice(i, 1); ensureGhost(e
 function setKind(k: EnvKind) {
   if (!env.value) return
   env.value.kind = env.value.kind === k ? '' : k
-  if (env.value.kind === 'prod' && env.value.confirm_writes === undefined) env.value.confirm_writes = true
   tabs.touch(props.tab.id)
 }
-const confirmOn = (): boolean => env.value?.confirm_writes ?? env.value?.kind === 'prod'
-function setConfirm(v: boolean) { if (env.value) { env.value.confirm_writes = v; tabs.touch(props.tab.id) } }
 // ── Boshlang'ich / Joriy qiymatlar ──
 const shown = ref<Record<string, boolean>>({})
 const masked = (v: { type: string; key: string }) => v.type === 'secret' && !shown.value[v.key]
@@ -83,7 +80,6 @@ async function save() {
     </div>
     <div v-if="!isGlobals" class="kind-chips" data-testid="env-kind" role="group" aria-label="Muhit turi"><span class="muted" style="font-weight:600;font-size:var(--fs-sm)">Turi:</span>
       <button v-for="k in KINDS" :key="k.id" class="chip" :class="['kind-' + k.id, { on: env.kind === k.id }]" :aria-pressed="env.kind === k.id" :data-kind="k.id" @click="setKind(k.id)"><span class="kind-dot" :class="'kind-' + k.id" />{{ k.label }}</button>
-      <label class="confirm"><input type="checkbox" data-testid="env-confirm-writes" :checked="confirmOn()" @change="setConfirm(($event.target as HTMLInputElement).checked)">POST / PUT / PATCH / DELETE yuborishdan oldin tasdiq so'ralsin</label>
     </div>
     <div class="env-note" data-testid="env-note"><Icon name="alert" :size="16" /><span><b>Boshlang'ich qiymat</b> eksport va zaxiraga tushadi. <b>Joriy qiymat</b> faqat shu kompyuterda ishlatiladi: tokenlar va parollarni shu ustunga yozing. Skriptlar faqat joriy qiymatni o'zgartiradi.</span></div>
     <div class="kv-wrap">

@@ -15,5 +15,8 @@ export function cleanSettings(s: ReqSettings | undefined | null): ReqSettings {
 export const mergeSettings = (global: ReqSettings | undefined, own: ReqSettings | undefined): ReqSettings => ({ ...cleanSettings(global), ...cleanSettings(own) })
 
 /** Host/metod xavfsizligi (workspace meta.safety). */
-export interface Safety { test_hosts: string[]; host_confirm: boolean; dev_runner_writes: boolean }
-export const DEFAULT_SAFETY: Safety = { test_hosts: [], host_confirm: true, dev_runner_writes: false }
+export interface Safety { test_hosts: string[]; prod_hosts: string[]; skip_hosts: string[]; single_confirm: boolean; dev_runner_writes: boolean }
+export const DEFAULT_SAFETY: Safety = { test_hosts: [], prod_hosts: [], skip_hosts: [], single_confirm: false, dev_runner_writes: false }
+/** «Meros'ga o'tkazish» taklifi: ko'rinishi (toast — sukut) va papka bo'yicha «so'ramaslik» / rad etilgan so'rovlar. */
+export interface AuthOffers { mode: 'toast' | 'dialog'; nodes: Record<string, { off: boolean; kept: string[] }> }
+export const DEFAULT_AUTH_OFFERS: AuthOffers = { mode: 'toast', nodes: {} }

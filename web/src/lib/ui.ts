@@ -17,10 +17,11 @@ export const monitorOpen = ref(false)
 export const proxyOpen = ref(false)
 export const shortcutsOpen = ref(false)
 
-export const toast = ref<{ msg: string; kind: string } | null>(null)
+export const toast = ref<{ msg: string; kind: string; action?: { label: string; run: () => void } } | null>(null)
 let tt: ReturnType<typeof setTimeout>
-export function showToast(msg: string, kind = 'info', ms = 3000) {
-  toast.value = { msg, kind }
+/** `action` — toast ichidagi tugma (masalan «Meros'ga o'tkazish»); bosilsa toast yopiladi. */
+export function showToast(msg: string, kind = 'info', ms = 3000, action?: { label: string; run: () => void }) {
+  toast.value = { msg, kind, action }
   clearTimeout(tt)
   tt = setTimeout(() => (toast.value = null), ms)
 }
@@ -29,8 +30,13 @@ export type CloseAnswer = 'save' | 'discard' | 'cancel'
 export const closeDialog = ref<{ title: string; resolve: (a: CloseAnswer) => void } | null>(null)
 export const askClose = (title: string) => new Promise<CloseAnswer>(res => { closeDialog.value = { title, resolve: a => { closeDialog.value = null; res(a) } } })
 
-export const confirmDialog = ref<{ msg: string; ok: string; resolve: (b: boolean) => void } | null>(null)
+export const confirmDialog = ref<{ msg: string; ok: string; checks?: { id: string; label: string }[]; checked?: Record<string, boolean>; resolve: (b: boolean) => void } | null>(null)
 export const askConfirm = (msg: string, ok = 'Ha') => new Promise<boolean>(res => { confirmDialog.value = { msg, ok, resolve: b => { confirmDialog.value = null; res(b) } } })
+/** Tasdiq + belgilar («Bu host uchun boshqa so'ramaslik» va h.k.). Qaytaradi: {ok, checked: belgilangan id'lar} (bekor qilinsa checked bo'sh). */
+export const askConfirmChecks = (msg: string, ok: string, checks: { id: string; label: string }[]) => new Promise<{ ok: boolean; checked: string[] }>(res => {
+  const checked: Record<string, boolean> = Object.fromEntries(checks.map(c => [c.id, false]))
+  confirmDialog.value = { msg, ok, checks, checked, resolve: b => { const picked = b ? Object.keys(checked).filter(k => checked[k]) : []; confirmDialog.value = null; res({ ok: b, checked: picked }) } }
+})
 
 /** Prod'da Runner ishga tushirishdan oldingi dialog (RunGuard): 'get' — faqat GET, 'all' — hammasi, null — bekor. */
 export type GuardAnswer = 'get' | 'all' | null

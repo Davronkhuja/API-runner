@@ -55,21 +55,6 @@ def open_runner(p):
 
 
 # ── muhit turi ──
-def test_env_kind_and_confirm_setting_are_saved_and_validated(app, world, page):
-    eid = make_env(app, "E1", active=False)
-    start(app, page)
-    T(page, "sb-environments").click()
-    page.locator("[data-testid=env-row], .tree-row", has_text="E1").first.dblclick()
-    expect(T(page, "env-tab")).to_be_visible()
-    expect(T(page, "env-confirm-writes")).not_to_be_checked()
-    page.click("[data-kind=prod]")
-    expect(T(page, "env-confirm-writes")).to_be_checked()                       # Prod uchun sukut bo'yicha yoqiq
-    T(page, "env-save").click()
-    eventually(lambda: app.api("GET", f"/api/environments/{eid}")["kind"] == "prod")           # saqlash asinxron
-    saved = app.api("GET", f"/api/environments/{eid}")
-    assert saved["kind"] == "prod" and saved["confirm_writes"] is True
-    r = requests.put(app.url + f"/api/environments/{eid}", json={**saved, "kind": "staging"}, headers={"X-Session-Token": E2E_TOKEN})
-    assert r.status_code == 400
 
 
 def test_prod_badge_only_for_prod_env(app, world, page):
@@ -86,57 +71,12 @@ def test_prod_badge_only_for_prod_env(app, world, page):
 
 
 # ── yozuvchi so'rovlar tasdig'i ──
-def test_post_on_prod_needs_confirmation_and_cancel_sends_nothing(app, world, page):
-    make_env(app, "Prod", kind="prod")
-    sent = []
-    start(app, page, sent)
-    open_req(page, "Post1")
-    T(page, "send").click()
-    expect(T(page, "confirm-dialog")).to_contain_text("POST")
-    expect(T(page, "confirm-dialog")).to_contain_text("Prod")
-    page.click("[data-testid=confirm-dialog] button:not(.primary)")             # Bekor qilish
-    page.wait_for_timeout(400)
-    assert sent == []                                                            # tasdiqsiz POST yuborilmadi
-    expect(T(page, "resp-status")).to_have_count(0)
-    T(page, "send").click()
-    T(page, "confirm-ok").click()
-    expect(T(page, "resp-status")).to_have_text("200")
-    assert len(sent) == 1
 
 
-def test_delete_on_prod_confirms_but_get_does_not(app, world, page):
-    make_env(app, "Prod", kind="prod")
-    sent = []
-    start(app, page, sent)
-    open_req(page, "Get1")
-    T(page, "send").click()
-    expect(T(page, "resp-status")).to_have_text("200")
-    expect(T(page, "confirm-dialog")).to_have_count(0)
-    open_req(page, "Del1")
-    T(page, "send").click()
-    expect(T(page, "confirm-dialog")).to_contain_text("DELETE")
-    assert len(sent) == 1
 
 
-def test_confirmation_follows_the_env_setting_not_only_the_kind(app, world, page):
-    make_env(app, "Prod no confirm", kind="prod", confirm=False)
-    start(app, page)
-    open_req(page, "Post1")
-    T(page, "send").click()
-    expect(T(page, "resp-status")).to_have_text("200")
-    expect(T(page, "confirm-dialog")).to_have_count(0)
 
 
-def test_dev_env_with_confirm_enabled_asks_and_no_env_never_asks(app, world, page):
-    make_env(app, "Dev strict", kind="dev", confirm=True)
-    start(app, page)
-    open_req(page, "Post1")
-    T(page, "send").click()
-    expect(T(page, "confirm-dialog")).to_be_visible()
-    page.click("[data-testid=confirm-dialog] button:not(.primary)")
-    page.select_option("[data-testid=env-select]", value="")
-    T(page, "send").click()
-    expect(T(page, "resp-status")).to_have_text("200")
 
 
 # ── Runner ──
@@ -201,7 +141,7 @@ def test_runguard_cancel_runs_nothing(app, world, page):
 
 # ── Runner: xavfsizlik so'rovning o'ziga qaraydi (v3.0.1) ──
 def set_safety(app, **kw):
-    app.api("PUT", "/api/workspace/meta", {"safety": {"test_hosts": [], "host_confirm": True, "dev_runner_writes": False, **kw}})
+    app.api("PUT", "/api/workspace/meta", {"safety": {"test_hosts": [], "prod_hosts": [], "skip_hosts": [], "single_confirm": False, "dev_runner_writes": False, **kw}})
 
 
 @pytest.mark.parametrize("kind", [None, "dev", "test", "prod"])
@@ -270,47 +210,138 @@ def test_guard_all_requires_confirm_word_and_get_mode_skips_writes(app, world, p
     expect(page.locator("[data-testid=runner-row] .m-POST")).to_have_count(0)
 
 
-def test_test_hosts_setting_makes_host_safe_and_single_send_asks_for_unlisted_host(app, page):
-    cid = app.api("POST", "/api/collections", {"name": "C"})["id"]
-    col = app.api("GET", f"/api/collections/{cid}")
-    col["item"] = [req("p", "PostProd", "POST", "https://api.company.uz/items"), req("q", "PostStage", "POST", "https://x.staging.company.uz/items")]
-    app.api("PUT", f"/api/collections/{cid}", col)
-    sent = []
-    start(app, page, sent)
-    open_req(page, "PostProd")
-    T(page, "send").click()
-    expect(T(page, "confirm-dialog")).to_contain_text("api.company.uz")                  # muhit yo'q, lekin host bo'yicha so'raydi
-    page.click("[data-testid=confirm-dialog] button:not(.primary)")
-    assert not sent
-    set_safety(app, test_hosts=["*.staging.company.uz"])
-    page.reload()
-    page.wait_for_selector("[data-testid=app]")
-    open_req(page, "PostStage")
-    T(page, "send").click()
-    expect(T(page, "confirm-dialog")).to_have_count(0)                                   # ro'yxatdagi host — tasdiqsiz
-    eventually(lambda: len(sent) == 1)
+def test_env_kind_is_saved_and_validated(app, world, page):
+    eid = make_env(app, "E1", active=False)
+    start(app, page)
+    T(page, "sb-environments").click()
+    page.locator("[data-testid=env-row], .tree-row", has_text="E1").first.dblclick()
+    expect(T(page, "env-tab")).to_be_visible()
+    page.click("[data-kind=prod]")
+    T(page, "env-save").click()
+    eventually(lambda: app.api("GET", f"/api/environments/{eid}")["kind"] == "prod")
+    saved = app.api("GET", f"/api/environments/{eid}")
+    r = requests.put(app.url + f"/api/environments/{eid}", json={**saved, "kind": "staging"}, headers={"X-Session-Token": E2E_TOKEN})
+    assert r.status_code == 400
 
 
-def test_host_confirm_can_be_disabled_in_settings(app, page):
-    cid = app.api("POST", "/api/collections", {"name": "C"})["id"]
+# ── yagona so'rov tasdig'i (v3.0.2: sukut O'CHIQ; yoqilgan bo'lsa faqat DELETE, faqat Prod muhit yoki prod host) ──
+def prod_col(app, name="PC"):
+    cid = app.api("POST", "/api/collections", {"name": name})["id"]
     col = app.api("GET", f"/api/collections/{cid}")
-    col["item"] = [req("p", "PostProd", "POST", "https://api.company.invalid/items")]
+    col["item"] = [req("p", "PostP", "POST", "https://api.company.uz/items"), req("u", "PutP", "PUT", "https://api.company.uz/items/1"),
+                   req("d", "DelP", "DELETE", "https://api.company.uz/items/1"), req("d2", "DelQ", "DELETE", "https://other.company.uz/items/2")]
     app.api("PUT", f"/api/collections/{cid}", col)
-    set_safety(app, host_confirm=False)
+    return cid
+
+
+def test_plain_post_put_and_default_delete_go_without_confirmation(app, page):
+    prod_col(app)
+    make_env(app, "Prod", kind="prod")
+    for single in (False, True):
+        set_safety(app, single_confirm=single, prod_hosts=["api.company.uz"])
+        sent = []
+        start(app, page, sent)
+        for n in ("PostP", "PutP"):                                                     # POST/PUT kundalik ish: Prod + prod host + yoqilgan sozlama bo'lsa ham so'ralmaydi
+            open_req(page, n)
+            T(page, "send").click()
+            page.wait_for_timeout(250)
+            expect(T(page, "confirm-dialog")).to_have_count(0)
+        eventually(lambda: len(sent) == 2)
+    set_safety(app, single_confirm=False, prod_hosts=["api.company.uz"])                # sukut o'chiq: DELETE ham so'ralmaydi
     sent = []
     start(app, page, sent)
-    open_req(page, "PostProd")
+    open_req(page, "DelP")
     T(page, "send").click()
+    page.wait_for_timeout(250)
     expect(T(page, "confirm-dialog")).to_have_count(0)
     eventually(lambda: len(sent) == 1)
 
 
-def test_safety_settings_ui_saves_hosts(app, world, page):
+def test_enabled_delete_confirm_only_for_prod_env_or_prod_host(app, page):
+    prod_col(app)
+    set_safety(app, single_confirm=True, prod_hosts=["api.company.uz"])
+    sent = []
+    start(app, page, sent)
+    open_req(page, "DelQ")                                                              # muhit yo'q, host prod ro'yxatida emas
+    T(page, "send").click()
+    page.wait_for_timeout(250)
+    expect(T(page, "confirm-dialog")).to_have_count(0)
+    open_req(page, "DelP")                                                              # prod host
+    T(page, "send").click()
+    expect(T(page, "confirm-dialog")).to_contain_text("api.company.uz")
+    page.click("[data-testid=confirm-dialog] button:not(.primary)")
+    n = len(sent)
+    page.wait_for_timeout(300)
+    assert len(sent) == n                                                               # bekor qilinsa yuborilmadi
+    make_env(app, "Prod", kind="prod")                                                  # Prod muhit: DelQ ham so'raydi
+    page.reload()
+    page.wait_for_selector("[data-testid=app]")
+    open_req(page, "DelQ")
+    T(page, "send").click()
+    expect(T(page, "confirm-dialog")).to_contain_text("Prod")
+    T(page, "confirm-ok").click()
+    eventually(lambda: len(sent) > n)
+
+
+def test_dont_ask_again_for_host_persists_and_can_be_undone_in_settings(app, page):
+    prod_col(app)
+    set_safety(app, single_confirm=True, prod_hosts=["api.company.uz"])
+    sent = []
+    start(app, page, sent)
+    open_req(page, "DelP")
+    T(page, "send").click()
+    T(page, "confirm-check-host").check()
+    T(page, "confirm-ok").click()
+    eventually(lambda: app.api("GET", "/api/workspace")["meta"]["safety"]["skip_hosts"] == ["api.company.uz"])
+    T(page, "send").click()                                                             # ikkinchi marta — tasdiqsiz
+    page.wait_for_timeout(250)
+    expect(T(page, "confirm-dialog")).to_have_count(0)
+    T(page, "settings-btn").click()
+    expect(T(page, "safety-skip-host")).to_contain_text("api.company.uz")
+    T(page, "safety-skip-undo").click()
+    eventually(lambda: app.api("GET", "/api/workspace")["meta"]["safety"]["skip_hosts"] == [])
+    open_req(page, "DelP")
+    T(page, "send").click()
+    expect(T(page, "confirm-dialog")).to_be_visible()                                   # qaytarib olindi — yana so'raydi
+
+
+def test_dont_ask_again_this_session_is_not_persisted(app, page):
+    prod_col(app)
+    set_safety(app, single_confirm=True, prod_hosts=["api.company.uz"])
+    start(app, page, [])
+    open_req(page, "DelP")
+    T(page, "send").click()
+    T(page, "confirm-check-session").check()
+    T(page, "confirm-ok").click()
+    T(page, "send").click()
+    page.wait_for_timeout(250)
+    expect(T(page, "confirm-dialog")).to_have_count(0)
+    assert app.api("GET", "/api/workspace")["meta"]["safety"]["skip_hosts"] == []
+    page.reload()                                                                       # yangi sessiya — yana so'raydi
+    page.wait_for_selector("[data-testid=app]")
+    open_req(page, "DelP")
+    T(page, "send").click()
+    expect(T(page, "confirm-dialog")).to_be_visible()
+
+
+def test_safety_settings_ui_saves_hosts_and_single_confirm(app, world, page):
     start(app, page)
     T(page, "settings-btn").click()
     T(page, "safety-hosts").fill("*.corp.test\napi.stage.company.uz")
     T(page, "safety-hosts").blur()
-    expect(T(page, "safety-saved")).to_contain_text("Saqlandi")
     eventually(lambda: app.api("GET", "/api/workspace")["meta"]["safety"]["test_hosts"] == ["*.corp.test", "api.stage.company.uz"])
-    T(page, "safety-host-confirm").uncheck()
-    eventually(lambda: app.api("GET", "/api/workspace")["meta"]["safety"]["host_confirm"] is False)
+    expect(T(page, "safety-single-confirm")).not_to_be_checked()                        # sukut o'chiq
+    T(page, "safety-single-confirm").check()
+    T(page, "safety-prod-hosts").fill("api.company.uz")
+    T(page, "safety-prod-hosts").blur()
+    eventually(lambda: (lambda sf: sf["single_confirm"] is True and sf["prod_hosts"] == ["api.company.uz"])(app.api("GET", "/api/workspace")["meta"]["safety"]))
+
+
+def test_old_host_confirm_flag_is_removed_by_migration(isolated, make_client):
+    c = make_client()
+    ws = c.app.extensions["workspace"]
+    ws.update_meta(safety={"test_hosts": ["x.uz"], "host_confirm": True, "dev_runner_writes": False})          # v3.0.1 holati
+    from apirunner.app import create_app
+    app2 = create_app(workspace_dir=str(isolated / "workspace"), saved_file=str(isolated / "saved_requests.json"), upload_dir=str(isolated / "uploads"), session_token="t", backup_dir=str(isolated / "backups"))
+    sf = app2.extensions["workspace"].meta()["safety"]
+    assert "host_confirm" not in sf and sf["single_confirm"] is False and sf["test_hosts"] == ["x.uz"]

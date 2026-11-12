@@ -27,6 +27,11 @@ export function isTestHost(host: string | null, extra: string[] = safety().test_
   if (BUILTIN(host)) return true
   return extra.some(p => { const x = p.trim().toLowerCase(); return x && (x.startsWith('*.') ? host === x.slice(2) || host.endsWith(x.slice(1)) : host === x) })
 }
+/** Foydalanuvchi «prod» deb belgilagan host (aniq yoki `*.x.uz`). */
+export function isProdHost(host: string | null, list: string[] = safety().prod_hosts): boolean {
+  if (!host) return false
+  return list.some(p => { const x = p.trim().toLowerCase(); return x && (x.startsWith('*.') ? host === x.slice(2) || host.endsWith(x.slice(1)) : host === x) })
+}
 export interface HostInfo { host: string | null; safe: boolean }
 export function hostInfo(url: string, ref: string | null): HostInfo {
   const host = hostOf(resolveVars(url, ref))

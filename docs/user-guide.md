@@ -37,7 +37,7 @@ Bo'limlar: **Params**, **Headers**, **Auth** (Bearer, Basic, API Key, JWT, Diges
 
 **Javob:** status, vaqt, hajm; Pretty/Raw/Preview; qidiruv; JSONPath filtri; Headers, Cookies, Tests tablari; 10 MB gacha JSON qotmasdan ko'rsatiladi (virtual scroll). Javobni faylga saqlash, **Example** sifatida saqlash mumkin.
 
-Yozuvchi so'rovlar (POST/PUT/PATCH/DELETE) test/dev bo'lmagan host'ga (hujjat.uz va h.k.) yoki Prod muhitga yuborilganda tasdiq so'raladi. **Runner** sukut bo'yicha faqat GET/HEAD/OPTIONS ni belgilaydi; yozuvchi metod tanlansa har doim «RunGuard» dialogi (host'lar ro'yxati, tasdiq so'zi) chiqadi. Test/dev host'lar ro'yxati — Sozlamalar → Xavfsizlik.
+Yagona so'rov tasdiqsiz yuboriladi (sukut). Xohlasangiz Sozlamalar → Xavfsizlik'da «DELETE tasdig'i» ni yoqing: faqat DELETE, faqat Prod muhit yoki «prod» deb belgilangan host uchun; dialogda «boshqa so'ramaslik» tanlash mumkin. **Runner** sukut bo'yicha faqat GET/HEAD/OPTIONS ni belgilaydi; yozuvchi metod tanlansa har doim «RunGuard» dialogi (host'lar ro'yxati, tasdiq so'zi) chiqadi. Test/dev host'lar ro'yxati — Sozlamalar → Xavfsizlik.
 
 ## 4. O'zgaruvchilar va muhitlar
 `{{nom}}` — URL, header, body va auth'da. Yozishni `{{` bilan boshlasangiz, avtoto'ldirish chiqadi. Doira (scope): global → collection → muhit → lokal. Muhit o'zgaruvchisida **Initial** va **Current** qiymat bor (eksportga faqat Initial ketadi; Secret turidagilar yashiriladi).

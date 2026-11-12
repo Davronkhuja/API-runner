@@ -5,6 +5,8 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from tests.e2e.conftest import eventually
+
 T = lambda p, t: p.locator(f"[data-testid={t}]")  # noqa: E731
 
 
@@ -166,36 +168,59 @@ def test_inherit_note_when_nothing_above_has_auth(app, page):
     expect(T(page, "auth-inherit-link")).to_have_count(0)
 
 
-# ── ommaviy «Meros» taklifi ──
-def test_bulk_offer_detects_same_token_requests_and_applies_selected_with_backup(ui, app, world):
+# ── «Meros'ga o'tkazish» taklifi (v3.0.2: faqat haqiqiy nomzod; sukut — toast) ──
+def dialog_mode(app):
+    app.api("PUT", "/api/workspace/meta", {"auth_offers": {"mode": "dialog", "nodes": {}}})
+
+
+def reload(ui):
+    ui.reload()
+    ui.wait_for_selector("[data-testid=app]")
+
+
+def test_toast_offer_counts_only_requests_with_same_token_and_applies_with_backup(ui, app, world):
     cid = world
     row(ui, "Fold").locator("[data-testid=row-chevron]").click() if row(ui, "Same").count() == 0 else None
     before = len(app.api("GET", "/api/backups"))
     set_folder_auth(ui, "Fold", "NEW")
-    dlg = T(ui, "bulk-auth-dialog")
-    expect(dlg).to_be_visible()
-    expect(T(ui, "bulk-auth-count")).to_have_text("3")                                  # Same, Other, Optout (Sub ichidagi InSub o'z papka auth'i bilan to'silgan)
-    rows = T(ui, "bulk-auth-row")
-    expect(rows).to_have_count(3)
-    expect(rows.filter(has_text="Same").locator("[data-testid=bulk-auth-same]")).to_have_text("bir xil")
-    expect(rows.filter(has_text="Same").locator("input")).to_be_checked()               # bir xil token avtomatik tanlangan
-    expect(rows.filter(has_text="Other").locator("input")).not_to_be_checked()
-    expect(rows.filter(has_text="Optout").locator("input")).not_to_be_checked()
-    expect(T(ui, "bulk-auth-backup-note")).to_contain_text("zaxira")
-    T(ui, "bulk-auth-apply").click()
+    expect(T(ui, "bulk-auth-dialog")).to_have_count(0)                                  # sukut: dialog emas, toast
+    expect(T(ui, "toast-action")).to_be_visible()
+    expect(T(ui, "toast")).to_contain_text("1 ta so'rovda")                             # faqat Same (NEW); Other/Optout sanalmaydi; InSub — Sub auth'i bilan to'silgan
+    T(ui, "toast-action").click()
     expect(ui.locator(".toast")).to_contain_text("1 ta so'rov «Meros»ga o'tkazildi")
-    expect(dlg).to_have_count(0)
     assert len(app.api("GET", "/api/backups")) == before + 1 and any("pre-bulk-auth" in b["name"] for b in app.api("GET", "/api/backups"))
-    assert auth_of(app, cid, "r1") is None                                              # Same — meros
-    assert auth_of(app, cid, "r2")["bearer"][0]["value"] == "DIFFERENT"                 # Other tegilmadi
+    assert auth_of(app, cid, "r1") is None
+    assert auth_of(app, cid, "r2")["bearer"][0]["value"] == "DIFFERENT"                 # boshqacha auth — tegilmadi
     assert auth_of(app, cid, "r3") == {"type": "noauth"} and auth_of(app, cid, "r5")["bearer"][0]["value"] == "NEW"
 
 
-def test_bulk_offer_select_all_and_open_tab_drafts_follow(ui, app, world):
+def test_toast_disappears_after_eight_seconds_without_touching_anything(ui, app, world):
     cid = world
+    set_folder_auth(ui, "Fold", "NEW")
+    expect(T(ui, "toast-action")).to_be_visible()
+    expect(T(ui, "toast-action")).to_have_count(0, timeout=12000)
+    assert auth_of(app, cid, "r1")["bearer"][0]["value"] == "NEW"
+
+
+def test_old_token_requests_are_offered_when_folder_token_changes(ui, app, world):
+    cid = world
+    set_folder_auth(ui, "Fold", "NEW")
+    T(ui, "toast-action").click()                                                       # Same -> meros
+    expect(ui.locator(".toast")).to_contain_text("o'tkazildi")
+    app.api("PUT", f"/api/collections/{cid}", {**app.api("GET", f"/api/collections/{cid}")})
+    set_folder_auth(ui, "Fold", "NEWER")                                                # eski NEW tokenli: InSub (Sub auth'i bilan to'silgan) — nomzod emas; boshqa yo'q
+    ui.wait_for_timeout(400)
+    expect(T(ui, "toast-action")).to_have_count(0)
+    expect(T(ui, "bulk-auth-dialog")).to_have_count(0)
+
+
+def test_dialog_mode_lists_only_candidates_and_open_tab_drafts_follow(ui, app, world):
+    cid = world
+    dialog_mode(app)
+    reload(ui)
     row(ui, "Fold").dblclick()
-    row(ui, "Fold").locator("[data-testid=row-chevron]").click() if row(ui, "Other").count() == 0 else None
-    row(ui, "Other").dblclick()
+    row(ui, "Fold").locator("[data-testid=row-chevron]").click() if row(ui, "Same").count() == 0 else None
+    row(ui, "Same").dblclick()
     ui.click("[data-section=auth]")
     expect(T(ui, "auth-type")).to_have_value("bearer")
     ui.locator("[data-testid=tab]").filter(has_text="Fold").click()
@@ -203,34 +228,94 @@ def test_bulk_offer_select_all_and_open_tab_drafts_follow(ui, app, world):
     ui.select_option("[data-testid=auth-type]", "bearer")
     T(ui, "auth-token").fill("NEW")
     T(ui, "scope-save").click()
-    T(ui, "bulk-auth-all").click()
-    expect(T(ui, "bulk-auth-apply")).to_contain_text("(3)")
+    expect(T(ui, "bulk-auth-dialog")).to_be_visible()
+    expect(T(ui, "bulk-auth-count")).to_have_text("1")
+    rows = T(ui, "bulk-auth-row")
+    expect(rows).to_have_count(1)
+    expect(rows.first).to_contain_text("Same")
+    expect(rows.first.locator("[data-testid=bulk-auth-same]")).to_have_text("bir xil")
+    expect(T(ui, "bulk-auth-backup-note")).to_contain_text("zaxira")
     T(ui, "bulk-auth-apply").click()
     expect(T(ui, "bulk-auth-dialog")).to_have_count(0)
-    assert [auth_of(app, cid, i) for i in ("r1", "r2", "r3")] == [None, None, None]
-    ui.locator("[data-testid=tab]").filter(has_text="Other").click()                     # ochiq tab qoralamasi ham «Meros»ga o'tdi
+    assert auth_of(app, cid, "r1") is None
+    ui.locator("[data-testid=tab]").filter(has_text="Same").click()                      # ochiq tab qoralamasi ham «Meros»ga o'tdi
     expect(T(ui, "auth-type")).to_have_value("inherit")
     expect(ui.locator("[data-testid=dirty-dot]")).to_have_count(0)
-    expect(T(ui, "auth-inherit-src")).to_contain_text("«Fold» papkasidan")
 
 
-def test_bulk_offer_can_be_skipped_and_only_when_it_matters(ui, app, world):
+def test_dialog_can_be_skipped_and_only_when_auth_really_changes(ui, app, world):
     cid = world
+    dialog_mode(app)
+    reload(ui)
     set_folder_auth(ui, "Fold", "NEW")
     expect(T(ui, "bulk-auth-dialog")).to_be_visible()
     ui.keyboard.press("Escape")
     expect(T(ui, "bulk-auth-dialog")).to_have_count(0)
     assert auth_of(app, cid, "r1")["bearer"][0]["value"] == "NEW"                      # o'zgarmadi
-    T(ui, "scope-desc") if False else None
     ui.click("[data-scope-section=overview]")
     T(ui, "scope-desc").fill("faqat tavsif")                                           # auth o'zgarmagan — taklif yo'q
     T(ui, "scope-save").click()
     expect(ui.locator(".toast")).to_contain_text("Saqlandi")
     expect(T(ui, "bulk-auth-dialog")).to_have_count(0)
+    expect(T(ui, "toast-action")).to_have_count(0)
     ui.click("[data-scope-section=auth]")
     ui.select_option("[data-testid=auth-type]", "inherit")                              # «Meros»ga qaytarish — taklif yo'q
     T(ui, "scope-save").click()
     expect(T(ui, "bulk-auth-dialog")).to_have_count(0)
+
+
+def test_no_candidates_means_nothing_is_shown_on_repeated_saves(app, page):
+    cid = app.api("POST", "/api/collections", {"name": "Col"})["id"]
+    col = app.api("GET", f"/api/collections/{cid}")
+    col["item"] = [{"id": "f", "name": "Fold", "item": [req("a", "A", bearer("X1")), req("b", "B", bearer("X2")), req("c", "C", {"type": "noauth"})]}]
+    app.api("PUT", f"/api/collections/{cid}", col)
+    page.goto(app.url)
+    page.wait_for_selector("[data-testid=app]")
+    for tok in ("T1", "T2", "T3", "T3"):
+        set_folder_auth(page, "Fold", tok)
+        page.wait_for_timeout(300)
+        expect(T(page, "bulk-auth-dialog")).to_have_count(0)
+        expect(T(page, "toast-action")).to_have_count(0)                                # boshqacha auth'li so'rovlar umuman sanalmaydi
+
+
+def test_declined_request_is_remembered_and_not_offered_again(ui, app, world):
+    cid = world
+    dialog_mode(app)
+    reload(ui)
+    set_folder_auth(ui, "Fold", "NEW")
+    expect(T(ui, "bulk-auth-dialog")).to_be_visible()
+    T(ui, "bulk-auth-check").first.uncheck()                                            # «Same» o'z auth'ida qoladi
+    T(ui, "bulk-auth-skip").click()
+    eventually(lambda: app.api("GET", "/api/workspace")["meta"]["auth_offers"]["nodes"][f"{cid}:f"]["kept"] == ["r1"])
+    set_folder_auth(ui, "Fold", "NEWER")                                                # Same (NEW) eski token bilan teng — lekin rad etilgan
+    ui.wait_for_timeout(400)
+    expect(T(ui, "bulk-auth-dialog")).to_have_count(0)
+    assert auth_of(app, cid, "r1")["bearer"][0]["value"] == "NEW"
+    reload(ui)                                                                          # eslab qolish diskda
+    set_folder_auth(ui, "Fold", "NEWEST")
+    ui.wait_for_timeout(400)
+    expect(T(ui, "bulk-auth-dialog")).to_have_count(0)
+    T(ui, "settings-btn").click()
+    expect(T(ui, "offer-memory-row")).to_contain_text("1 ta so'rov o'z auth'ida qoldirilgan")
+    T(ui, "offer-reset").click()                                                        # qaytarib olinadi
+    eventually(lambda: f"{cid}:f" not in app.api("GET", "/api/workspace")["meta"]["auth_offers"]["nodes"])
+
+
+def test_dont_ask_for_this_folder_and_overview_link_remains(ui, app, world):
+    cid = world
+    dialog_mode(app)
+    reload(ui)
+    set_folder_auth(ui, "Fold", "NEW")
+    T(ui, "bulk-auth-off").check()
+    T(ui, "bulk-auth-skip").click()
+    eventually(lambda: app.api("GET", "/api/workspace")["meta"]["auth_offers"]["nodes"][f"{cid}:f"]["off"] is True)
+    set_folder_auth(ui, "Fold", "NEWER")
+    ui.wait_for_timeout(400)
+    expect(T(ui, "bulk-auth-dialog")).to_have_count(0)
+    ui.click("[data-scope-section=overview]")
+    expect(T(ui, "ov-to-inherit")).to_contain_text("ta so'rovda o'z auth'i — ko'rib chiqish")     # Overview'da kichik havola qoladi
+    T(ui, "ov-to-inherit").click()
+    expect(T(ui, "bulk-auth-dialog")).to_be_visible()
 
 
 def test_no_offer_when_nothing_would_be_overridden(ui):
@@ -254,7 +339,7 @@ def test_lock_icon_marks_nodes_with_own_auth_only(ui, app, world):
     expect(row(ui, "Same").locator("[data-testid=auth-lock]")).to_have_attribute("title", "Auth: Bearer Token (o'z auth'i)")
     expect(row(ui, "Other folder").locator("[data-testid=auth-lock]")).to_have_attribute("aria-label", re.compile("Basic Auth"))
     set_folder_auth(ui, "Fold", "NEW")
-    T(ui, "bulk-auth-all").click()
-    T(ui, "bulk-auth-apply").click()
-    expect(T(ui, "bulk-auth-dialog")).to_have_count(0)
-    assert has_lock("Fold") and not has_lock("Same") and not has_lock("Other")           # papkada paydo bo'ldi, so'rovlardan ketdi
+    T(ui, "toast-action").click()
+    expect(ui.locator(".toast")).to_contain_text("o'tkazildi")
+    eventually(lambda: not has_lock("Same"))
+    assert has_lock("Fold") and has_lock("Other")                                        # papkada paydo bo'ldi; Same — meros; Other (boshqa token) tegilmadi
